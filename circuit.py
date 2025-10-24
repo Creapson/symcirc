@@ -9,10 +9,10 @@ class Circuit():
 
     nodes: List[str] = []
 
-    models: dict[str, Model] = {}
     elements: List[Element] = []
 
-    subcircuits: List["Circuit"] = []
+    models: dict[str, Model] = {}
+    subcircuits: dict[str, "Circuit"] = {}
     
     def getNodes(self):
         return self.nodes.copy()
@@ -23,20 +23,15 @@ class Circuit():
         if self.nodes.__contains__(nodeID) is False:
             self.nodes.append(nodeID)
 
-
     def addModel(self, model):
         model_name = model.name
-
-        # Load subcircuit from library files before importing in dict
-        #model.loadSubct()
-        
         self.models[model_name] = model
 
     def addElement(self, element):
         self.elements.append(element)
 
-    def addSubcircuit(self, subCt):
-        pass
+    def addSubcircuit(self, circuitName, circuit):
+        self.subcircuits[circuitName] = circuit
 
     def changeNodeID(self, nodeOld, nodeNew):
         pass
