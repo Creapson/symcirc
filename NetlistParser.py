@@ -1,3 +1,4 @@
+from Circuit import Circuit
 from Element import Element
 from Model import Model
 
@@ -7,8 +8,8 @@ class NetlistParser:
 
     def parse_netlist(self):
         self.pre_format()
-        self.parse_lines()
-        pass
+        circuit = self.parse_lines()
+        return circuit
 
     def set_circuit_file(self, file_path):
         self.file_path = file_path
@@ -25,21 +26,30 @@ class NetlistParser:
         print("Num of lines: ", len(self.netlist_lines))
         pass
 
-    def parse_lines(self):
+    def parse_lines(self, starting_index=0, end_index=None, circuit=None):
         # Recognice what this line does(e.x descripe element or subcircuit)
         # and call the acording functions
-        index = 0
-        while index < len(self.netlist_lines):
+        if circuit is None:
+            circuit = Circuit()
+        if end_index is None:
+            end_index = len(self.netlist_lines)
+        index = starting_index
+        while index < end_index:
             line = self.netlist_lines[index]
             if line.startswith("."):
-                print(line)
+                # chech if subcircuit is starting
                 if line.startswith((".SUBCKT", ".subckt")):
-                    index = self.parse_subcircuit(index)
+                    index, ct_name, sub_ct = self.parse_subcircuit(index)
+                    circuit.addSubcircuit(ct_name, sub_ct)
                     continue
+
+                # check if a model declaration is starting
                 if line.startswith((".model", ".MODEL")):
-                    print("Model Found")
-                    index = self.parse_model(index + 1)
+                    index, model = self.parse_model(index + 1)
+                    circuit.addModel(model)
                     continue
+
+                # output currently not parsable lines
                 print(
                     "\x1b[31m",
                     "Unable to parse the following string: ",
@@ -47,8 +57,10 @@ class NetlistParser:
                     "\x1b[0m",
                 )
             else:
-                self.parse_element(line)
+                element = self.parse_element(line)
+                circuit.addElement(element)
             index += 1
+        return circuit
 
     def parse_element(self, line: str):
         line_splits = line.split(" ")
@@ -64,47 +76,58 @@ class NetlistParser:
         match line_splits[0].upper()[0]:
             # Admittance
             case "R" | "C" | "L":
-                element.connections = {line_splits[1], line_splits[2]}
+                element.connections = line_splits[1:2]
                 element.addParam("value_dc", line_splits[3])
-                element.to_ai_string()
-                return
+                return element
 
             # Sources
             case "V" | "I":
-                element.connections = {line_splits[1], line_splits[2]}
+                element.connections = line_splits[1:2]
                 element.addParam("value_dc", line_splits[3])
-                element.to_ai_string()
-                return
+                return element
 
             # Controlles Sources
             case "E" | "G" | "F" | "H":
-                return
+                return element
 
             # Transistors
             case "Q":
-                element.connections = {
-                    line_splits[1],
-                    line_splits[2],
-                    line_splits[3],
-                    line_splits[4],
-                }
+                element.connections = line_splits[2:4]
                 element.addParam("ref_model", line_splits[5])
                 element.addParam("area", line_splits[6])
-                element.to_ai_string()
-                return
+                return element
 
             # Subcircuits
             case "X":
-                return
+                element.connections = line_splits[1:-1]
+                return element
 
     def parse_subcircuit(self, index):
-        print("subcircuit found")
-        while not self.netlist_lines[index].startswith(".ENDS"):
-            # Add recursive logic here
-            index += 1
+        """
+        Parse a subcircuit definition in the netlist.
+        Returns:
+            end_index + 1: the line after the .ENDS
+            ct_name: subcircuit name
+            ct: independent Circuit object for this subcircuit
+        """
+        # Find where the subcircuit ends
+        end_index = index + 1
+        while not self.netlist_lines[end_index].startswith(".ENDS"):
+            end_index += 1
 
-        # Return the line number where the subcircuit ends
-        return index + 1
+        # Parse only the lines inside this subcircuit, using a NEW Circuit instance
+        ct = self.parse_lines(
+            starting_index=index + 1, end_index=end_index, circuit=Circuit()
+        )
+
+        line_splits = self.netlist_lines[index].split()
+        ct_name = line_splits[1]
+
+        # Create a NEW Circuit object for this subcircuit
+        ct.outer_connecting_nodes = line_splits[2:]
+
+        # Return the line after the .ENDS, the name, and the subcircuit
+        return end_index + 1, ct_name, ct
 
     def parse_model(self, index):
         line_splits = self.netlist_lines[index].split(" ")
@@ -112,7 +135,7 @@ class NetlistParser:
         model.name = line_splits[1]
         while index < len(self.netlist_lines) - 1:
             if not self.netlist_lines[index].startswith("+"):
-                return index + 1
+                return index + 1, model
 
             # parse the model Parameters
             param_line = self.netlist_lines[index].removeprefix("+").strip()
@@ -132,6 +155,5 @@ class NetlistParser:
 
             index += 1
 
-        model.to_ai_string()
         # return the line number where the model ends
-        return index + 1
+        return index + 1, model
