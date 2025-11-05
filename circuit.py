@@ -1,9 +1,10 @@
 from typing import List
 
-from element import Element
-from model import Model
+from Element import Element
+from Model import Model
 
-class Circuit():
+
+class Circuit:
     outer_connecting_nodes: List[str] = []
     inner_connecting_nodes: List[str] = []
 
@@ -13,10 +14,9 @@ class Circuit():
 
     models: dict[str, Model] = {}
     subcircuits: dict[str, "Circuit"] = {}
-    
+
     def getNodes(self):
         return self.nodes.copy()
-
 
     def addNode(self, nodeID, alias):
         # if node doesnt exist add it
