@@ -7,15 +7,27 @@ class NetlistParser:
     netlist_lines = []
 
     def parse_netlist(self):
+        """Parse the entire loaded Netlist. Load the netlist with
+        NetlistParser.set_circuit_file()
+
+        Returns:
+            A Circuit with all Elements, Models and Subcircuit
+        """
         self.pre_format()
         circuit = self.parse_lines()
         return circuit
 
     def set_circuit_file(self, file_path):
+        """Set the filepath for file the will be parsed
+
+        Args:
+            file_path (str): Filepath to the netlist-File
+        """
         self.file_path = file_path
         pass
 
     def pre_format(self):
+        """Removes all Comments and empty lines from the loaded netlist"""
         # Remove Commands
         with open(self.file_path, "r") as file:
             lines = [line.strip() for line in file if not line.lstrip().startswith("*")]
@@ -25,6 +37,11 @@ class NetlistParser:
         pass
 
     def print_parser_error(self, extra_string):
+        """Print a error in red for a given line
+
+        Args:
+            extra_string (str): String with extra details to output 
+        """
         print(
             "\x1b[31m",
             "Unable to parse the following string: ",
@@ -33,6 +50,17 @@ class NetlistParser:
         )
 
     def parse_lines(self, starting_index=0, end_index=None, circuit=None):
+        """Parse all lines in the netlist-File
+
+        Args:
+            starting_index (int): Line-Index to start the parsing from
+            end_index (int): Line-Index to end parsing at
+            circuit (Cicuit): Circuit object where the Elements, Models 
+            and Subcircuits should be added to
+
+        Returns:
+            The fully populated Circuit
+        """
         # Recognice what this line does(e.x descripe element or subcircuit)
         # and call the acording functions
         if circuit is None:
@@ -65,6 +93,14 @@ class NetlistParser:
         return circuit
 
     def parse_element(self, line: str):
+        """ Parses the element from the given string.
+
+        Args:
+            line: str representing the Elememt
+
+        Returns:
+            The parsed Element
+        """
         line_splits = line.split(" ")
         element = Element()
         # check if the element type is present twice e.g: CC32
@@ -120,15 +156,23 @@ class NetlistParser:
 
             # Subcircuits
             case "X":
+                if "PARAMS" in line:
+                    self.print_parser_error("Cant parse this line! " + line)
+                    return None
                 element.connections = line_splits[1:-1]
+                element.addParam("ref_cir", line_splits[-1])
                 return element
             case _:
                 self.print_parser_error(line)
                 return None
 
     def parse_subcircuit(self, index):
-        """
-        Parse a subcircuit definition in the netlist.
+        """Searches througth the netlist to find the end of the subcircuit.
+        Then it uses self.parse_lines() to parse a part of the whole file.
+
+        Args:
+            index (int): line-index where the start of the subcircuit definition startet
+
         Returns:
             end_index + 1: the line after the .ENDS
             ct_name: subcircuit name
@@ -154,6 +198,15 @@ class NetlistParser:
         return end_index + 1, ct_name, ct
 
     def parse_model(self, index):
+        """Parse the model
+
+        Args:
+            index (int): line-index there the model definiton starts
+
+        Returns:
+            index: line-index where the model definition ends
+            model: Fully populated Model object
+        """
         def parse_params(param_list):
             for param in param_list:
                 # remove the brackets from the parameters
