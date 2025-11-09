@@ -29,7 +29,8 @@ class Circuit:
         self.models[model_name] = model
 
     def addElement(self, element):
-        self.elements.append(element)
+        if element is not None:
+            self.elements.append(element)
 
     def addSubcircuit(self, circuitName, circuit):
         self.subcircuits[circuitName] = circuit
@@ -43,27 +44,26 @@ class Circuit:
     def flatten(self, bipolar_model, mosfet_model, depth):
         pass
 
-    def to_ai_string(self):
+    def to_ai_string(self, indent=0):
         # currently a placeholder for debuging
-
         # print inner connecting nodes
-        print("Connectionss:", self.outer_connecting_nodes)
+        print("\t" * indent + "Connectionss:", self.outer_connecting_nodes)
 
         # print all elements
-        print("Elements in Circuit")
+        print("\t" * indent + "Elements in Circuit")
         for element in self.elements:
-            element.to_ai_string()
+            element.to_ai_string(indent + 1)
 
         # print all models
         if self.models:
-            print("Models in Circuit")
+            print("\t" * indent + "Models in Circuit")
             for name, model in self.models.items():
-                print(name)
-                model.to_ai_string()
+                print("\t" * (indent + 1) + name)
+                model.to_ai_string(indent + 1)
 
         # print all subcircuits
         if self.subcircuits:  # only runs if there is at least one subcircuit
-            print("Subcircuit in Circuit")
+            print("\t" * indent + "Subcircuit in Circuit")
             for name, sub_ct in self.subcircuits.items():
-                print(name)
-                sub_ct.to_ai_string()
+                print("\t" * indent + "Name of the subcircuit", name)
+                sub_ct.to_ai_string(indent + 1)

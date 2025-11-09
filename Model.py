@@ -1,7 +1,8 @@
 class Model:
-    name: str
-    filename: str = ""
-    params: dict[str, str] = {}
+    def __init__(self):
+        self.name: str
+        self.filename: str = ""
+        self.params: dict[str, str] = {}
 
     def addParam(self, paramSymbol, value):
         self.params[paramSymbol] = value
@@ -11,7 +12,7 @@ class Model:
     ):
         pass
 
-    def to_ai_string(self):
+    def to_ai_string(self, indent):
         param_string = ", ".join(f'"{k}" -> {v}' for k, v in self.params.items())
-        print(self.name, self.filename, param_string)
+        print("\t" * indent, self.name, self.filename, param_string)
         return
