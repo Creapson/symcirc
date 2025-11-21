@@ -5,10 +5,13 @@ circuit = Circuit()
 
 parser = NetlistParser()
 
-parser.set_circuit_file("testNetlist.cir")
+parser.set_netlist_file("testNetlist.cir")
 circuit = parser.parse_netlist()
 print(circuit)
 circuit.to_ai_string()
 
 circuit.flatten()
+circuit.to_ai_string()
+
+circuit.flatten(True)
 circuit.to_ai_string()

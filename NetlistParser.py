@@ -17,7 +17,7 @@ class NetlistParser:
         circuit = self.parse_lines()
         return circuit
 
-    def set_circuit_file(self, file_path):
+    def set_netlist_file(self, file_path):
         """Set the filepath for file the will be parsed
 
         Args:
@@ -166,6 +166,14 @@ class NetlistParser:
                 self.print_parser_error(line)
                 return None
 
+    def find_subcircuit(self, subct_name):
+        index = 0
+        for i in range(0, len(self.netlist_lines)):
+            if subct_name in self.netlist_lines[i]:
+                index = i
+                break
+        return index
+
     def parse_subcircuit(self, index):
         """Searches througth the netlist to find the end of the subcircuit.
         Then it uses self.parse_lines() to parse a part of the whole file.
@@ -180,8 +188,12 @@ class NetlistParser:
         """
         # Find where the subcircuit ends
         end_index = index + 1
-        while not self.netlist_lines[end_index].startswith((".ENDS", ".ends")):
+        while not self.netlist_lines[end_index].startswith(
+            (".ENDS", ".ends", ".END", ".end")
+        ):
             end_index += 1
+            if end_index >= len(self.netlist_lines):
+                break
 
         # Parse only the lines inside this subcircuit, using a NEW Circuit instance
         ct = self.parse_lines(

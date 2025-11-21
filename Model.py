@@ -7,10 +7,41 @@ class Model:
     def addParam(self, paramSymbol, value):
         self.params[paramSymbol] = value
 
-    def generateSubcircuit(
-        self, connections, element_params, bipolar_model, mosfet_model
+    def get_generated_subcircuit(
+        self,
+        element_params,
+        bipolar_model="beta_with_r_be",
+        mosfet_model="BSIM",
     ):
-        pass
+        param_list = self.params | element_params
+
+        import re
+
+        from NetlistParser import NetlistParser
+
+        parser = NetlistParser()
+
+        # chose the correct small signal model
+        # todo for those types: NPN, PNP, LPNP, D, ...
+        if param_list["type"] == "NPN":
+            parser.set_netlist_file("library/bipolar_models.lib")
+        else:
+            parser.set_netlist_file("library/mosfet_models.lib")
+        parser.pre_format()
+
+        # loop over all lines and replace the param_name with
+        # the respecting value
+        new_netlist_lines = []
+        regex = r"\b(" + "|".join(map(re.escape, param_list.keys())) + r")\b"
+        for line in parser.netlist_lines:
+            new_line = re.sub(regex, lambda m: str(param_list[m.group(1)]), line)
+            new_netlist_lines.append(new_line)
+        parser.netlist_lines = new_netlist_lines
+
+        # parse the replaced subcircuit normaly
+        subct_start_index = parser.find_subcircuit(bipolar_model)
+        start_index, end_index, ct = parser.parse_subcircuit(subct_start_index)
+        return ct
 
     def to_ai_string(self, indent):
         param_string = ", ".join(f'"{k}" -> {v}' for k, v in self.params.items())

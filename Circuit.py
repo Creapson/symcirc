@@ -56,8 +56,6 @@ class Circuit:
                     new_IDs.append("0")
                 if node in subct_connections:
                     position = subct.inner_connecting_nodes.index(node)
-                    print(position)
-                    print(element_connections)
                     new_IDs.append(subct_element_connections[position])
                 else:
                     new_IDs.append(subcircuit_name + seperator + node)
@@ -69,6 +67,7 @@ class Circuit:
             element_connections = element.connections
             new_ele_connections = new_nodeIDs(element_connections)
             new_ele = element.copy()
+            new_ele.name = subcircuit_name + "_" + new_ele.name
             new_ele.connections = new_ele_connections
             subct_elements.append(new_ele)
             pass
@@ -76,31 +75,45 @@ class Circuit:
             self.addModel(model)
         return subct_elements
 
-    def flatten(self, only_elements=True):
-        print(self.subcircuits)
+    def flatten(self, flatten_models=False):
         # Make sure all circuits are already flattend
         for name, subct in self.subcircuits.items():
             subct.flatten()
 
         new_elements = []
         for element in self.elements:
-            if element.type == "X":
+            if element.type == "X" and not flatten_models:
                 element_connections = element.connections
                 subcircuit_name = element.params["ref_cir"]
                 subct_elements = self.flatten_subcircuit(
                     subcircuit_name, element_connections
                 )
                 new_elements += subct_elements
-            else:
-                new_elements.append(element)
+                continue
 
             # Create a subcircuit for each element where this is needed
             # then flatten those normaly
-            if not only_elements:
-                if element.type == "Q":
-                    # create subcircuit with params for each element
-                    # then flatten those subcircuits
-                    pass
+            # there are other models like D
+            if element.type == "Q" and flatten_models:
+                # create subcircuit with params for each element
+                # then flatten those subcircuits
+                model_name = element.params["ref_model"]
+                model = self.models[model_name]
+                subct_name = element.name + "_" + model_name
+                model_subct = model.get_generated_subcircuit(element.params)
+                self.addSubcircuit(subct_name, model_subct)
+                subct_elements = self.flatten_subcircuit(
+                    subct_name, element.connections
+                )
+                new_elements += subct_elements
+
+                continue
+
+            new_elements.append(element)
+
+        # every subcircuit has been flattend. no need to store them
+        # anymore
+        self.subcircuits = {}
         self.elements = new_elements
 
     def to_ai_string(self, indent=0):
