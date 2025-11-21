@@ -40,7 +40,9 @@ class Circuit:
     def _addListOfElements(self, elementList):
         pass
 
-    def flatten_subcircuit(self, subcircuit_name, subct_element_connections):
+    def flatten_subcircuit(
+        self, subcircuit_name, element_name, subct_element_connections
+    ):
         if len(self.subcircuits) == 0:
             return
         subct = self.subcircuits[subcircuit_name]
@@ -67,7 +69,7 @@ class Circuit:
             element_connections = element.connections
             new_ele_connections = new_nodeIDs(element_connections)
             new_ele = element.copy()
-            new_ele.name = subcircuit_name + "_" + new_ele.name
+            new_ele.name = element_name + "_" + new_ele.name
             new_ele.connections = new_ele_connections
             subct_elements.append(new_ele)
             pass
@@ -86,7 +88,7 @@ class Circuit:
                 element_connections = element.connections
                 subcircuit_name = element.params["ref_cir"]
                 subct_elements = self.flatten_subcircuit(
-                    subcircuit_name, element_connections
+                    subcircuit_name, element.name, element_connections
                 )
                 new_elements += subct_elements
                 continue
@@ -103,7 +105,7 @@ class Circuit:
                 model_subct = model.get_generated_subcircuit(element.params)
                 self.addSubcircuit(subct_name, model_subct)
                 subct_elements = self.flatten_subcircuit(
-                    subct_name, element.connections
+                    subct_name, element.name, element.connections
                 )
                 new_elements += subct_elements
 
