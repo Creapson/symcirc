@@ -40,7 +40,7 @@ class NetlistParser:
         """Print a error in red for a given line
 
         Args:
-            extra_string (str): String with extra details to output 
+            extra_string (str): String with extra details to output
         """
         print(
             "\x1b[31m",
@@ -55,7 +55,7 @@ class NetlistParser:
         Args:
             starting_index (int): Line-Index to start the parsing from
             end_index (int): Line-Index to end parsing at
-            circuit (Cicuit): Circuit object where the Elements, Models 
+            circuit (Cicuit): Circuit object where the Elements, Models
             and Subcircuits should be added to
 
         Returns:
@@ -93,7 +93,7 @@ class NetlistParser:
         return circuit
 
     def parse_element(self, line: str):
-        """ Parses the element from the given string.
+        """Parses the element from the given string.
 
         Args:
             line: str representing the Elememt
@@ -192,7 +192,7 @@ class NetlistParser:
         ct_name = line_splits[1]
 
         # Create a NEW Circuit object for this subcircuit
-        ct.outer_connecting_nodes = line_splits[2:]
+        ct.inner_connecting_nodes = line_splits[2:]
 
         # Return the line after the .ENDS, the name, and the subcircuit
         return end_index + 1, ct_name, ct
@@ -207,6 +207,7 @@ class NetlistParser:
             index: line-index where the model definition ends
             model: Fully populated Model object
         """
+
         def parse_params(param_list):
             for param in param_list:
                 # remove the brackets from the parameters

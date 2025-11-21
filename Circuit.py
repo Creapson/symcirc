@@ -6,7 +6,6 @@ from Model import Model
 
 class Circuit:
     def __init__(self):
-        self.outer_connecting_nodes: List[str] = []
         self.inner_connecting_nodes: List[str] = []
 
         self.nodes: List[str] = []
@@ -41,13 +40,73 @@ class Circuit:
     def _addListOfElements(self, elementList):
         pass
 
-    def flatten(self, bipolar_model, mosfet_model, depth):
-        pass
+    def flatten_subcircuit(self, subcircuit_name, subct_element_connections):
+        if len(self.subcircuits) == 0:
+            return
+        subct = self.subcircuits[subcircuit_name]
+        subct_connections = subct.inner_connecting_nodes
+
+        # If this node is in connection use the nodeID of the root circuit
+        def new_nodeIDs(nodeID):
+            seperator = "_"
+
+            new_IDs = []
+            for node in nodeID:
+                if node == "0":
+                    new_IDs.append("0")
+                if node in subct_connections:
+                    position = subct.inner_connecting_nodes.index(node)
+                    print(position)
+                    print(element_connections)
+                    new_IDs.append(subct_element_connections[position])
+                else:
+                    new_IDs.append(subcircuit_name + seperator + node)
+            # if list is empty
+            return new_IDs
+
+        subct_elements = []
+        for element in subct.elements:
+            element_connections = element.connections
+            new_ele_connections = new_nodeIDs(element_connections)
+            new_ele = element.copy()
+            new_ele.connections = new_ele_connections
+            subct_elements.append(new_ele)
+            pass
+        for model in subct.models:
+            self.addModel(model)
+        return subct_elements
+
+    def flatten(self, only_elements=True):
+        print(self.subcircuits)
+        # Make sure all circuits are already flattend
+        for name, subct in self.subcircuits.items():
+            subct.flatten()
+
+        new_elements = []
+        for element in self.elements:
+            if element.type == "X":
+                element_connections = element.connections
+                subcircuit_name = element.params["ref_cir"]
+                subct_elements = self.flatten_subcircuit(
+                    subcircuit_name, element_connections
+                )
+                new_elements += subct_elements
+            else:
+                new_elements.append(element)
+
+            # Create a subcircuit for each element where this is needed
+            # then flatten those normaly
+            if not only_elements:
+                if element.type == "Q":
+                    # create subcircuit with params for each element
+                    # then flatten those subcircuits
+                    pass
+        self.elements = new_elements
 
     def to_ai_string(self, indent=0):
         # currently a placeholder for debuging
         # print inner connecting nodes
-        print("\t" * indent + "Connectionss:", self.outer_connecting_nodes)
+        print("\t" * indent + "Connectionss:", self.inner_connecting_nodes)
 
         # print all elements
         print("\t" * indent + "Elements in Circuit")
