@@ -428,17 +428,17 @@ class ModifiedNodalAnalysis(EquationFormulator):
                                               1/(s*sp.symbols(element.name)))
 
                 case "V": self.add_independent_voltage_source(self.node_map[element.connections[0]], # noqa: E701
-                                                self.node_map[element.connections[1]], sp.symbols(element.name), element.params["value_ac"])
+                                                self.node_map[element.connections[1]], sp.symbols(element.name), element.params["value_dc"])
 
                 case "I": self.add_independent_current_source(self.node_map[element.connections[0]], # noqa: E701
                                                 self.node_map[element.connections[1]], sp.symbols(element.name))
             
            
                     
-        for bipole in self.ct.bipoles:
+        for element in self.ct.elements:
 
             
-            match bipole.tp:
+            match element.type:
                 
                 case "H": 
                     self.add_ccvs(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701

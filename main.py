@@ -1,6 +1,6 @@
 from Circuit import Circuit
 from NetlistParser import NetlistParser
-
+from Equation_Formulator_WIP import ModifiedNodalAnalysis
 circuit = Circuit()
 
 parser = NetlistParser()
@@ -14,3 +14,9 @@ circuit.to_ai_string()
 print("\n\n\nThe flattend circuit with small signal models")
 circuit.flatten(True)
 circuit.to_ai_string()
+
+mna = ModifiedNodalAnalysis(circuit)
+mna.buildEquationSystem()
+result = mna.solve()
+print("\n\n\nThe results of the simulation")
+print(result)
