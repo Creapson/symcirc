@@ -15,10 +15,15 @@ class Circuit:
         self.models: dict[str, Model] = {}
         self.subcircuits: dict[str, "Circuit"] = {}
 
+    def update_nodes(self):
+        for element in self.elements:
+            for node in element.connections:
+                self.addNode(node)
+
     def getNodes(self):
         return self.nodes.copy()
 
-    def addNode(self, nodeID, alias):
+    def addNode(self, nodeID):
         # if node doesnt exist add it
         if self.nodes.__contains__(nodeID) is False:
             self.nodes.append(nodeID)
@@ -30,6 +35,8 @@ class Circuit:
     def addElement(self, element):
         if element is not None:
             self.elements.append(element)
+        for node in element.connections:
+            self.addNode(node)
 
     def addSubcircuit(self, circuitName, circuit):
         self.subcircuits[circuitName] = circuit
@@ -117,11 +124,13 @@ class Circuit:
         # anymore
         self.subcircuits = {}
         self.elements = new_elements
+        self.update_nodes()
 
     def to_ai_string(self, indent=0):
         # currently a placeholder for debuging
         # print inner connecting nodes
         print("\t" * indent + "Connectionss:", self.inner_connecting_nodes)
+        print("\t" * indent + "Nodes:", self.nodes)
 
         # print all elements
         print("\t" * indent + "Elements in Circuit")
