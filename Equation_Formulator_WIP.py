@@ -44,14 +44,14 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
         #create mapping for node names to integer values for easy matrix handling
    
-        node_map = {}
+        self.node_map = {}
         used_values = set()
         
         for node in self.ct.nodes:
             if node.isdigit():
                 val = int(node)
                 if val not in used_values:
-                    node_map[node] = val
+                    self.node_map[node] = val
                     used_values.add(val)
         
         for node in self.ct.nodes:
@@ -60,7 +60,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
                 val = 1
                 while val in used_values:
                     val += 1
-                node_map[node] = val
+                self.node_map[node] = val
                 used_values.add(val)
         
      
@@ -166,11 +166,11 @@ class ModifiedNodalAnalysis(EquationFormulator):
         v_counter = 0
         proof_counter = 0
 
-        for bipole in self.ct.bipoles:
+        for element in self.ct.elements:
             proof_counter += 1
-            match bipole.tp:
+            match element.type:
                 case "V" | "H" |  "E":            
-                    if {self.result[bipole.node1], bipole.node2} == {node_ctrl1, node_ctrl2}:
+                    if {self.node_map[element.connections[0]], self.node_map[element.connections[1]]} == {node_ctrl1, node_ctrl2}:
                         idx = self.n + v_counter
 
                         if node_out1 != 0:
@@ -185,7 +185,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
                 
                 case  "R" | "C" | "L" | "I" | "F" | "G": 
-                    if {bipole.node1, bipole.node2} == {node_ctrl1, node_ctrl2}:
+                    if {self.node_map[element.connections[0]], self.node_map[element.connections[1]]} == {node_ctrl1, node_ctrl2}:
                     
                         self.expand_matrix()
                         idx = self.A.rows - 1
@@ -208,7 +208,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
                         
                         break
         
-        if proof_counter == len(self.ct.bipoles):
+        if proof_counter == len(self.ct.elements):
             self.expand_matrix()
             idx = self.A.rows - 1
 
@@ -378,8 +378,9 @@ class ModifiedNodalAnalysis(EquationFormulator):
         """
        
         #v = sp.Matrix(sp.symbols(f"V1:{self.n +1}"))
-        potential_symbols_strings = [self.ct.getNodes()[k] for k in 
-                                     sorted(self.ct.getNodes())]
+        potential_symbols_strings = [
+            key for key, _ in sorted(self.node_map.items(), key=lambda item: item[1])
+            ]
 
         potential_symbols = sp.symbols(potential_symbols_strings[1:])
 
@@ -428,33 +429,33 @@ class ModifiedNodalAnalysis(EquationFormulator):
                                               1/(s*sp.symbols(element.name)))
 
                 case "V": self.add_independent_voltage_source(self.node_map[element.connections[0]], # noqa: E701
-                                                self.node_map[element.connections[1]], sp.symbols(element.name), element.params["value_ac"])
+                                                self.node_map[element.connections[1]], sp.symbols(element.name), element.params["value_dc"])
 
                 case "I": self.add_independent_current_source(self.node_map[element.connections[0]], # noqa: E701
                                                 self.node_map[element.connections[1]], sp.symbols(element.name))
             
            
                     
-        for bipole in self.ct.bipoles:
+        for element in self.ct.elements:
 
             
-            match bipole.tp:
+            match element.type:
                 
                 case "H": 
                     self.add_ccvs(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
-                        self.node_map[element.connections[3]], self.node_map[element.connections[4]], sp.symbols(element.name))
+                        self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(element.name))
 
                 case "F": 
                     self.add_cccs(self.node_map[element.connections[0]], self.node_map[element.connections[1]],
-                        self.node_map[element.connections[3]], self.node_map[element.connections[4]], sp.symbols(element.name))
+                        self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(element.name))
 
                 case "E": 
                     self.add_vcvs(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
-                        self.node_map[element.connections[3]], self.node_map[element.connections[4]], sp.symbols(element.name))
+                        self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(element.name))
 
                 case "G": 
                     self.add_vccs(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
-                        self.node_map[element.connections[3]], self.node_map[element.connections[4]], sp.symbols(element.name))
+                        self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(element.name))
 
         print("Finished building equation system!")
         logger.debug("Finished building equation system!")   
@@ -477,16 +478,16 @@ class ModifiedNodalAnalysis(EquationFormulator):
         print("Solving equation system...")
         logger.debug("Solving equation system...")
 
-        #result = sp.solve(self.A * x - self.z, x)
-        result = self.A.LUsolve(self.z)
+        result = sp.solve(self.A * x - self.z, x)
+        #result = self.A.LUsolve(self.z)
 
-        result_dict = dict(zip(x, result))
+        #result_dict = dict(zip(x, result))
 
         print("Finished solving equation system!")
         logger.debug("Finished solving equation system!")
 
-        logger.debug(result_dict)
+        #logger.debug(result_dict)
 
-        return result_dict
+        return result
     
          

@@ -1,6 +1,6 @@
 from Circuit import Circuit
 from NetlistParser import NetlistParser
-
+from Equation_Formulator_WIP import ModifiedNodalAnalysis
 circuit = Circuit()
 
 parser = NetlistParser()
