@@ -76,7 +76,7 @@ class Circuit:
             element_connections = element.connections
             new_ele_connections = new_nodeIDs(element_connections)
             new_ele = element.copy()
-            new_ele.name = element_name + "_" + new_ele.name
+            new_ele.name = element_name + "." + new_ele.name
             new_ele.connections = new_ele_connections
             subct_elements.append(new_ele)
             pass
@@ -84,10 +84,19 @@ class Circuit:
             self.addModel(model)
         return subct_elements
 
-    def flatten(self, flatten_models=False):
-        # Make sure all circuits are already flattend
+    def flatten(self, flatten_models=False, out_file_path=""):
+        # Make sure all subcircuits are already flattend
         for name, subct in self.subcircuits.items():
             subct.flatten()
+
+        # parse the element params before creating
+        # the small signal subcircuits
+        if flatten_models:
+            # add the missing element params from the .out file
+            from NetlistParser import NetlistParser
+            parser = NetlistParser()
+            # the elements get changed by reference
+            parser.parse_element_params(out_file_path, self.elements)
 
         new_elements = []
         for element in self.elements:
@@ -108,7 +117,7 @@ class Circuit:
                 # then flatten those subcircuits
                 model_name = element.params["ref_model"]
                 model = self.models[model_name]
-                subct_name = element.name + "_" + model_name
+                subct_name = element.name + "." + model_name
                 model_subct = model.get_generated_subcircuit(element.params)
                 self.addSubcircuit(subct_name, model_subct)
                 subct_elements = self.flatten_subcircuit(
@@ -119,6 +128,7 @@ class Circuit:
                 continue
 
             new_elements.append(element)
+
 
         # every subcircuit has been flattend. no need to store them
         # anymore

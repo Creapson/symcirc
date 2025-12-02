@@ -4,7 +4,7 @@ class Model:
         self.filename: str = ""
         self.params: dict[str, str] = {}
 
-    def addParam(self, paramSymbol, value):
+    def add_param(self, paramSymbol, value):
         self.params[paramSymbol] = value
 
     def get_generated_subcircuit(
@@ -13,7 +13,9 @@ class Model:
         bipolar_model="beta_with_r_be",
         mosfet_model="BSIM",
     ):
-        param_list = self.params | element_params
+
+        # convert all params to lowercase
+        param_list = {k.lower(): v for k, v in (self.params | element_params).items()}
 
         import re
 

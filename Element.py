@@ -8,16 +8,16 @@ class Element:
         self.type: str = ""
         self.params: dict[str, str] = {}
 
-    def setType(self, newType: str):
+    def set_type(self, newType: str):
         self.type = newType
 
-    def addParam(self, paramSymbol, value):
+    def add_param(self, paramSymbol, value):
         self.params[paramSymbol] = value
 
-    def setConnections(self, connections):
+    def set_connections(self, connections):
         self.connections = connections
 
-    def getConnections(self):
+    def get_connections(self):
         return self.connections
 
     def to_ai_string(self, indent):

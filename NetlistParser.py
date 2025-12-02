@@ -1,3 +1,4 @@
+import re
 from Circuit import Circuit
 from Element import Element
 from Model import Model
@@ -101,7 +102,7 @@ class NetlistParser:
         Returns:
             The parsed Element
         """
-        line_splits = line.split(" ")
+        line_splits = line.split()
         element = Element()
         # check if the element type is present twice e.g: CC32
         if len(line_splits[0]) >= 2:
@@ -112,20 +113,20 @@ class NetlistParser:
         else:
             element.name = line_splits[0]
 
-        element.setType(line_splits[0][0])
+        element.set_type(line_splits[0][0])
 
         match line_splits[0].upper()[0]:
             # Admittance
             case "R" | "C" | "L":
                 element.connections = line_splits[1:-1]
-                element.addParam("value_dc", line_splits[3])
+                element.add_param("value_dc", line_splits[3])
                 return element
 
             # Sources
             case "V" | "I":
                 if len(line_splits) == 4:
                     element.connections = line_splits[1:-1]
-                    element.addParam("value_dc", line_splits[3])
+                    element.add_param("value_dc", line_splits[3])
                 else:
                     self.print_parser_error("This line is too long or short!\t" + line)
                     return None
@@ -135,7 +136,7 @@ class NetlistParser:
             case "E" | "G" | "F" | "H":
                 if len(line_splits) == 6:
                     element.connections = line_splits[1:-1]
-                    element.addParam("value", line_splits[5])
+                    element.add_param("value", line_splits[5])
                 else:
                     self.print_parser_error("This line is too long or short!" + line)
                 return element
@@ -144,14 +145,14 @@ class NetlistParser:
             case "Q":
                 if len(line_splits) == 5:
                     element.connections = line_splits[1:3]
-                    element.addParam("ref_model", line_splits[4])
+                    element.add_param("ref_model", line_splits[4])
                 elif len(line_splits) == 6:
                     element.connections = line_splits[1:4]
-                    element.addParam("ref_model", line_splits[5])
+                    element.add_param("ref_model", line_splits[5])
                 else:
                     element.connections = line_splits[1:4]
-                    element.addParam("ref_model", line_splits[5])
-                    element.addParam("area", line_splits[6])
+                    element.add_param("ref_model", line_splits[5])
+                    element.add_param("area", line_splits[6])
                 return element
 
             # Subcircuits
@@ -160,7 +161,7 @@ class NetlistParser:
                     self.print_parser_error("Cant parse this line! " + line)
                     return None
                 element.connections = line_splits[1:-1]
-                element.addParam("ref_cir", line_splits[-1])
+                element.add_param("ref_cir", line_splits[-1])
                 return element
             case _:
                 self.print_parser_error(line)
@@ -226,7 +227,7 @@ class NetlistParser:
                 param.removeprefix("(")
                 param.removesuffix(")")
                 param_split = param.split("=")
-                model.addParam(param_split[0], param_split[1])
+                model.add_param(param_split[0], param_split[1])
 
         # There are two different syntax for models
         # 1. .model name type (params)
@@ -235,14 +236,14 @@ class NetlistParser:
         #    + params ...
 
         line = self.netlist_lines[index]
-        line_splits = line.split(" ")
+        line_splits = line.split()
         model = Model()
 
         model.name = line_splits[1]
 
         # chech if is first Type
         if "(" in line:
-            model.addParam("type", line_splits[2])
+            model.add_param("type", line_splits[2])
             parse_params(line_splits[3:])
 
         # If a ')' is in this line all params are parsed
@@ -259,15 +260,15 @@ class NetlistParser:
             # parse the model Parameters
             param_line = self.netlist_lines[index].removeprefix("+").strip()
             if "NPN" in param_line:
-                model.addParam("type", "NPN")
+                model.add_param("type", "NPN")
                 index += 1
                 continue
             if "PNP" in param_line:
-                model.addParam("type", "PNP")
+                model.add_param("type", "PNP")
                 index += 1
                 continue
 
-            parse_params(param_line.split(" "))
+            parse_params(param_line.split())
 
             if ")" in param_line:
                 return index, model
@@ -275,3 +276,78 @@ class NetlistParser:
 
         # return the line number where the model ends
         return index, model
+
+    def parse_element_params(self, out_filepath, elements):
+        """
+        text:     the full SPICE-like dump string
+        elements: list or dict of objects that have .name and .add_param(key, value)
+        """
+        with open(out_filepath, "r") as file:
+            lines = [line.rstrip() for line in file]
+
+        param_start_index = 0
+        for line in lines:
+            if "BIPOLAR JUNCTION TRANSISTORS" in line:
+                param_start_index += 1
+                break
+            else:
+                param_start_index += 1
+        print(param_start_index)
+        
+
+        # Build fast lookup
+        lookup = {el.name: el for el in elements}
+        i = 0
+        n = len(lines)
+
+        current_names = []    # list of transistor names in the current block
+
+        while i < n:
+            line = lines[i].strip()
+
+            # Detect "NAME Q201 Q202 ..."
+            if line.startswith("NAME"):
+                parts = line.split()
+                current_names = parts[1:]  # all device names on that line
+                row_index = 0
+                i += 1
+                continue
+
+            # check if the next line start with a Word
+            # This is the name of the param
+            if current_names and re.match(r"^[A-Za-z0-9]+", line):
+                parts = line.split()
+                key = parts[0]
+                values = parts[1:]
+
+                # each value must have a element to whom
+                # it belongs
+                if len(values) != len(current_names):
+                    # ERROR: mismatched count
+                    print(f"Warning: key {key} has {len(values)} values but {len(current_names)} names.")
+                else:
+                    # Assign each value to the corresponding element
+                    for name, raw in zip(current_names, values):
+
+                        # convert str to float
+                        try:
+                            val = float(raw)
+                        except ValueError:
+                            val = raw
+
+                        if name in lookup:
+                            lookup[name].add_param(key, val)
+                            print(f"Added {key} to {name}")
+                        else:
+                            print(f"Warning: element {name} not found in lookup.")
+
+                i += 1
+                continue
+
+            # End of block or empty line resets current_names
+            if line.strip() == "" or line.startswith("JOB"):
+                current_names = []
+
+            i += 1
+
+            pass
