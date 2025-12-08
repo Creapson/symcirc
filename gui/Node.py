@@ -1,190 +1,133 @@
-
 import dearpygui.dearpygui as dpg
-import uuid
-
-
-# ------------------------------------------------------------
-#  Utilities
-# ------------------------------------------------------------
-
-def uid():
-    """Generate unique IDs for node attributes."""
-    return str(uuid.uuid4())
-
-
-# ------------------------------------------------------------
-#  Base Node Class
-# ------------------------------------------------------------
 
 class Node:
     def __init__(self, label, position=(100, 100)):
         self.label = label
         self.position = position
+        # Add the editor to access the other nodes
+        self.editor = None
         self.node_id = None
 
-        self.input_attributes = []
-        self.output_attributes = []
-
-        self.input_widgets = {}   # <attr_id : widget_id>
-        self.output_widgets = {}  # <attr_id : widget_id>
+        # {pin_id: connected_node}
+        self.connections = {}
+        # {pin_id: variable}
+        self.output_values = {}
+        self.output_pins = []
+        self.input_pins = []
 
     def setup(self, build_fn):
         with dpg.node(label=self.label, pos=self.position) as self.node_id:
             build_fn()
 
+            with self.add_static_attr():
+                dpg.add_button(label="Debug Log", callback=self.debug_print)
+            print("Output Pins: ", self.output_pins)
+
+
+        print(f"node_id of node {self.label} with id: {self.node_id}")
         dpg.set_item_pos(self.node_id, self.position)
 
+        return self.node_id
+
     def add_input_attr(self):
-        attr_id = uid()
-        self.input_attributes.append(attr_id)
-        return dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Input, tag=attr_id)
+        return dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Input)
+
+    def add_static_attr(self):
+        return dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Static)
 
     def add_output_attr(self):
-        attr_id = uid()
-        self.output_attributes.append(attr_id)
-        return dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Output, tag=attr_id)
+        return dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Output)
+
+    def add_output_value(self, pin_index, value):
+        pin_id = self.output_pins[pin_index]
+        self.output_values[pin_id] = value
+        print("Output Values", self.output_values)
+
+    def add_connection(self, pin_id, connected_node):
+        self.connections[pin_id] = connected_node
+        print("Connections in Node: ", self.connections)
+
+    def update(self):
+        print("update was called!")
+
+    def debug_print(self):
+        print(f"Debug Output from Node: {self.label}")
+        print("Label: ", self.label)
+        print("Position: ", self.position)
+        print("NodeID: ", self.node_id)
+        print("Connections: ", self.connections)
+        print("output Values: ", self.output_values)
+        print("output pins: ", self.output_pins)
 
 
-# ------------------------------------------------------------
-#  Example Node Types
-# ------------------------------------------------------------
+class ImportCircuit(Node):
+    def callback(self, sender, app_data):
+        self.add_output_value(0, app_data["file_path_name"])
+        dpg.set_value(self.file_path_widget_id, f"Selected File Path:\n{app_data["file_path_name"]}")
 
-class SimpleNode(Node):
+    def cancel_callback(sender, app_data):
+        print('Cancel was clicked.')
+
     def setup(self):
         def build():
-            # Input
-            with self.add_input_attr():
-                dpg.add_input_float(label="Input", width=150)
 
-            # Output
-            with self.add_output_attr():
-                dpg.add_input_float(label="Output", width=150)
+            with dpg.value_registry():
+                dpg.add_string_value(default_value="No file currently selected!", tag="file_path_string")
 
-        super().setup(build)
+            with dpg.file_dialog(
+                directory_selector=False,
+                show=False,
+                callback=self.callback,
+                cancel_callback=self.cancel_callback,
+                tag="file_dialog_id",
+                width=700,
+                height=400
+            ):
+                dpg.add_file_extension(".cir")
 
-
-class AdvancedNode(Node):
-    def setup(self):
-        def build():
-            with dpg.file_dialog(directory_selector=False, show=False, id="file_dialog_id",width=700 ,height=400):
-                dpg.add_file_extension(".*")
-
-            with self.add_output_attr():
+            with self.add_output_attr() as output_pin:
                 dpg.add_button(label="Open File Dialog",
                                callback=lambda: dpg.show_item("file_dialog_id"))
+            self.output_pins.append(output_pin)
 
-        super().setup(build)
+            with self.add_static_attr():
+                self.file_path_widget_id = dpg.add_text(source="file_path_string")
 
+        return super().setup(build)
 
-class TextOutputNode(Node):
-    def __init__(self, label, position):
-        super().__init__(label, position)
-        self.input_text_id = None
-
+class TextShowNode(Node):
     def setup(self):
+
+
         def build():
-            # Input
-            with self.add_input_attr():
-                self.inout_text_id = dpg.add_text("Filepath: ...")
-                
-        super().setup(build)
 
-    def on_input(self, sender, app_data):
-        dpg.set_value(self.input_text_id, f"Filepath: {app_data}")
+            with dpg.value_registry():
+                dpg.add_string_value(default_value="Connect a input", tag="file_path_string_text")
 
-    # Called by NodeEditor when a connected node changes
-    def receive_value(self, value):
-        dpg.set_value(self.input_text_id, value)
-        dpg.set_value(self.output_text_id, f"Output: {value}")
+            with self.add_input_attr() as input_pin:
+                self.file_path_widget_id = dpg.add_text(source="file_path_string_text")
+            self.input_pins.append(input_pin)
 
-# ------------------------------------------------------------
-#  Node Editor
-# ------------------------------------------------------------
+            with self.add_static_attr():
+                dpg.add_button(label="Update", callback=self.update)
 
-class NodeEditor:
-    def __init__(self):
-        self.nodes = []
-        self.links = []
-
-    def add_node(self, node_cls, label, pos):
-        node = node_cls(label, pos)
-        self.nodes.append(node)
-        return node
-
-    def render(self):
-        with dpg.window(label="Node Editor", width=1200, height=800):
-            with dpg.node_editor(tag="node_editor",
-                                 callback=self.on_link,
-                                 delink_callback=self.on_delink):
-                for node in self.nodes:
-                    node.setup()
-
-    # -------- LINK HANDLING --------
-    def on_link(self, sender, app_data):
-        output_attr, input_attr = app_data
-
-        dpg.add_node_link(output_attr, input_attr, parent="node_editor")
-        self.links.append((output_attr, input_attr))
-
-        self.propagate_values()
-
-    def on_delink(self, sender, link_id):
-        dpg.delete_item(link_id)
-
-        # clean links list
-        self.links = [(o, i) for (o, i) in self.links if dpg.does_item_exist(o)]
-        self.propagate_values()
+        return super().setup(build)
 
 
-    def propagate_values(self):
+    def update(self):
+        input_pin = self.input_pins[0]
+        from_pin = self.connections[input_pin]
 
-        # Build quick lookup tables
-        attr_to_node = {}
-        for node in self.nodes:
-            for attr in node.output_attributes:
-                attr_to_node[attr] = node
-            for attr in node.input_attributes:
-                attr_to_node[attr] = node
+        # get parent node ID (dpg ID)
+        from_node_id = dpg.get_item_parent(from_pin)
 
-        # For each link
-        for output_attr, input_attr in self.links:
+        # get actual python object
+        from_node = self.editor.node_dic[from_node_id]
 
-            sender = attr_to_node[output_attr]
-            receiver = attr_to_node[input_attr]
+        # read the value
+        value = from_node.output_values.get(from_pin, "No value found")
 
-            # find the widget inside the sender that generates the value
-            if output_attr in sender.output_widgets:
-                widget_id = sender.output_widgets[output_attr]
-                value = dpg.get_value(widget_id)
-            else:
-                continue
+        # apply it to UI
+        dpg.set_value("file_path_string_text", value)
 
-            # deliver value to receiver
-            if hasattr(receiver, "receive_value"):
-                receiver.receive_value(value)
-
-# ------------------------------------------------------------
-#  Main App
-# ------------------------------------------------------------
-
-def main():
-    dpg.create_context()
-    dpg.create_viewport(title="OOP Node Editor Example", width=1200, height=800)
-
-    editor = NodeEditor()
-
-    # Add nodes
-    editor.add_node(SimpleNode, "Simple Node", (100, 100))
-    editor.add_node(AdvancedNode, "Advanced Node", (350, 100))
-    editor.add_node(TextOutputNode, "Text Output Node", (600, 100))
-
-    editor.render()
-
-    dpg.setup_dearpygui()
-    dpg.show_viewport()
-    dpg.start_dearpygui()
-    dpg.destroy_context()
-
-
-if __name__ == "__main__":
-    main()
+        super().update()

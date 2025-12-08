@@ -127,9 +127,42 @@ class NetlistParser:
                 if len(line_splits) == 4:
                     element.connections = line_splits[1:-1]
                     element.add_param("value_dc", line_splits[3])
-                else:
-                    self.print_parser_error("This line is too long or short!\t" + line)
-                    return None
+                elif len(line_splits) > 4:
+                    element.connections = line_splits[1:2]
+
+                    # parse all values from this token
+                    def parse_token(index, token_str):
+                        token_list = ["DC", "AC", "SIN", "PULSE", "EXP", "SFFM"]
+                        token_list.remove(token_str)
+                        print(token_list)
+                        param_token_str = "value_" + token_str.lower()
+                        value = ""
+                        index += 1
+                        while index < len(line_splits) and line_splits[index].upper() not in token_list:
+                            value += line_splits[index]
+                            index += 1
+                            print(index)
+                        print(value)
+                        print("".join(token))
+                        element.add_param(param_token_str, value)
+                        return index
+
+                    i = 3
+                    while i < len(line_splits):
+                        token = line_splits[i].upper()
+
+                        if token == "DC":
+                            i = parse_token(i, "DC")
+                            continue  # skip the normal i increment to avoid skipping token
+
+                        if token == "AC":
+                            i = parse_token(i, "AC")
+                            continue  # skip the normal i increment to avoid skipping token
+
+                        else:
+                            i += 1
+
+
                 return element
 
             # Controlles Sources
