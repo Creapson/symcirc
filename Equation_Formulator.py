@@ -26,6 +26,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
     """
     ct:Circuit
+    value_dict:dict
   
 
     def __init__(self, circuit:Circuit):
@@ -35,7 +36,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
             circuit (Circuit): The Circuit to analyze.
 
         """
-
+        self.value_dict = {}
         self.ct = circuit
         self.n = len(self.ct.nodes) - 1  # Anzahl Knoten ohne Masse (0)
         self.A = sp.zeros(self.n, self.n)
@@ -63,9 +64,24 @@ class ModifiedNodalAnalysis(EquationFormulator):
                 self.node_map[node] = val
                 used_values.add(val)
         
+        size = len(self.node_map)
+        self.unknowns = [None] * size
+
+        for name, idx in self.node_map.items():
+            if (name == "ground") | (name == "0") | (name == "GND") | (name == "gnd"):
+                # Masseknoten bekommt kein Symbol (None bleibt stehen)
+                continue
+            self.unknowns[idx] = sp.Symbol(f"V_{name}")
+
+        # Falls Masseknoten (oder andere fehlende Indizes) vorhanden sind:
+        # setze Dummy-Symbole NICHT -> SymPy soll nur echte Variablen enthalten
+        # hier entfernen wir leere Einträge
+        self.unknowns = [s for s in self.unknowns if s is not None]
+        self.unknowns = sp.Matrix(self.unknowns)
+        
      
                 
-    def expand_matrix(self):
+    def expand_matrix(self, symName):
         """Expand matrix in case of an additional voltage source by 1 row and 1 column.
 
         """
@@ -75,6 +91,10 @@ class ModifiedNodalAnalysis(EquationFormulator):
         self.A = self.A.col_join(last_row)            # neue letzte Zeile
 
         self.z = self.z.col_join(sp.Matrix([0]))
+
+        newsym = sp.Symbol("I_" + str(symName))
+        self.unknowns = self.unknowns.col_join(sp.Matrix([newsym]))
+                                               
         self.current_var_index += 1
 
     def add_admittance(self, node1, node2, value):
@@ -119,7 +139,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
             value (symbol): Symbol of the source.
 
         """
-        self.expand_matrix()
+        self.expand_matrix(sym_value)
         idx = self.A.rows - 1
         if node1 != 0:
             self.A[node1 - 1, idx] = 1
@@ -187,7 +207,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
                 case  "R" | "C" | "L" | "I" | "F" | "G": 
                     if {self.node_map[element.connections[0]], self.node_map[element.connections[1]]} == {node_ctrl1, node_ctrl2}:
                     
-                        self.expand_matrix()
+                        self.expand_matrix(beta)
                         idx = self.A.rows - 1
 
                         if node_out1 != 0:
@@ -209,7 +229,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
                         break
         
         if proof_counter == len(self.ct.elements):
-            self.expand_matrix()
+            self.expand_matrix(beta)
             idx = self.A.rows - 1
 
             if node_out1 != 0:
@@ -238,7 +258,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
             gain (float): gain factor
 
         """
-        self.expand_matrix()
+        self.expand_matrix(gain)
         idx = self.A.rows - 1
         if node_out1 != 0:
             self.A[node_out1 - 1, idx] = 1
@@ -272,7 +292,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
                     if {self.node_map[element.connections[0]], self.node_map[element.connections[1]]} == {node_ctrl1, node_ctrl2}:
                         ctrl_idx = self.n + v_counter
 
-                        self.expand_matrix()
+                        self.expand_matrix(r_m)
                         idx = self.A.rows - 1
 
                         if node_out1 != 0:
@@ -296,7 +316,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
                 case  "R" | "C" | "L" | "I" | "F" | "G": 
                     if {self.node_map[element.connections[0]], self.node_map[element.connections[1]]} == {node_ctrl1, node_ctrl2}:
                     
-                        self.expand_matrix()
+                        self.expand_matrix(r_m)
                         ctrl_idx = self.A.rows - 1
 
                         
@@ -310,7 +330,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
                         
                         self.z[ctrl_idx] = 0
                         
-                        self.expand_matrix()
+                        self.expand_matrix(r_m)
                         idx = self.A.rows - 1
 
                         if node_out1 != 0:
@@ -328,7 +348,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
                         break
         
         if proof_counter == len(self.ct.bipoles):
-            self.expand_matrix()
+            self.expand_matrix(r_m)
             ctrl_idx = self.A.rows - 1
 
                         
@@ -342,7 +362,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
             
             self.z[ctrl_idx] = 0
                         
-            self.expand_matrix()
+            self.expand_matrix(r_m)
             idx = self.A.rows - 1
 
             if node_out1 != 0:
@@ -377,18 +397,9 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
         """
        
-        #v = sp.Matrix(sp.symbols(f"V1:{self.n +1}"))
-        potential_symbols_strings = [
-            key for key, _ in sorted(self.node_map.items(), key=lambda item: item[1])
-            ]
+        
 
-        potential_symbols = sp.symbols(potential_symbols_strings[1:])
-
-        v = sp.Matrix(potential_symbols)
-
-        i = sp.Matrix(sp.symbols(f"I1:{self.current_var_index +1}"))
-
-        return v.col_join(i)
+        return self.unknowns
     
     def get_unknowns_as_strings(self):
         """Return vector of unknowns as String for easy displaying.
@@ -415,24 +426,34 @@ class ModifiedNodalAnalysis(EquationFormulator):
          
         
         for element in self.ct.elements:
-            
+
             
 
             match element.type:
-                case "R": self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]],  # noqa: E701
+                case "R": 
+                    self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]],  # noqa: E701
                                               sp.symbols(element.name))
+                    self.value_dict.update({sp.symbols(element.name): element.params["value_dc"]})
 
-                case "L": self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
+                case "L": 
+                    self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
                                               s*sp.symbols(element.name))
+                    self.value_dict.update({s*sp.symbols(element.name): element.params["value_dc"]})
 
-                case "C": self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
+                case "C": 
+                    self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
                                               1/(s*sp.symbols(element.name)))
+                    self.value_dict.update({1/(s*sp.symbols(element.name)): element.params["value_dc"]})
 
-                case "V": self.add_independent_voltage_source(self.node_map[element.connections[0]], # noqa: E701
-                                                self.node_map[element.connections[1]], sp.symbols(element.name), element.params["value_dc"])
+                case "V": 
+                    self.add_independent_voltage_source(self.node_map[element.connections[0]], # noqa: E701
+                                                self.node_map[element.connections[1]], sp.symbols(element.name), element.params.get("value_ac", 0))
+                    self.value_dict.update({sp.symbols(element.name): element.params.get("value_ac", 0)})
 
-                case "I": self.add_independent_current_source(self.node_map[element.connections[0]], # noqa: E701
+                case "I": 
+                    self.add_independent_current_source(self.node_map[element.connections[0]], # noqa: E701
                                                 self.node_map[element.connections[1]], sp.symbols(element.name))
+                    self.value_dict.update({sp.symbols(element.name): element.params.get("value_ac", 0)})
             
            
                     
@@ -444,18 +465,22 @@ class ModifiedNodalAnalysis(EquationFormulator):
                 case "H": 
                     self.add_ccvs(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
                         self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(element.name))
+                    self.value_dict.update({sp.symbols(element.name): element.params["value"]})
 
                 case "F": 
                     self.add_cccs(self.node_map[element.connections[0]], self.node_map[element.connections[1]],
                         self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(element.name))
+                    self.value_dict.update({sp.symbols(element.name): element.params["value"]})
 
                 case "E": 
                     self.add_vcvs(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
                         self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(element.name))
+                    self.value_dict.update({sp.symbols(element.name): element.params["value"]})
 
                 case "G": 
                     self.add_vccs(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
                         self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(element.name))
+                    self.value_dict.update({sp.symbols(element.name): element.params["value"]})
 
         print("Finished building equation system!")
         logger.debug("Finished building equation system!")   
@@ -490,4 +515,67 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
         return result
     
-         
+    def toNumerical(self, matrix, value_dict):
+        """Convert symbolic matrix to numerical matrix based on the value dictionary.
+
+        Args:
+            matrix (matrix): symbolic matrix
+
+        Returns:
+            num_matrix (matrix): numerical matrix
+
+        """
+        num_matrix = matrix.subs(value_dict)
+        return num_matrix
+
+    def solveNumerical(self, value_dict):
+
+        """Solve the equation system numerically based on the value dictionary.
+
+        Args:
+            value_dict (dict): dictionary with numerical values for symbols
+
+        Returns:
+            sol(array): array with numerical solutions
+
+        """
+        x = self.get_unknowns()
+
+        A_num = self.toNumerical(self.A, value_dict)
+        z_num = self.toNumerical(self.z, value_dict)
+
+        print("Solving numerical equation system...")
+        logger.debug("Solving numerical equation system...")
+
+        result = sp.solve(A_num * x - z_num, x)
+
+        print("Finished solving numerical equation system!")
+        logger.debug("Finished solving numerical equation system!")
+
+        return result
+    
+    def estimateTerms(self, matrix: sp.Matrix):
+        """Estimate the terms of an equation system.
+
+        Args:
+            matrix (sp.Matrix): _Matrix of equation system.
+
+        Raises:
+            TypeError: Argument is not a sympy MatrixBase object.
+
+        Returns:
+            sympy.Expr: Determinant of the matrix with all symbols replaced by 1.
+
+        """
+        if not isinstance(matrix, sp.MatrixBase):
+            raise TypeError(self.EXCEPTION_NOTAMATRIX)
+        
+       
+        symbols = matrix.free_symbols
+        
+      
+        subs_dict = {s: 1 for s in symbols}
+
+        matrix_ones = matrix.subs(subs_dict)
+
+        return matrix_ones.det()

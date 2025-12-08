@@ -1,0 +1,211 @@
+
+**** 08/26/125 13:00:40 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * Block  : Transconduttore
+
+
+ ****     CIRCUIT DESCRIPTION
+
+
+******************************************************************************
+
+
+
+.SUBCKT SUB0 IN N0 OUT N1
+VV5 NET15 0 3
+VI3 NET7 0 2.4
+II0 NET9 0 500u
+II1 NET11 0 500u
+II2 NET13 0 1m
+QQ3 NET15 NET7 NET21 0 C41 1
+QQ1 NET18 N0 NET11 0 C41 1
+QQ0 NET21 IN NET9 0 C41 1
+QQ4 NET15 NET7 NET18 0 C41 1
+QQ5 N1 NET18 NET13 0 C41 1
+QQ12 OUT NET21 NET13 0 C41 1
+RREE NET9 NET11 20
+RR10 N1 NET15 2.8K
+RR11 OUT NET15 2.8K
+.ENDS SUB0
+
+V1 1 2 AC 1
+Voff 2 0 DC 1.5
+X1 1 2 3 4 SUB0
+
+.ac DEC 101 10k 1.00G
+.OP
+
+.probe
+
+*---------------------------------------------------------------
+* Spice Model : C41
+*---------------------------------------------------------------
+.model C41 
++ NPN
++ IS=2.27E-018 BF=1.00E+002 BR=1.00E+000 NF=1.00E+000
++ NR=1.00E+000 TF=6.00E-012 TR=1.00E-008 XTF=1.00E+001
++ VTF=1.50E+000 ITF=6.87E-003 PTF=3.75E+001 VAF=4.50E+001
++ VAR=3.00E+000 IKF=9.23E-003 IKR=1.16E-003 ISE=8.27E-017
++ NE=2.00E+000 ISC=4.47E-017 NC=1.50E+000 RE=1.34E+001
++ RB=2.00E+002 IRB=0.00E+000 RBM=3.49E+001 RC=2.22E+002
++ CJE=1.06E-014 VJE=1.05E+000 MJE=1.60E-001 CJC=1.03E-014
++ VJC=8.60E-001 MJC=3.40E-001 XCJC=1.80E-001 CJS=9.69E-015
++ VJS=8.20E-001 MJS=3.20E-001 EG=1.17E+000 XTB=1.70E+000
++ XTI=3.00E+000 KF=0.00E+000 AF=1.00E+000 FC=5.00E-001
+*
+
+**** 08/26/125 13:00:40 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * Block  : Transconduttore
+
+
+ ****     BJT MODEL PARAMETERS
+
+
+******************************************************************************
+
+
+
+
+               C41             
+               NPN             
+          IS    2.270000E-18 
+          EG    1.17         
+          BF  100            
+          NF    1            
+         VAF   45            
+         IKF    9.230000E-03 
+         ISE   82.700000E-18 
+          NE    2            
+          BR    1            
+          NR    1            
+         VAR    3            
+         IKR    1.160000E-03 
+         ISC   44.700000E-18 
+          NC    1.5          
+          RB  200            
+         RBM   34.9          
+          RE   13.4          
+          RC  222            
+         CJE   10.600000E-15 
+         VJE    1.05         
+         MJE     .16         
+         CJC   10.300000E-15 
+         VJC     .86         
+         MJC     .34         
+        XCJC     .18         
+         CJS    9.690000E-15 
+         VJS     .82         
+         MJS     .32         
+          TF    6.000000E-12 
+         XTF   10            
+         VTF    1.5          
+         ITF    6.870000E-03 
+         PTF   37.5          
+          TR   10.000000E-09 
+         XTB    1.7          
+
+
+**** 08/26/125 13:00:40 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * Block  : Transconduttore
+
+
+ ****     SMALL SIGNAL BIAS SOLUTION       TEMPERATURE =   27.000 DEG C
+
+
+******************************************************************************
+
+
+
+ NODE   VOLTAGE     NODE   VOLTAGE     NODE   VOLTAGE     NODE   VOLTAGE
+
+
+(    1)    1.5000  (    2)    1.5000  (    3)    1.6208  (    4)    1.6208      
+
+(X1.NET7)    2.4000                   (X1.NET9)     .6277                       
+
+(X1.NET11)     .6277                  (X1.NET13)     .6559                      
+
+(X1.NET15)    3.0000                  (X1.NET18)    1.5282                      
+
+(X1.NET21)    1.5282                  
+
+
+
+
+    VOLTAGE SOURCE CURRENTS
+    NAME         CURRENT
+
+    V1          -7.460E-06
+    Voff        -1.492E-05
+    X1.VV5      -1.970E-03
+    X1.VI3      -1.464E-05
+
+    TOTAL POWER DISSIPATION   5.97E-03  WATTS
+
+
+**** 08/26/125 13:00:40 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * Block  : Transconduttore
+
+
+ ****     OPERATING POINT INFORMATION      TEMPERATURE =   27.000 DEG C
+
+
+******************************************************************************
+
+
+
+
+
+
+**** BIPOLAR JUNCTION TRANSISTORS
+
+
+NAME         X1.QQ3      X1.QQ1      X1.QQ0      X1.QQ4      X1.QQ5    
+MODEL        C41         C41         C41         C41         C41       
+IB           7.32E-06    7.46E-06    7.46E-06    7.32E-06    7.44E-06 
+IC           4.93E-04    4.93E-04    4.93E-04    4.93E-04    4.93E-04 
+VBE          8.72E-01    8.72E-01    8.72E-01    8.72E-01    8.72E-01 
+VBC         -6.00E-01   -2.82E-02   -2.82E-02   -6.00E-01   -9.27E-02 
+VCE          1.47E+00    9.01E-01    9.01E-01    1.47E+00    9.65E-01 
+BETADC       6.73E+01    6.60E+01    6.60E+01    6.73E+01    6.62E+01 
+GM           1.76E-02    1.76E-02    1.76E-02    1.76E-02    1.76E-02 
+RPI          3.53E+03    3.47E+03    3.47E+03    3.53E+03    3.48E+03 
+RX           1.46E+02    1.44E+02    1.44E+02    1.46E+02    1.44E+02 
+RO           6.60E+04    6.49E+04    6.49E+04    6.60E+04    6.50E+04 
+CBE          1.42E-13    1.49E-13    1.49E-13    1.42E-13    1.48E-13 
+CBC          1.59E-15    1.92E-15    1.92E-15    1.59E-15    1.87E-15 
+CJS          5.98E-15    7.03E-15    7.03E-15    5.98E-15    6.94E-15 
+BETAAC       6.21E+01    6.09E+01    6.09E+01    6.21E+01    6.10E+01 
+CBX          7.24E-15    8.74E-15    8.74E-15    7.24E-15    8.50E-15 
+FT           1.86E+10    1.74E+10    1.74E+10    1.86E+10    1.76E+10 
+
+
+
+NAME         X1.QQ12   
+MODEL        C41       
+IB           7.44E-06 
+IC           4.93E-04 
+VBE          8.72E-01 
+VBC         -9.27E-02 
+VCE          9.65E-01 
+BETADC       6.62E+01 
+GM           1.76E-02 
+RPI          3.48E+03 
+RX           1.44E+02 
+RO           6.50E+04 
+CBE          1.48E-13 
+CBC          1.87E-15 
+CJS          6.94E-15 
+BETAAC       6.10E+01 
+CBX          8.50E-15 
+FT           1.76E+10 
+
+
+
+          JOB CONCLUDED
+
+          TOTAL JOB TIME             .05
+
