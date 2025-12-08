@@ -3,3 +3,4 @@ src/*
 tests/*
 poetry.lock
 gui/__pycache__/*
+.vscode/*

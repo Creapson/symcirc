@@ -128,7 +128,7 @@ class NetlistParser:
                     element.connections = line_splits[1:-1]
                     element.add_param("value_dc", line_splits[3])
                 elif len(line_splits) > 4:
-                    element.connections = line_splits[1:2]
+                    element.connections = line_splits[1:3]
 
                     # parse all values from this token
                     def parse_token(index, token_str):
