@@ -1,20 +1,23 @@
 from Circuit import Circuit
 from NetlistParser import NetlistParser
 from Equation_Formulator import ModifiedNodalAnalysis
+import Pspice_util as pu
 circuit = Circuit()
 
 parser = NetlistParser()
 
-parser.set_netlist_file("testNetlist.cir")
+parser.set_netlist_file("Emitteramp_deutsch.cir")
 circuit = parser.parse_netlist()
 circuit.to_ai_string()
 print("\n\n\nThe now flattend circuit with models")
 circuit.flatten()
 circuit.to_ai_string()
 print("\n\n\nThe flattend circuit with small signal models")
-circuit.flatten(True, "gm.out")
+circuit.flatten(True, "Emitteramp_deutsch.out")
 circuit.to_ai_string()
 print(circuit.getNodes())
+
+
 
 circuit.elements[0].connections.append("2")
 

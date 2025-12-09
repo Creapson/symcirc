@@ -1,0 +1,339 @@
+
+**** 06/09/125 09:28:29 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * D:\Dokumente\docs\ESS\GST_WS2425\10.\Emitter\Emitteramp_deutsch.sch
+
+
+ ****     CIRCUIT DESCRIPTION
+
+
+******************************************************************************
+
+
+
+
+* Schematics Version 8.0 - July 1997
+* Tue Apr 22 09:38:38 2025
+
+
+
+** Analysis setup **
+.ac DEC 101 1 1000meg
+.tran/OP 10u 5m 0 10u
+.OP 
+
+
+* From [SCHEMATICS NETLIST] section of msim.ini:
+.lib "D:\MSim_8\lib\mos.lib"
+.lib "D:\MSim_8\lib\EBIPOLAR.LIB"
+.lib "D:\MSim_8\lib\User\RASH_PCE3_MODEL.LIB"
+.lib "D:\MSim_8\lib\ts.lib"
+.lib "D:\msim_8\lib\nom.lib"
+
+.INC "Emitteramp_deutsch.net"
+
+**** INCLUDING Emitteramp_deutsch.net ****
+* Schematics Netlist *
+
+
+
+Q_Q1         4 3 5 Q2N2222
+V_Vcc         6 0 DC 15  
+C_Cin         1 3 100n 
+R_R1         6 3 95331.9
+R_R2         3 0 25683.2
+R_RC         6 4 3947.37
+R_RL         2 0 1000k
+C_Cout         4 2 10n 
+R_RE         5 0 1198.02
+V_VIN         1 0  AC 1 sin( 0 0.1 1000hz )
+
+**** RESUMING Emitteramp_deutsch.cir ****
+.INC "Emitteramp_deutsch.als"
+
+
+
+**** INCLUDING Emitteramp_deutsch.als ****
+* Schematics Aliases *
+
+.ALIASES/CSDF
+Q_Q1            Q1(c=4 b=3 e=5 )
+V_Vcc           Vcc(+=6 -=0 )
+C_Cin           Cin(1=1 2=3 )
+R_R1            R1(1=6 2=3 )
+R_R2            R2(1=3 2=0 )
+R_RC            RC(1=6 2=4 )
+R_RL            RL(1=2 2=0 )
+C_Cout          Cout(1=4 2=2 )
+R_RE            RE(1=5 2=0 )
+V_VIN           VIN(+=1 -=0 )
+_    _(3=3)
+_    _(4=4)
+_    _(5=5)
+_    _(6=6)
+_    _(1=1)
+_    _(2=2)
+.ENDALIASES
+
+
+**** RESUMING Emitteramp_deutsch.cir ****
+.probe/CSDF N(2) 
+.probe/CSDF N(1) 
+
+
+.END
+
+WARNING -- Library file D:\MSim_8\lib\mos.lib has changed since index file mos.ind was created.
+WARNING -- The timestamp changed from Wed May 19 17:11:30 1999 to Fri May 23 15:56:23 2025.
+WARNING -- Making new index file mos.ind for library file mos.lib
+Index has 2 entries from 1 file(s).
+.MODEL MODN NMOS (LEVEL=2 VTO=1 NSUB=1E16 TOX=8.5E-8 U0=750
++ CGSO=4E-10 CGDO=4E-10 CGBO=2E-10 UCRIT=5E4 UEXP=.14 UTRA=0
++ VMAX=5E4 RSH=15 CJ=4E-4 MJ=2 PB=.7 CJSW=8E-10 MJSW=2 JS=1E-6
++ XJ=1U LD=.7U)
+
+.MODEL MODP PMOS (LEVEL=2 VTO=-1 NSUB=2E15 TOX=8.5E-8 U0=250
++ CGSO=4E-10 CGDO=4E-10 CGBO=2E-10 UCRIT=9.99E3 UEXP=.03 UTRA=0
++ VMAX=3E4 RSH=75 CJ=1.8E-4 MJ=2 PB=.7 CJSW=6E-10 MJSW=2 JS=1E-6
++ XJ=.9U LD=.6U)
+
+
+WARNING -- Library file D:\MSim_8\lib\EBIPOLAR.LIB has changed since index file EBIPOLAR.ind was created.
+WARNING -- The timestamp changed from Sat Feb 18 16:04:48 1995 to Fri May 23 15:56:23 2025.
+WARNING -- Making new index file EBIPOLAR.ind for library file EBIPOLAR.LIB
+Index has 160 entries from 1 file(s).
++               Mje=.3333 Vje=.5 Tr=10n Tf=591p Itf=1.423 Xtf=51.17 Vtf=10)
+*               SIEMENS         pid=smbta20     case=SOT23
+*               91-08-28 dsq
+*$
+.model SMBTA55  PNP(Is=9.744f Xti=3 Eg=1.11 Vaf=100 Bf=107.1 Ise=9.747f
++               Ne=1.377 Ikf=1.26 Nk=.7865 Xtb=1.5 Br=3.584 Isc=59.76f Nc=1.511
++               Ikr=1.901 Rc=.6051 Cjc=29.15p Mjc=.3333 Vjc=.5 Fc=.5 Cje=87.45p
++               Mje=.3333 Vje=.5 Tr=10n Tf=977.7p Itf=13.98 Xtf=131.9 Vtf=10)
+*               SIEMENS         pid=smbta55     case=SOT23
+*               91-08-28 dsq
+*$
+.model SMBTA56  PNP(Is=9.744f Xti=3 Eg=1.11 Vaf=100 Bf=107.1 Ise=9.747f
++               Ne=1.377 Ikf=1.26 Nk=.7865 Xtb=1.5 Br=3.584 Isc=59.76f Nc=1.511
++               Ikr=1.901 Rc=.6051 Cjc=29.15p Mjc=.3333 Vjc=.5 Fc=.5 Cje=87.45p
++               Mje=.3333 Vje=.5 Tr=10n Tf=977.7p Itf=13.98 Xtf=131.9 Vtf=10)
+*               SIEMENS         pid=smbta55     case=SOT23
+*               91-08-28 dsq
+*$
+* end of library
+
+WARNING -- Library file D:\MSim_8\lib\User\RASH_PCE3_MODEL.LIB has changed since index file RASH_PCE3_MODEL.ind was created.
+WARNING -- The timestamp changed from Tue Apr 15 15:22:10 2003 to Fri May 23 15:56:24 2025.
+WARNING -- Making new index file RASH_PCE3_MODEL.ind for library file RASH_PCE3_MODEL.LIB
+Index has 41 entries from 1 file(s).
+VI              7               1               DC              0V
+F1              4               3               VI              20
+.ENDS           QMOD
+
+
+.MODEL CMOSN NMOS (LEVEL=3 PHI=0.700000 TOX=9.6000E-09 XJ=0.200000U TPG=1
++ VTO=0.6684 DELTA=1.0700E+00 LD=4.2030E-08 KP=1.7748E-04 
++ UO=493.4 THETA=1.8120E-01 RSH=1.6680E+01 GAMMA=0.5382 
++ NSUB=1.1290E+17 NFS=7.1500E+11 VMAX=2.7900E+05 ETA=1.8690E-02 
++ KAPPA=1.6100E-01 CGDO=4.0920E-10 CGSO=4.0920E-10 
++ CGBO=3.7765E-10 CJ=5.9000E-04 MJ=0.76700 CJSW=2.0000E-11 
++ MJSW=0.71000 PB=0.9900000 WD=1.83E-07 LAMBDA=0.02)
+
+.MODEL CMOSP PMOS (LEVEL=3 PHI=0.700000 TOX=9.6000E-09 XJ=0.200000U TPG=-1
++ VTO=-0.9352 DELTA=1.2380E-02 LD=5.2440E-08 KP=4.4927E-05 
++ UO=124.9 THETA=5.7490E-02 RSH=1.1660E+00 GAMMA=0.4551 
++ NSUB=8.0710E+16 NFS=5.9080E+11 VMAX=2.2960E+05 ETA=2.1930E-02 
++ KAPPA=9.3660E+00 CGDO=2.1260E-10 CGSO=2.1260E-10 
++ CGBO=3.6890E-10 CJ=9.3400E-04 MJ=0.48300 CJSW=2.5100E-10 
++ MJSW=0.21200 PB=0.930000 WD=1.75E-07 LAMBDA=0.02)
+ 
+
+
+
+
+WARNING -- Library file D:\MSim_8\lib\ts.lib has changed since index file ts.ind was created.
+WARNING -- The timestamp changed from Sun Nov 18 00:29:02 2007 to Fri May 23 15:56:24 2025.
+WARNING -- Making new index file ts.ind for library file ts.lib
+Index has 67 entries from 1 file(s).
+
+**** 06/09/125 09:28:29 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * D:\Dokumente\docs\ESS\GST_WS2425\10.\Emitter\Emitteramp_deutsch.sch
+
+
+ ****     BJT MODEL PARAMETERS
+
+
+******************************************************************************
+
+
+
+
+               Q2N2222         
+               NPN             
+          IS   14.340000E-15 
+          BF  255.9          
+          NF    1            
+         VAF   74.03         
+         IKF     .2847       
+         ISE   14.340000E-15 
+          NE    1.307        
+          BR    6.092        
+          NR    1            
+          RB   10            
+          RC    1            
+         CJE   22.010000E-12 
+         MJE     .377        
+         CJC    7.306000E-12 
+         MJC     .3416       
+          TF  411.100000E-12 
+         XTF    3            
+         VTF    1.7          
+         ITF     .6          
+          TR   46.910000E-09 
+         XTB    1.5          
+
+
+**** 06/09/125 09:28:29 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * D:\Dokumente\docs\ESS\GST_WS2425\10.\Emitter\Emitteramp_deutsch.sch
+
+
+ ****     SMALL SIGNAL BIAS SOLUTION       TEMPERATURE =   27.000 DEG C
+
+
+******************************************************************************
+
+
+
+ NODE   VOLTAGE     NODE   VOLTAGE     NODE   VOLTAGE     NODE   VOLTAGE
+
+
+(    1)    0.0000  (    2)    0.0000  (    3)    2.9510  (    4)    7.5004      
+
+(    5)    2.2899  (    6)   15.0000  
+
+
+
+
+    VOLTAGE SOURCE CURRENTS
+    NAME         CURRENT
+
+    V_Vcc       -2.026E-03
+    V_VIN        0.000E+00
+
+    TOTAL POWER DISSIPATION   3.04E-02  WATTS
+
+
+**** 06/09/125 09:28:29 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * D:\Dokumente\docs\ESS\GST_WS2425\10.\Emitter\Emitteramp_deutsch.sch
+
+
+ ****     OPERATING POINT INFORMATION      TEMPERATURE =   27.000 DEG C
+
+
+******************************************************************************
+
+
+
+
+
+
+**** BIPOLAR JUNCTION TRANSISTORS
+
+
+NAME         Q_Q1      
+MODEL        Q2N2222   
+IB           1.15E-05 
+IC           1.90E-03 
+VBE          6.61E-01 
+VBC         -4.55E+00 
+VCE          5.21E+00 
+BETADC       1.65E+02 
+GM           7.30E-02 
+RPI          2.48E+03 
+RX           1.00E+01 
+RO           4.14E+04 
+CBE          6.68E-11 
+CBC          3.75E-12 
+CJS          0.00E+00 
+BETAAC       1.81E+02 
+CBX          0.00E+00 
+FT           1.65E+08 
+
+
+**** 06/09/125 09:28:29 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * D:\Dokumente\docs\ESS\GST_WS2425\10.\Emitter\Emitteramp_deutsch.sch
+
+
+ ****     INITIAL TRANSIENT SOLUTION       TEMPERATURE =   27.000 DEG C
+
+
+******************************************************************************
+
+
+
+ NODE   VOLTAGE     NODE   VOLTAGE     NODE   VOLTAGE     NODE   VOLTAGE
+
+
+(    1)    0.0000  (    2)    0.0000  (    3)    2.9510  (    4)    7.5004      
+
+(    5)    2.2899  (    6)   15.0000  
+
+
+
+
+    VOLTAGE SOURCE CURRENTS
+    NAME         CURRENT
+
+    V_Vcc       -2.026E-03
+    V_VIN        0.000E+00
+
+    TOTAL POWER DISSIPATION   3.04E-02  WATTS
+
+
+**** 06/09/125 09:28:29 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * D:\Dokumente\docs\ESS\GST_WS2425\10.\Emitter\Emitteramp_deutsch.sch
+
+
+ ****     OPERATING POINT INFORMATION      TEMPERATURE =   27.000 DEG C
+
+
+******************************************************************************
+
+
+
+
+
+
+**** BIPOLAR JUNCTION TRANSISTORS
+
+
+NAME         Q_Q1      
+MODEL        Q2N2222   
+IB           1.15E-05 
+IC           1.90E-03 
+VBE          6.61E-01 
+VBC         -4.55E+00 
+VCE          5.21E+00 
+BETADC       1.65E+02 
+GM           7.30E-02 
+RPI          2.48E+03 
+RX           1.00E+01 
+RO           4.14E+04 
+CBE          6.68E-11 
+CBC          3.75E-12 
+CJS          0.00E+00 
+BETAAC       1.81E+02 
+CBX          0.00E+00 
+FT           1.65E+08 
+
+
+
+          JOB CONCLUDED
+
+          TOTAL JOB TIME             .14
+

@@ -1,0 +1,30 @@
+* D:\Dokumente\docs\ESS\GST_WS2425\10.�\Emitter\Emitteramp_deutsch.sch
+
+* Schematics Version 8.0 - July 1997
+* Tue Apr 22 09:38:38 2025
+
+
+
+** Analysis setup **
+.ac DEC 101 1 1000meg
+.tran/OP 10u 5m 0 10u
+.OP 
+
+
+* From [SCHEMATICS NETLIST] section of msim.ini:
+.lib "D:\MSim_8\lib\mos.lib"
+.lib "D:\MSim_8\lib\EBIPOLAR.LIB"
+.lib "D:\MSim_8\lib\User\RASH_PCE3_MODEL.LIB"
+.lib "D:\MSim_8\lib\ts.lib"
+.lib "D:\msim_8\lib\nom.lib"
+
+.INC "Emitteramp_deutsch.net"
+.INC "Emitteramp_deutsch.als"
+
+
+.probe/CSDF N(2) 
+.probe/CSDF N(1) 
+
+
+
+.END

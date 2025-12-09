@@ -3,6 +3,7 @@
 import Circuit
 import sympy as sp
 import logging
+import Pspice_util as pu
 logger = logging.getLogger(__name__)
 
 class EquationFormulator():
@@ -433,21 +434,21 @@ class ModifiedNodalAnalysis(EquationFormulator):
                 case "R": 
                     self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]],  # noqa: E701
                                               sp.symbols(element.name))
-                    self.value_dict.update({sp.symbols(element.name): element.params["value_dc"]})
+                    self.value_dict.update({sp.symbols(element.name): pu.pspice_to_float(element.params["value_dc"])})
 
                 case "L": 
                     self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
                                               s*sp.symbols(element.name))
-                    self.value_dict.update({s*sp.symbols(element.name): element.params["value_dc"]})
+                    self.value_dict.update({sp.symbols(element.name): pu.pspice_to_float(element.params["value_dc"])})
 
                 case "C": 
                     self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
                                               1/(s*sp.symbols(element.name)))
-                    self.value_dict.update({1/(s*sp.symbols(element.name)): element.params["value_dc"]})
+                    self.value_dict.update({sp.symbols(element.name): pu.pspice_to_float(element.params["value_dc"])})
 
                 case "V": 
                     self.add_independent_voltage_source(self.node_map[element.connections[0]], # noqa: E701
-                                                self.node_map[element.connections[1]], sp.symbols(element.name), element.params.get("value_ac", 0))
+                        self.node_map[element.connections[1]], sp.symbols(element.name), element.params.get("value_ac", 0))
                     self.value_dict.update({sp.symbols(element.name): element.params.get("value_ac", 0)})
 
                 case "I": 
@@ -465,22 +466,22 @@ class ModifiedNodalAnalysis(EquationFormulator):
                 case "H": 
                     self.add_ccvs(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
                         self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(element.name))
-                    self.value_dict.update({sp.symbols(element.name): element.params["value"]})
+                    self.value_dict.update({sp.symbols(element.name): pu.pspice_to_float(element.params["value"])})
 
                 case "F": 
                     self.add_cccs(self.node_map[element.connections[0]], self.node_map[element.connections[1]],
                         self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(element.name))
-                    self.value_dict.update({sp.symbols(element.name): element.params["value"]})
+                    self.value_dict.update({sp.symbols(element.name): pu.pspice_to_float(element.params["value"])})
 
                 case "E": 
                     self.add_vcvs(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
                         self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(element.name))
-                    self.value_dict.update({sp.symbols(element.name): element.params["value"]})
+                    self.value_dict.update({sp.symbols(element.name): pu.pspice_to_float(element.params["value"])})
 
                 case "G": 
                     self.add_vccs(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
                         self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(element.name))
-                    self.value_dict.update({sp.symbols(element.name): element.params["value"]})
+                    self.value_dict.update({sp.symbols(element.name): pu.pspice_to_float(element.params["value"])})
 
         print("Finished building equation system!")
         logger.debug("Finished building equation system!")   
