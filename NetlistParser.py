@@ -132,7 +132,7 @@ class NetlistParser:
 
                     # parse all values from this token
                     def parse_token(index, token_str):
-                        token_list = ["DC", "AC", "SIN", "PULSE", "EXP", "SFFM"]
+                        token_list = ["DC", "AC", "SIN(", "SIN", "PULSE", "EXP", "SFFM"]
                         token_list.remove(token_str)
                         print(token_list)
                         param_token_str = "value_" + token_str.lower()
@@ -153,16 +153,30 @@ class NetlistParser:
 
                         if token == "DC":
                             i = parse_token(i, "DC")
-                            continue  # skip the normal i increment to avoid skipping token
+                            continue
 
-                        if token == "AC":
+                        elif token == "AC":
                             i = parse_token(i, "AC")
-                            continue  # skip the normal i increment to avoid skipping token
+                            continue
 
+                        elif token.startswith("SIN"):
+                            i += 1
+                            continue
+
+                        elif token == "PULSE":
+                            i += 1
+                            continue
+
+                        elif token == "EXP":
+                            i += 1
+                            continue
+
+                        elif token == "SFFM":
+                            i += 1
+                            continue
+                        
                         else:
                             i += 1
-
-
                 return element
 
             # Controlles Sources
@@ -177,13 +191,13 @@ class NetlistParser:
             # Transistors
             case "Q":
                 if len(line_splits) == 5:
-                    element.connections = line_splits[1:3]
+                    element.connections = line_splits[1:4]
                     element.add_param("ref_model", line_splits[4])
                 elif len(line_splits) == 6:
-                    element.connections = line_splits[1:4]
+                    element.connections = line_splits[1:5]
                     element.add_param("ref_model", line_splits[5])
                 else:
-                    element.connections = line_splits[1:4]
+                    element.connections = line_splits[1:5]
                     element.add_param("ref_model", line_splits[5])
                     element.add_param("area", line_splits[6])
                 return element
@@ -370,7 +384,6 @@ class NetlistParser:
 
                         if name in lookup:
                             lookup[name].add_param(key, val)
-                            print(f"Added {key} to {name}")
                         else:
                             print(f"Warning: element {name} not found in lookup.")
 
@@ -382,5 +395,3 @@ class NetlistParser:
                 current_names = []
 
             i += 1
-
-            pass

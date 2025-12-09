@@ -6,14 +6,14 @@ circuit = Circuit()
 
 parser = NetlistParser()
 
-parser.set_netlist_file("Emitteramp_deutsch.cir")
+parser.set_netlist_file("test_circuits/Emitteramp_deutsch.net")
 circuit = parser.parse_netlist()
 circuit.to_ai_string()
 print("\n\n\nThe now flattend circuit with models")
 circuit.flatten()
 circuit.to_ai_string()
 print("\n\n\nThe flattend circuit with small signal models")
-circuit.flatten(True, "Emitteramp_deutsch.out")
+circuit.flatten(True, "test_circuits/Emitteramp_deutsch.out")
 circuit.to_ai_string()
 print(circuit.getNodes())
 
