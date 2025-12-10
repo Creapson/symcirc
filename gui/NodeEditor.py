@@ -1,5 +1,7 @@
 import dearpygui.dearpygui as dpg
-from Node import ImportCircuit, TextShowNode
+
+from gui.Node import ImportCircuit, NetlistParserNode
+
 
 class NodeEditor:
     def __init__(self):
@@ -30,31 +32,31 @@ class NodeEditor:
 
     def render(self):
         with dpg.window(tag="Node Editor"):
-            with dpg.node_editor(tag="node_editor", callback=self.link_callback, delink_callback=self.delink_callback):
+            with dpg.node_editor(
+                tag="node_editor",
+                callback=self.link_callback,
+                delink_callback=self.delink_callback,
+            ):
                 for node in self.nodes:
                     node_id = node.setup()
                     self.node_dic[node_id] = node
                 print(self.node_dic)
 
-def main():
-    dpg.create_context()
+    def start(self):
+        dpg.create_context()
 
-    # Viewport
-    dpg.create_viewport(title="OOP Node Editor Example", width=1200, height=800)
-    editor = NodeEditor()
-    # Add nodes
-    editor.add_node(ImportCircuit, "Circuit import Node", (000, 100))
-    editor.add_node(TextShowNode, "Show the text", (600, 100))
-    editor.render()
-    dpg.setup_dearpygui()
+        # Viewport
+        dpg.create_viewport(title="OOP Node Editor Example", width=1200, height=800)
+        editor = NodeEditor()
+        # Add nodes
+        editor.add_node(ImportCircuit, "Circuit import Node", (000, 100))
+        editor.add_node(NetlistParserNode, "Show the text", (600, 100))
+        editor.render()
+        dpg.setup_dearpygui()
 
-    dpg.show_viewport()
-    dpg.set_primary_window("Node Editor", True)
+        dpg.show_viewport()
+        dpg.set_primary_window("Node Editor", True)
 
-    # Render Loop
-    dpg.start_dearpygui()
-    dpg.destroy_context()
-
-
-if __name__ == "__main__":
-    main()
+        # Render Loop
+        dpg.start_dearpygui()
+        dpg.destroy_context()

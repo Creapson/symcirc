@@ -23,6 +23,11 @@ class Circuit:
     def getNodes(self):
         return self.nodes.copy()
 
+    def get_element(self, element_name):
+        for element in self.elements:
+            if element.name == element_name:
+                return element
+            
     def addNode(self, nodeID):
         # if node doesnt exist add it
         if self.nodes.__contains__(nodeID) is False:
@@ -84,7 +89,11 @@ class Circuit:
             self.addModel(model)
         return subct_elements
 
-    def flatten(self, flatten_models=False, out_file_path=""):
+    def flatten(self, flatten_models=False, 
+                out_file_path=None, 
+                bipolar_model="beta_with_r_be",
+                mosfet_model="BSIM"
+    ):
         # Make sure all subcircuits are already flattend
         for name, subct in self.subcircuits.items():
             subct.flatten()
@@ -118,7 +127,7 @@ class Circuit:
                 model_name = element.params["ref_model"]
                 model = self.models[model_name]
                 subct_name = element.name + "." + model_name
-                model_subct = model.get_generated_subcircuit(element.params)
+                model_subct = model.get_generated_subcircuit(element.params, bipolar_model, mosfet_model)
                 self.addSubcircuit(subct_name, model_subct)
                 subct_elements = self.flatten_subcircuit(
                     subct_name, element.name, element.connections

@@ -1,5 +1,6 @@
 import dearpygui.dearpygui as dpg
 
+
 class Node:
     def __init__(self, label, position=(100, 100)):
         self.label = label
@@ -22,7 +23,6 @@ class Node:
             with self.add_static_attr():
                 dpg.add_button(label="Debug Log", callback=self.debug_print)
             print("Output Pins: ", self.output_pins)
-
 
         print(f"node_id of node {self.label} with id: {self.node_id}")
         dpg.set_item_pos(self.node_id, self.position)
@@ -60,19 +60,28 @@ class Node:
         print("output pins: ", self.output_pins)
 
 
+###################
+#   NODE CLASSES  #
+###################
+
+
 class ImportCircuit(Node):
     def callback(self, sender, app_data):
         self.add_output_value(0, app_data["file_path_name"])
-        dpg.set_value(self.file_path_widget_id, f"Selected File Path:\n{app_data["file_path_name"]}")
+        dpg.set_value(
+            self.file_path_widget_id,
+            f"Selected File Path:\n{app_data['file_path_name']}",
+        )
 
     def cancel_callback(sender, app_data):
-        print('Cancel was clicked.')
+        print("Cancel was clicked.")
 
     def setup(self):
         def build():
-
             with dpg.value_registry():
-                dpg.add_string_value(default_value="No file currently selected!", tag="file_path_string")
+                dpg.add_string_value(
+                    default_value="No file currently selected!", tag="file_path_string"
+                )
 
             with dpg.file_dialog(
                 directory_selector=False,
@@ -81,13 +90,15 @@ class ImportCircuit(Node):
                 cancel_callback=self.cancel_callback,
                 tag="file_dialog_id",
                 width=700,
-                height=400
+                height=400,
             ):
                 dpg.add_file_extension(".cir")
 
             with self.add_output_attr() as output_pin:
-                dpg.add_button(label="Open File Dialog",
-                               callback=lambda: dpg.show_item("file_dialog_id"))
+                dpg.add_button(
+                    label="Open File Dialog",
+                    callback=lambda: dpg.show_item("file_dialog_id"),
+                )
             self.output_pins.append(output_pin)
 
             with self.add_static_attr():
@@ -95,24 +106,29 @@ class ImportCircuit(Node):
 
         return super().setup(build)
 
-class TextShowNode(Node):
+
+class NetlistParserNode(Node):
     def setup(self):
-
-
         def build():
-
             with dpg.value_registry():
-                dpg.add_string_value(default_value="Connect a input", tag="file_path_string_text")
+                dpg.add_string_value(
+                    default_value="Circuit Object", tag="circuit_parser"
+                )
 
             with self.add_input_attr() as input_pin:
-                self.file_path_widget_id = dpg.add_text(source="file_path_string_text")
+                self.file_path_widget_id = dpg.add_text(
+                    default_value="Connect ImportNode here! [filepath]"
+                )
             self.input_pins.append(input_pin)
+
+            with self.add_output_attr() as ouput_pin:
+                self.circuit_out_pin = dpg.add_text(source="circuit_parser")
+            self.output_pins.append(ouput_pin)
 
             with self.add_static_attr():
                 dpg.add_button(label="Update", callback=self.update)
 
         return super().setup(build)
-
 
     def update(self):
         input_pin = self.input_pins[0]
@@ -125,9 +141,17 @@ class TextShowNode(Node):
         from_node = self.editor.node_dic[from_node_id]
 
         # read the value
-        value = from_node.output_values.get(from_pin, "No value found")
+        filepath = from_node.output_values.get(from_pin, "No value found")
+
+        from NetlistParser import NetlistParser
+
+        parser = NetlistParser()
+        parser.set_netlist_file(filepath)
+        circuit = parser.parse_netlist()
+
+        ai_string = circuit.to_ai_string()
 
         # apply it to UI
-        dpg.set_value("file_path_string_text", value)
+        dpg.set_value("circuit_parser", ai_string)
 
         super().update()

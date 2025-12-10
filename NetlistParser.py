@@ -88,12 +88,12 @@ class NetlistParser:
                 # output currently not parsable lines
                 self.print_parser_error(line)
             else:
-                element = self.parse_element(line)
+                element = self.parse_element(line, circuit)
                 circuit.addElement(element)
             index += 1
         return circuit
 
-    def parse_element(self, line: str):
+    def parse_element(self, line: str, circuit=None):
         """Parses the element from the given string.
 
         Args:
@@ -184,6 +184,12 @@ class NetlistParser:
                 if len(line_splits) == 6:
                     element.connections = line_splits[1:-1]
                     element.add_param("value", line_splits[5])
+                
+                # Special Case connctions refernces another element
+                elif len(line_splits) == 5:
+                    ref_element = circuit.get_element(line_splits[3])
+                    element.connections = line_splits[1:-2] + ref_element.connections
+                    element.add_param("value", line_splits[4])
                 else:
                     self.print_parser_error("This line is too long or short!" + line)
                 return element

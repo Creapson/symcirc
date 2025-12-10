@@ -7,12 +7,7 @@ class Model:
     def add_param(self, paramSymbol, value):
         self.params[paramSymbol] = value
 
-    def get_generated_subcircuit(
-        self,
-        element_params,
-        bipolar_model="beta_with_r_be",
-        mosfet_model="BSIM",
-    ):
+    def get_generated_subcircuit(self, element_params, bipolar_model, mosfet_model):
 
         # convert all params to lowercase
         param_list = {k.lower(): v for k, v in (self.params | element_params).items()}
