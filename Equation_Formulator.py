@@ -433,17 +433,17 @@ class ModifiedNodalAnalysis(EquationFormulator):
             match element.type:
                 case "R": 
                     self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]],  # noqa: E701
-                                              sp.symbols(element.name))
+                                              1/sp.symbols(element.name))
                     self.value_dict.update({sp.symbols(element.name): pu.pspice_to_float(element.params["value_dc"])})
 
                 case "L": 
                     self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
-                                              s*sp.symbols(element.name))
+                                              1/s*sp.symbols(element.name))
                     self.value_dict.update({sp.symbols(element.name): pu.pspice_to_float(element.params["value_dc"])})
 
                 case "C": 
                     self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
-                                              1/(s*sp.symbols(element.name)))
+                                              (s*sp.symbols(element.name)))
                     self.value_dict.update({sp.symbols(element.name): pu.pspice_to_float(element.params["value_dc"])})
 
                 case "V": 
