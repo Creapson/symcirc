@@ -2,11 +2,11 @@ from typing import List
 
 
 class Element:
-    def __init__(self, name=None, connections=[], type=None, param_dict={}):
+    def __init__(self, name=None, connections=[], type=None):
         self.name: str = name
         self.connections: List[str] = connections
         self.type: str = type
-        self.params: dict[str, str] = param_dict
+        self.params: dict[str, str] = {}
 
     def set_type(self, newType: str):
         self.type = newType
