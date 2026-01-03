@@ -16,8 +16,8 @@ class Node:
         self.output_pins = []
         self.input_pins = []
 
-    def setup(self, build_fn):
-        with dpg.node(label=self.label, pos=self.position) as self.node_id:
+    def setup(self, build_fn, parent):
+        with dpg.node(label=self.label, pos=self.position, parent=parent) as self.node_id:
             build_fn()
 
             with self.add_static_attr():
@@ -76,11 +76,11 @@ class ImportCircuit(Node):
     def cancel_callback(sender, app_data):
         print("Cancel was clicked.")
 
-    def setup(self):
+    def setup(self, parent):
         def build():
             with dpg.value_registry():
                 dpg.add_string_value(
-                    default_value="No file currently selected!", tag="file_path_string"
+                    default_value="No file currently selected!", tag=f"{self.node_id}_file_path_string"
                 )
 
             with dpg.file_dialog(
@@ -88,7 +88,7 @@ class ImportCircuit(Node):
                 show=False,
                 callback=self.callback,
                 cancel_callback=self.cancel_callback,
-                tag="file_dialog_id",
+                tag=f"{self.node_id}_file_dialog_id",
                 width=700,
                 height=400,
             ):
@@ -97,22 +97,22 @@ class ImportCircuit(Node):
             with self.add_output_attr() as output_pin:
                 dpg.add_button(
                     label="Open File Dialog",
-                    callback=lambda: dpg.show_item("file_dialog_id"),
+                    callback=lambda: dpg.show_item(f"{self.node_id}_file_dialog_id"),
                 )
             self.output_pins.append(output_pin)
 
             with self.add_static_attr():
-                self.file_path_widget_id = dpg.add_text(source="file_path_string")
+                self.file_path_widget_id = dpg.add_text(source=f"{self.node_id}_file_path_string")
 
-        return super().setup(build)
+        return super().setup(build, parent)
 
 
 class NetlistParserNode(Node):
-    def setup(self):
+    def setup(self, parent):
         def build():
             with dpg.value_registry():
                 dpg.add_string_value(
-                    default_value="Circuit Object", tag="circuit_parser"
+                    default_value="Circuit Object", tag=f"{self.node_id}_circuit_parser"
                 )
 
             with self.add_input_attr() as input_pin:
@@ -122,13 +122,13 @@ class NetlistParserNode(Node):
             self.input_pins.append(input_pin)
 
             with self.add_output_attr() as ouput_pin:
-                self.circuit_out_pin = dpg.add_text(source="circuit_parser")
+                self.circuit_out_pin = dpg.add_text(source=f"{self.node_id}_circuit_parser")
             self.output_pins.append(ouput_pin)
 
             with self.add_static_attr():
                 dpg.add_button(label="Update", callback=self.update)
 
-        return super().setup(build)
+        return super().setup(build, parent)
 
     def update(self):
         input_pin = self.input_pins[0]

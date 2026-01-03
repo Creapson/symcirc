@@ -7,11 +7,21 @@ class NodeEditor:
     def __init__(self):
         self.node_dic = {}
         self.nodes = []
+        self.node_editor_tag = "node_editor"
 
-    def add_node(self, node_constructor, label, pos):
+    def add_node(self, node_constructor, label, pos=(0, 100)):
         node = node_constructor(label, pos)
         node.editor = self
         self.nodes.append(node)
+
+        # CREATE DearPyGui items immediately
+        node_id = node.setup(parent=self.node_editor_tag)
+        self.node_dic[node_id] = node
+
+        # debug
+        print(self.node_dic)
+        print("node rendered:", node_id)
+
         return node
 
     # callback runs when user attempts to connect attributes
@@ -31,7 +41,28 @@ class NodeEditor:
         dpg.delete_item(app_data)
 
     def render(self):
+        
         with dpg.window(tag="Node Editor"):
+           # ---------- MENU BAR ----------
+            with dpg.menu_bar():
+                with dpg.menu(label="File"):
+                    dpg.add_menu_item(label="New", enabled=False)
+                    dpg.add_menu_item(label="Open", enabled=False)
+                    dpg.add_separator()
+                    dpg.add_menu_item(label="Exit", enabled=False)
+
+                with dpg.menu(label="Edit"):
+                    dpg.add_menu_item(label="Undo", enabled=False)
+                    dpg.add_menu_item(label="Redo", enabled=False)
+                    # sub menu (dropdown with all node types
+                    with dpg.menu(label="Add Node"):
+                        dpg.add_menu_item(label="ImportCircuit", callback=lambda: self.add_node(ImportCircuit, "Circuit import Node", (000, 100)))
+                        dpg.add_menu_item(label="NetlistParserNode", callback=lambda: self.add_node(NetlistParserNode, "Show the text", (600, 100)))
+
+                with dpg.menu(label="View"):
+                    dpg.add_menu_item(label="Reset View")
+
+            # ---------- NODE EDITOR ----------
             with dpg.node_editor(
                 tag="node_editor",
                 callback=self.link_callback,
@@ -49,8 +80,6 @@ class NodeEditor:
         dpg.create_viewport(title="OOP Node Editor Example", width=1200, height=800)
         editor = NodeEditor()
         # Add nodes
-        editor.add_node(ImportCircuit, "Circuit import Node", (000, 100))
-        editor.add_node(NetlistParserNode, "Show the text", (600, 100))
         editor.render()
         dpg.setup_dearpygui()
 
