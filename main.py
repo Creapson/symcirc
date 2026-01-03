@@ -7,8 +7,8 @@ import sympy as sp
 import numpy as np
 import matplotlib.pyplot as plt
 
-#nodeEditor = NodeEditor()
-#nodeEditor.start()
+nodeEditor = NodeEditor()
+nodeEditor.start()
 
 circuit = Circuit()
 
