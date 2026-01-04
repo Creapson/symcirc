@@ -34,7 +34,14 @@ class NodeEditor:
         # you can not connect multiple outputs to one input
         if len(to_node.connections) == 0:
             to_node.add_connection(to_pin, from_pin)
-            to_node.onlink_callback()
+            try:
+                to_node.onlink_callback()  # may raise
+            except Exception as e:
+                to_node.connections = {}
+                print(f"Link rejected: {e}")
+                return
+
+
 
             link_id = dpg.add_node_link(from_pin, to_pin, parent=sender)
             # store link metadata
@@ -71,6 +78,16 @@ class NodeEditor:
 
         print("Removed connection:", from_pin, "->", to_pin)
 
+    # when the output changes run onlink_callback on
+    # all connected nodes to update the value
+    def propagate(self, output_pin_id):
+        for link_id, (from_pin, to_pin) in self.links.items():
+            if from_pin == output_pin_id:
+                # get the node which should be
+                # updated
+                to_node_id = dpg.get_item_parent(to_pin)
+                to_node = self.node_dic[to_node_id]
+                to_node.onlink_callback()
 
     def render(self):
         

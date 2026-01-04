@@ -46,8 +46,18 @@ class Circuit:
     def set_bipolar_model(self, new_model):
         self.bipolar_model = new_model
 
+        # apply this to all elements
+        for element in self.elements:
+            if element.type == "Q":
+                element.add_param("bipolar_model", self.bipolar_model)
+
     def set_mosfet_model(self, new_model):
         self.mosfet_model = new_model
+
+        # apply this to all elements
+        for element in self.elements:
+            if element.type == "Q":
+                element.add_param("mosfet_model", self.mosfet_model)
 
     def update_nodes(self):
         for element in self.elements:
