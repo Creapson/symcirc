@@ -1,6 +1,6 @@
 import dearpygui.dearpygui as dpg
 
-from gui.Node import ImportCircuit, NetlistParserNode
+from gui.Node import ImportCircuit, NetlistParserNode, BodePlot, FlattenNode, ModifiedNodalAnalysis
 
 
 class NodeEditor:
@@ -8,6 +8,7 @@ class NodeEditor:
         self.node_dic = {}
         self.nodes = []
         self.node_editor_tag = "node_editor"
+        self.links = {}
 
     def add_node(self, node_constructor, label, pos=(0, 100)):
         node = node_constructor(label, pos)
@@ -26,20 +27,50 @@ class NodeEditor:
 
     # callback runs when user attempts to connect attributes
     def onlink_callback(self, sender, app_data):
-        print("Added Connections: ", app_data)
         from_pin, to_pin = app_data
         to_node_id = dpg.get_item_parent(to_pin)
         to_node = self.node_dic[to_node_id]
 
-        to_node.add_connection(to_pin, from_pin)
-        to_node.onlink_callback()
+        # you can not connect multiple outputs to one input
+        if len(to_node.connections) == 0:
+            to_node.add_connection(to_pin, from_pin)
+            to_node.onlink_callback()
 
-        dpg.add_node_link(from_pin, to_pin, parent=sender)
+            link_id = dpg.add_node_link(from_pin, to_pin, parent=sender)
+            # store link metadata
+            self.links[link_id] = (from_pin, to_pin)
+
+            print("Added Connections: ", app_data)
 
     # callback runs when user attempts to disconnect attributes
     def delink_callback(self, sender, app_data):
-        # app_data -> link_id
-        dpg.delete_item(app_data)
+        link_id = app_data
+
+        if link_id not in self.links:
+            return
+
+        from_pin, to_pin = self.links[link_id]
+
+        from_node_id = dpg.get_item_parent(from_pin)
+        to_node_id = dpg.get_item_parent(to_pin)
+
+        from_node = self.node_dic[from_node_id]
+        to_node = self.node_dic[to_node_id]
+
+        # remove logical connections
+        from_node.connections.pop(from_pin, None)
+        to_node.connections.pop(to_pin, None)
+
+        to_node.delink_callback()
+
+        # remove stored link
+        del self.links[link_id]
+
+        # remove visual link
+        dpg.delete_item(link_id)
+
+        print("Removed connection:", from_pin, "->", to_pin)
+
 
     def render(self):
         
@@ -59,6 +90,9 @@ class NodeEditor:
                     with dpg.menu(label="Add Node"):
                         dpg.add_menu_item(label="ImportCircuit", callback=lambda: self.add_node(ImportCircuit, "Circuit import Node", (000, 100)))
                         dpg.add_menu_item(label="NetlistParserNode", callback=lambda: self.add_node(NetlistParserNode, "Netlist Parser Node", (600, 100)))
+                        dpg.add_menu_item(label="ModifiedNodalAnalysis", callback=lambda: self.add_node(ModifiedNodalAnalysis, "ModifiedNodalAnalysis Node", (000, 300)))
+                        dpg.add_menu_item(label="BodeBlot", callback=lambda: self.add_node(BodePlot, "BodePlot Node", (300, 300)))
+                        dpg.add_menu_item(label="Flatten", callback=lambda: self.add_node(FlattenNode, "Flatten Node", (600, 300)))
 
             # ---------- NODE EDITOR ----------
             with dpg.node_editor(

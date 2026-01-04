@@ -18,6 +18,31 @@ class Circuit:
         self.models: dict[str, Model] = {}
         self.subcircuits: dict[str, "Circuit"] = {}
 
+        self.separator = "."
+
+    # --- COPY METHOD ---
+    def copy(self) -> "Circuit":
+        new = Circuit()
+        new.inner_connecting_nodes = list(self.inner_connecting_nodes)
+        new.bipolar_model = self.bipolar_model
+        new.mosfet_model = self.mosfet_model
+        new.nodes = list(self.nodes)
+
+        # Copy elements
+        new.elements = [element.copy() for element in self.elements]
+
+        # Copy models (Model class must have a copy method)
+        new.models = {name: model.copy() for name, model in self.models.items()}
+
+        # Copy subcircuits recursively
+        new.subcircuits = {name: sub_ct.copy() for name, sub_ct in self.subcircuits.items()}
+
+        new.separator = self.separator
+        return new
+
+    def set_separator(self, separator):
+        self.separator = separator
+
     def set_bipolar_model(self, new_model):
         self.bipolar_model = new_model
 
@@ -31,6 +56,9 @@ class Circuit:
 
     def get_nodes(self):
         return self.nodes.copy()
+
+    def get_elements(self):
+        return self.elements
 
     def get_element(self, element_name):
         for element in self.elements:
@@ -64,6 +92,7 @@ class Circuit:
     def flatten_subcircuit(
         self, subcircuit_name, element_name, subct_element_connections
     ):
+
         if len(self.subcircuits) == 0:
             return
         subct = self.subcircuits[subcircuit_name]
@@ -71,8 +100,7 @@ class Circuit:
 
         # If this node is in connection use the nodeID of the root circuit
         def new_node_IDs(nodeID):
-            seperator = "_"
-
+            
             new_IDs = []
             for node in nodeID:
                 if node == "0":
@@ -81,7 +109,7 @@ class Circuit:
                     position = subct.inner_connecting_nodes.index(node)
                     new_IDs.append(subct_element_connections[position])
                 else:
-                    new_IDs.append(subcircuit_name + seperator + node)
+                    new_IDs.append(subcircuit_name + self.separator + node)
             # if list is empty
             return new_IDs
 
@@ -90,8 +118,11 @@ class Circuit:
             element_connections = element.connections
             new_ele_connections = new_node_IDs(element_connections)
             new_ele = element.copy()
-            new_ele.name = element_name + "." + new_ele.name
+            new_ele.name = element_name + self.separator + new_ele.name
             new_ele.connections = new_ele_connections
+            if new_ele.type == ("Q"):
+                new_ele.add_param("bipolar_model", subct.bipolar_model)
+                new_ele.add_param("mosfet_model", subct.mosfet_model)
             subct_elements.append(new_ele)
             pass
         for model in subct.models:

@@ -4,6 +4,14 @@ class Model:
         self.filename: str = ""
         self.params: dict[str, str] = {}
 
+   # --- COPY METHOD ---
+    def copy(self) -> "Model":
+        new = Model()
+        new.name = self.name
+        new.filename = self.filename
+        new.params = dict(self.params)  # copy the dictionary
+        return new
+
     def add_param(self, paramSymbol, value):
         self.params[paramSymbol] = value
 
