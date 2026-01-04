@@ -1,5 +1,5 @@
 from Circuit import Circuit
-from Equation_Formulator import ModifiedNodalAnalysis
+from Modified_Node_Analysis import ModifiedNodalAnalysis
 from gui.NodeEditor import NodeEditor
 from NetlistParser import NetlistParser
 
