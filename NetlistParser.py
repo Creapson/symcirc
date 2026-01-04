@@ -18,7 +18,7 @@ class NetlistParser:
         circuit = self.parse_lines()
         return circuit
 
-    def set_netlist_file(self, file_path):
+    def set_cir_file(self, file_path):
         """Set the filepath for file the will be parsed
 
         Args:
@@ -29,13 +29,27 @@ class NetlistParser:
 
     def pre_format(self):
         """Removes all Comments and empty lines from the loaded netlist"""
+        feedback = []
         # Remove Commands
         with open(self.file_path, "r") as file:
             lines = [line.strip() for line in file if not line.lstrip().startswith("*")]
 
         # Remove empty lines from the list
         self.netlist_lines = list(filter(None, lines))
-        pass
+
+        # resolve missing includes
+        index = 0
+        end_index = len(self.netlist_lines)
+        while index < end_index:
+            line = self.netlist_lines[index]
+            if line.startswith((".inc", ".INC")):
+                feedback.append(self.parse_inc(index))
+                end_index = len(self.netlist_lines)
+                index += 1
+                continue
+            index += 1
+
+        return feedback
 
     def print_parser_error(self, extra_string):
         """Print a error in red for a given line
@@ -64,6 +78,7 @@ class NetlistParser:
         """
         # Recognice what this line does(e.x descripe element or subcircuit)
         # and call the acording functions
+        print(self.netlist_lines)
         if circuit is None:
             circuit = Circuit()
         if end_index is None:
@@ -75,23 +90,56 @@ class NetlistParser:
                 # chech if subcircuit is starting
                 if line.startswith((".SUBCKT", ".subckt")):
                     index, ct_name, sub_ct = self.parse_subcircuit(index)
-                    circuit.addSubcircuit(ct_name, sub_ct)
+                    circuit.add_subcircuit(ct_name, sub_ct)
                     continue
 
                 # check if a model declaration is starting
                 if line.startswith((".model", ".MODEL")):
                     index, model = self.parse_model(index)
-                    circuit.addModel(model)
+                    circuit.add_model(model)
                     index += 1
                     continue
+
+                """
+                if line.startswith((".inc", ".INC")):
+                    self.parse_inc(index)
+                    end_index = len(self.netlist_lines)
+                    index += 1
+                    continue
+                """
 
                 # output currently not parsable lines
                 self.print_parser_error(line)
             else:
                 element = self.parse_element(line, circuit)
-                circuit.addElement(element)
+                circuit.add_element(element)
             index += 1
         return circuit
+
+    def parse_inc(self, index: int):
+        line_splits = self.netlist_lines[index].split()
+        # try leading the file
+        file_path = line_splits[1].replace("\"", "")
+
+        import os
+        dir_path = os.path.dirname(self.file_path)
+        new_file_path = os.path.join(dir_path, file_path)
+
+        lines = []
+        try:
+            with open(new_file_path, "r") as file:
+                lines = [line.strip() for line in file if not line.lstrip().startswith("*")]
+                # Remove empty lines from the list
+                include_lines = list(filter(None, lines))
+                # squeeze the includes lines into the main line array
+                self.netlist_lines = self.netlist_lines[:index] + include_lines + self.netlist_lines[index+1:]
+
+            print(f"Succesfully loaded {file_path}!")
+            return None
+        except FileNotFoundError:
+            return f"The file: {file_path} could not be found!"
+        
+
 
     def parse_element(self, line: str, circuit=None):
         """Parses the element from the given string.
@@ -134,16 +182,12 @@ class NetlistParser:
                     def parse_token(index, token_str):
                         token_list = ["DC", "AC", "SIN(", "SIN", "PULSE", "EXP", "SFFM"]
                         token_list.remove(token_str)
-                        print(token_list)
                         param_token_str = "value_" + token_str.lower()
                         value = ""
                         index += 1
                         while index < len(line_splits) and line_splits[index].upper() not in token_list:
                             value += line_splits[index]
                             index += 1
-                            print(index)
-                        print(value)
-                        print("".join(token))
                         element.add_param(param_token_str, value)
                         return index
 
@@ -345,7 +389,6 @@ class NetlistParser:
                 break
             else:
                 param_start_index += 1
-        print(param_start_index)
         
 
         # Build fast lookup

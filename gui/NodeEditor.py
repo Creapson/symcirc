@@ -25,13 +25,14 @@ class NodeEditor:
         return node
 
     # callback runs when user attempts to connect attributes
-    def link_callback(self, sender, app_data):
+    def onlink_callback(self, sender, app_data):
         print("Added Connections: ", app_data)
         from_pin, to_pin = app_data
         to_node_id = dpg.get_item_parent(to_pin)
         to_node = self.node_dic[to_node_id]
 
         to_node.add_connection(to_pin, from_pin)
+        to_node.onlink_callback()
 
         dpg.add_node_link(from_pin, to_pin, parent=sender)
 
@@ -57,15 +58,12 @@ class NodeEditor:
                     # sub menu (dropdown with all node types
                     with dpg.menu(label="Add Node"):
                         dpg.add_menu_item(label="ImportCircuit", callback=lambda: self.add_node(ImportCircuit, "Circuit import Node", (000, 100)))
-                        dpg.add_menu_item(label="NetlistParserNode", callback=lambda: self.add_node(NetlistParserNode, "Show the text", (600, 100)))
-
-                with dpg.menu(label="View"):
-                    dpg.add_menu_item(label="Reset View")
+                        dpg.add_menu_item(label="NetlistParserNode", callback=lambda: self.add_node(NetlistParserNode, "Netlist Parser Node", (600, 100)))
 
             # ---------- NODE EDITOR ----------
             with dpg.node_editor(
                 tag="node_editor",
-                callback=self.link_callback,
+                callback=self.onlink_callback,
                 delink_callback=self.delink_callback,
             ):
                 for node in self.nodes:

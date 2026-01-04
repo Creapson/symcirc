@@ -8,6 +8,9 @@ class Circuit:
     def __init__(self):
         self.inner_connecting_nodes: List[str] = []
 
+        self.bipolar_model = "beta_with_r_be"
+        self.mosfet_model = "BSIM"
+
         self.nodes: List[str] = []
 
         self.elements: List[Element] = []
@@ -15,41 +18,47 @@ class Circuit:
         self.models: dict[str, Model] = {}
         self.subcircuits: dict[str, "Circuit"] = {}
 
+    def set_bipolar_model(self, new_model):
+        self.bipolar_model = new_model
+
+    def set_mosfet_model(self, new_model):
+        self.mosfet_model = new_model
+
     def update_nodes(self):
         for element in self.elements:
             for node in element.connections:
-                self.addNode(node)
+                self.add_node(node)
 
-    def getNodes(self):
+    def get_nodes(self):
         return self.nodes.copy()
 
     def get_element(self, element_name):
         for element in self.elements:
             if element.name == element_name:
                 return element
-            
-    def addNode(self, nodeID):
+
+    def get_subcircuits(self):
+        return self.subcircuits
+
+    def add_node(self, nodeID):
         # if node doesnt exist add it
         if self.nodes.__contains__(nodeID) is False:
             self.nodes.append(nodeID)
 
-    def addModel(self, model):
+    def add_model(self, model):
         model_name = model.name
         self.models[model_name] = model
 
-    def addElement(self, element):
+    def add_element(self, element):
         if element is not None:
             self.elements.append(element)
         for node in element.connections:
-            self.addNode(node)
+            self.add_node(node)
 
-    def addSubcircuit(self, circuitName, circuit):
+    def add_subcircuit(self, circuitName, circuit):
         self.subcircuits[circuitName] = circuit
 
-    def changeNodeID(self, nodeOld, nodeNew):
-        pass
-
-    def _addListOfElements(self, elementList):
+    def change_node_ID(self, nodeOld, nodeNew):
         pass
 
     def flatten_subcircuit(
@@ -61,7 +70,7 @@ class Circuit:
         subct_connections = subct.inner_connecting_nodes
 
         # If this node is in connection use the nodeID of the root circuit
-        def new_nodeIDs(nodeID):
+        def new_node_IDs(nodeID):
             seperator = "_"
 
             new_IDs = []
@@ -79,21 +88,17 @@ class Circuit:
         subct_elements = []
         for element in subct.elements:
             element_connections = element.connections
-            new_ele_connections = new_nodeIDs(element_connections)
+            new_ele_connections = new_node_IDs(element_connections)
             new_ele = element.copy()
             new_ele.name = element_name + "." + new_ele.name
             new_ele.connections = new_ele_connections
             subct_elements.append(new_ele)
             pass
         for model in subct.models:
-            self.addModel(model)
+            self.add_model(model)
         return subct_elements
 
-    def flatten(self, flatten_models=False, 
-                out_file_path=None, 
-                bipolar_model="beta_with_r_be",
-                mosfet_model="BSIM"
-    ):
+    def flatten(self, flatten_models=False, out_file_path=None):
         # Make sure all subcircuits are already flattend
         for name, subct in self.subcircuits.items():
             subct.flatten()
@@ -127,8 +132,8 @@ class Circuit:
                 model_name = element.params["ref_model"]
                 model = self.models[model_name]
                 subct_name = element.name + "." + model_name
-                model_subct = model.get_generated_subcircuit(element.params, bipolar_model, mosfet_model)
-                self.addSubcircuit(subct_name, model_subct)
+                model_subct = model.get_generated_subcircuit(element.params, self.bipolar_model, self.mosfet_model)
+                self.add_subcircuit(subct_name, model_subct)
                 subct_elements = self.flatten_subcircuit(
                     subct_name, element.name, element.connections
                 )

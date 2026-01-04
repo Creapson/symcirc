@@ -21,9 +21,9 @@ class Model:
         # chose the correct small signal model
         # todo for those types: NPN, PNP, LPNP, D, ...
         if param_list["type"] == "NPN":
-            parser.set_netlist_file("library/bipolar_models.lib")
+            parser.set_cir_file("library/bipolar_models.lib")
         else:
-            parser.set_netlist_file("library/mosfet_models.lib")
+            parser.set_cir_file("library/mosfet_models.lib")
         parser.pre_format()
 
         # loop over all lines and replace the param_name with

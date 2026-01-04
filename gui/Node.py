@@ -28,6 +28,9 @@ class Node:
         dpg.set_item_pos(self.node_id, self.position)
 
         return self.node_id
+    
+    def uuid(self, txt: str):
+        return f"{self.node_id}_" + txt
 
     def add_input_attr(self):
         return dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Input)
@@ -46,6 +49,12 @@ class Node:
     def add_connection(self, pin_id, connected_node):
         self.connections[pin_id] = connected_node
         print("Connections in Node: ", self.connections)
+
+    def onlink_callback(self):
+        pass
+
+    def delink_callback(self):
+        pass
 
     def update(self):
         print("update was called!")
@@ -67,10 +76,24 @@ class Node:
 
 class ImportCircuit(Node):
     def callback(self, sender, app_data):
+
+        def format_feedback(feedback):
+            message = ""
+            for string in feedback:
+                if string is not None:
+                    message += "\n" + string
+            return message
+
+        from NetlistParser import NetlistParser
+
+        parser = NetlistParser()
+        parser.set_cir_file(app_data["file_path_name"])
+        feedback = parser.pre_format()
+
         self.add_output_value(0, app_data["file_path_name"])
         dpg.set_value(
             self.file_path_widget_id,
-            f"Selected File Path:\n{app_data['file_path_name']}",
+            f"Loaded file with following Feedback:\n{format_feedback(feedback)}",
         )
 
     def cancel_callback(sender, app_data):
@@ -111,9 +134,10 @@ class NetlistParserNode(Node):
     def setup(self, parent):
         def build():
             with dpg.value_registry():
-                dpg.add_string_value(
-                    default_value="Circuit Object", tag=f"{self.node_id}_circuit_parser"
-                )
+                dpg.add_string_value(default_value="Circuit Object", tag=self.uuid("circuit_parser"))
+                dpg.add_string_value(default_value="_", tag=self.uuid("separator"))
+                dpg.add_string_value(default_value="beta_1", tag=self.uuid("default_bipolar_model"))
+                dpg.add_string_value(default_value="bsim_1", tag=self.uuid("default_mosfet_model"))
 
             with self.add_input_attr() as input_pin:
                 self.file_path_widget_id = dpg.add_text(
@@ -122,36 +146,78 @@ class NetlistParserNode(Node):
             self.input_pins.append(input_pin)
 
             with self.add_output_attr() as ouput_pin:
-                self.circuit_out_pin = dpg.add_text(source=f"{self.node_id}_circuit_parser")
+                self.circuit_out_pin = dpg.add_text(source=self.uuid("circuit_parser"))
             self.output_pins.append(ouput_pin)
 
             with self.add_static_attr():
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Seperator Symbol")
+                    dpg.add_combo(items=("_", ",", ";"), width=50, source=self.uuid("separator"))
+
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Default Bioplar model")
+                    dpg.add_combo(items=("beta_1", "beta_2"), width=200, source=self.uuid("default_bipolar_model"))
+
+
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Default Mosfet Model")
+                    dpg.add_combo(items=("BSIM", "BSIM_2"), width=200, source=self.uuid("default_mosfet_model"))
+
+                # create table to edit all subcircuits
+                dpg.add_text("Select the default small signal models for the subcircuits")
+                with dpg.table(header_row=True, policy=dpg.mvTable_SizingFixedFit, resizable=True, no_host_extendX=True,
+                   borders_innerV=True, borders_outerV=True, borders_outerH=True, tag=self.uuid("subcircuit_table")):
+
+                    # create the header of the table
+                    dpg.add_table_column(label="name")
+                    dpg.add_table_column(label="bpiolar_model")
+                    dpg.add_table_column(label="mosfet_model")
+
+
+                dpg.add_text("When nothing is selected the default value will be used!")
+
+                # temperary update button
                 dpg.add_button(label="Update", callback=self.update)
 
         return super().setup(build, parent)
 
-    def update(self):
+    def onlink_callback(self):
         input_pin = self.input_pins[0]
         from_pin = self.connections[input_pin]
 
-        # get parent node ID (dpg ID)
+        # traverse the connection to the connected node 
+        # and get the object from there
         from_node_id = dpg.get_item_parent(from_pin)
-
-        # get actual python object
         from_node = self.editor.node_dic[from_node_id]
-
-        # read the value
         filepath = from_node.output_values.get(from_pin, "No value found")
 
         from NetlistParser import NetlistParser
 
         parser = NetlistParser()
-        parser.set_netlist_file(filepath)
-        circuit = parser.parse_netlist()
+        parser.set_cir_file(filepath)
+        self.circuit = parser.parse_netlist()
 
-        ai_string = circuit.to_ai_string()
+        # populate the subcircuit table
+        def add_cubcircuit_row(subct_name, bipolar_model, mosfet_model):
+            with dpg.value_registry():
+                dpg.add_string_value(default_value=bipolar_model, tag=self.uuid(f"{subct_name}_default_bipolar_model"))
+                dpg.add_string_value(default_value=mosfet_model, tag=self.uuid(f"{subct_name}_default_mosfet_model"))
+
+            row = dpg.add_table_row(parent=self.uuid("subcircuit_table"))
+            dpg.add_text(subct_name, parent=row)
+            dpg.add_combo(source=self.uuid(f"{subct_name}_default_bipolar_model"), parent=row)
+            dpg.add_combo(source=self.uuid(f"{subct_name}_default_mosfet_model"), parent=row)
+
+        subct_list = self.circuit.get_subcircuits()
+        for subct_name, subct_obj in subct_list.items():
+            add_cubcircuit_row(subct_name, subct_obj.bipolar_model, subct_obj.mosfet_model)
+
+        super().onlink_callback()
+
+    def update(self):
+        ai_string = self.circuit.to_ai_string()
 
         # apply it to UI
-        dpg.set_value("circuit_parser", ai_string)
+        dpg.set_value(f"{self.node_id}_circuit_parser", ai_string)
 
         super().update()
