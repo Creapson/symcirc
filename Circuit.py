@@ -173,17 +173,17 @@ class Circuit:
                 model_name = element.params["ref_model"]
                 model = self.models[model_name]
                 subct_name = element.name + "." + model_name
-                model_subct = model.get_generated_subcircuit(element.params, self.bipolar_model, self.mosfet_model)
-                self.add_subcircuit(subct_name, model_subct)
-                subct_elements = self.flatten_subcircuit(
-                    subct_name, element.name, element.connections
-                )
-                new_elements += subct_elements
 
+                bipolar_model = element.params["bipolar_model"]
+                mosfet_model = element.params["mosfet_model"]
+                model_subct = model.get_generated_subcircuit(element.params, bipolar_model, mosfet_model)
+
+                self.add_subcircuit(subct_name, model_subct)
+                subct_elements = self.flatten_subcircuit(subct_name, element.name, element.connections)
+                new_elements += subct_elements
                 continue
 
             new_elements.append(element)
-
 
         # every subcircuit has been flattend. no need to store them
         # anymore

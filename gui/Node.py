@@ -35,13 +35,13 @@ class Node:
         return f"{self.node_id}_" + txt
 
     def add_input_attr(self):
-        return dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Input)
+        return dpg.node_attribute(parent=self.node_id, attribute_type=dpg.mvNode_Attr_Input)
 
     def add_static_attr(self):
-        return dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Static)
+        return dpg.node_attribute(parent=self.node_id, attribute_type=dpg.mvNode_Attr_Static)
 
     def add_output_attr(self):
-        return dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Output)
+        return dpg.node_attribute(parent=self.node_id, attribute_type=dpg.mvNode_Attr_Output)
 
     def add_output_value(self, pin_index, value):
         pin_id = self.output_pins[pin_index]
@@ -93,11 +93,17 @@ class ImportCircuit(Node):
         parser.set_cir_file(app_data["file_path_name"])
         feedback = parser.pre_format()
 
+        # when a file is selected create the output pin
+        with self.add_output_attr() as output_pin:
+            dpg.add_text("Selected file")
+        self.output_pins.append(output_pin)
+
         self.add_output_value(0, app_data["file_path_name"])
         dpg.set_value(
             self.file_path_widget_id,
             f"Loaded file with following Feedback:\n{format_feedback(feedback)}",
         )
+
 
 
     def setup(self, parent):
@@ -117,14 +123,9 @@ class ImportCircuit(Node):
             ):
                 dpg.add_file_extension(".cir")
 
-            with self.add_output_attr() as output_pin:
-                dpg.add_button(
-                    label="Open File Dialog",
-                    callback=lambda: dpg.show_item(f"{self.node_id}_file_dialog_id"),
-                )
-            self.output_pins.append(output_pin)
 
             with self.add_static_attr():
+                dpg.add_button(label="Open File Dialog", callback=lambda: dpg.show_item(f"{self.node_id}_file_dialog_id"))               
                 self.file_path_widget_id = dpg.add_text(source=f"{self.node_id}_file_path_string")
 
         return super().setup(build, parent)
@@ -180,10 +181,11 @@ class NetlistParserNode(Node):
                 # temperary update button
                 dpg.add_button(label="Flatten Subcircuits", callback=self.update)
 
+            """
             with self.add_output_attr() as ouput_pin:
                 self.circuit_out_pin = dpg.add_text(source=self.uuid("circuit_parser"))
             self.output_pins.append(ouput_pin)
-
+            """
 
         return super().setup(build, parent)
 
@@ -263,6 +265,12 @@ class NetlistParserNode(Node):
 
         flattend_circuit = self.circuit.copy()
         flattend_circuit.flatten()
+
+        # create a output pin for the flattend circuit
+        with self.add_output_attr() as output_pin:
+            dpg.add_text("Flattend Circuit")
+        self.output_pins.append(output_pin)
+
         self.add_output_value(0, flattend_circuit)
 
         flattend_circuit.to_ai_string()
@@ -325,10 +333,7 @@ class FlattenNode(Node):
                 # temperary update button
                 dpg.add_button(label="Flatten Elements", callback=self.update)
 
-            # output pin
-            with self.add_output_attr() as ouput_pin:
-                self.circuit_out_pin = dpg.add_text(source=self.uuid("circuit_out"))
-            self.output_pins.append(ouput_pin)
+
 
         return super().setup(build, parent)
 
@@ -345,22 +350,24 @@ class FlattenNode(Node):
         self.circuit.to_ai_string()
 
         # populate the subcircuit table
-        def add_element_row(subct_name, bipolar_model, mosfet_model):
+        def add_element_row(name, bipolar_model, mosfet_model):
             with dpg.value_registry():
-                bipolar_source_id = dpg.add_string_value(default_value=bipolar_model, tag=self.uuid(f"{subct_name}_default_bipolar_model"))
+                bipolar_source_id = dpg.add_string_value(default_value=bipolar_model, tag=self.uuid(f"{name}_bipolar_model"))
                 self.row_sources.append(bipolar_source_id)
-                mosfet_source_id = dpg.add_string_value(default_value=MOSFET_MODELS, tag=self.uuid(f"{subct_name}_default_mosfet_model"))
+                mosfet_source_id = dpg.add_string_value(default_value=mosfet_model, tag=self.uuid(f"{name}_mosfet_model"))
 
                 self.row_sources.append(mosfet_source_id)
 
             row = dpg.add_table_row(parent=self.uuid("element_table"))
-            dpg.add_text(subct_name, parent=row)
-            dpg.add_combo(items=BIPOLAR_MODELS, source=self.uuid(f"{subct_name}_default_bipolar_model"), parent=row)
-            dpg.add_combo(items=MOSFET_MODELS, source=self.uuid(f"{subct_name}_default_mosfet_model"), parent=row)
+            dpg.add_text(name, parent=row)
+            dpg.add_combo(items=BIPOLAR_MODELS, source=self.uuid(f"{name}_bipolar_model"), parent=row, width=-1)
+            dpg.add_combo(items=MOSFET_MODELS, source=self.uuid(f"{name}_mosfet_model"), parent=row, width=-1)
 
-        element_list = self.circuit.get_elements()
+        # populate the table with all elements
+        self.element_list = self.circuit.get_elements()
+        print(self.element_list)
         self.delete_table()
-        for item in element_list:
+        for item in self.element_list:
             if item.type == "Q":
                 add_element_row(item.name, item.params["bipolar_model"], item.params["mosfet_model"]), 
 
@@ -379,14 +386,28 @@ class FlattenNode(Node):
 
     def update(self):
 
+        # apply the changed small signal models to all elements
+        for element in self.element_list:
+            bipolar_model = dpg.get_value(self.uuid(f"{element.name}_bipolar_model"))
+            mosfet_model = dpg.get_value(self.uuid(f"{element.name}_mosfet_model"))
+            element.params["bipolar_model"] = bipolar_model
+            element.params["mosfet_model"] = mosfet_model 
+
+
         flattend_circuit = self.circuit.copy()
         flattend_circuit.flatten(True, self.out_file_path)
+
+        # output pin
+        with self.add_output_attr() as ouput_pin:
+            self.circuit_out_pin = dpg.add_text(source=self.uuid("circuit_out"))
+        self.output_pins.append(ouput_pin)
+
         self.add_output_value(0, flattend_circuit)
 
         flattend_circuit.to_ai_string()
 
         # apply it to UI
-        dpg.set_value(self.uuid("circuit_out"), "")
+        dpg.set_value(self.uuid("circuit_out"), "Circuit with flattend Models")
 
         super().update()
 
