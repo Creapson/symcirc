@@ -11,7 +11,6 @@ import dearpygui.dearpygui as dpg
 nodeEditor = NodeEditor()
 nodeEditor.start()
 
-"""
 circuit = Circuit()
 
 parser = NetlistParser()
@@ -85,6 +84,10 @@ freq_log = np.log10(w)
 magnitude_db = 20 * np.log10(np.abs(H_eval))
 phase_deg = np.angle(H_eval, deg=True)
 
+print(freq_log)
+print(magnitude_db)
+print(phase_deg)
+
 # DearPyGui Setup
 dpg.create_context()
 
@@ -120,4 +123,3 @@ dpg.setup_dearpygui()
 dpg.show_viewport()
 dpg.start_dearpygui()
 dpg.destroy_context()
-"""

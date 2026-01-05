@@ -174,8 +174,8 @@ class Circuit:
                 model = self.models[model_name]
                 subct_name = element.name + "." + model_name
 
-                bipolar_model = element.params["bipolar_model"]
-                mosfet_model = element.params["mosfet_model"]
+                bipolar_model = element.params.get("bipolar_model", self.bipolar_model)
+                mosfet_model = element.params.get("mosfet_model", self.mosfet_model)
                 model_subct = model.get_generated_subcircuit(element.params, bipolar_model, mosfet_model)
 
                 self.add_subcircuit(subct_name, model_subct)

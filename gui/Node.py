@@ -16,7 +16,7 @@ class Node:
         # {pin_id: variable}
         self.output_values = {}
         self.output_pins = []
-        self.input_pins = []
+        self.input_pins = {}
 
     def setup(self, build_fn, parent):
         with dpg.node(label=self.label, pos=self.position, parent=parent) as self.node_id:
@@ -58,6 +58,24 @@ class Node:
     def delink_callback(self):
         pass
 
+    def get_input_pin_value(self, input_pin_tag):
+
+        if input_pin_tag in self.input_pins:
+            input_pin = self.input_pins.get(input_pin_tag, None)
+            from_pin = self.connections.get(input_pin, None)
+
+            if from_pin is None:
+                return None
+
+            # traverse the connection to the connected node
+            # and get the object from there
+            from_node_id = dpg.get_item_parent(from_pin)
+            from_node = self.editor.node_dic[from_node_id]
+            return from_node.output_values.get(from_pin, None)
+
+        else:
+            return None
+
     def update(self):
         if len(self.output_pins) > 0:
             self.editor.propagate(self.output_pins[0])
@@ -69,6 +87,7 @@ class Node:
         print("Position: ", self.position)
         print("NodeID: ", self.node_id)
         print("Connections: ", self.connections)
+        print("Input Pins", self.input_pins)
         print("output Values: ", self.output_values)
         print("output pins: ", self.output_pins)
 
@@ -146,10 +165,8 @@ class NetlistParserNode(Node):
                 dpg.add_string_value(default_value="BSIM", tag=self.uuid("mosfet_model"))
 
             with self.add_input_attr() as input_pin:
-                self.file_path_widget_id = dpg.add_text(
-                    default_value="Connect ImportNode here! [filepath]"
-                )
-            self.input_pins.append(input_pin)
+                self.file_path_widget_id = dpg.add_text(default_value="Connect ImportNode here! [filepath]", tag=self.uuid("file_path_pin"))
+            self.input_pins[self.uuid("file_path_pin")] = input_pin
 
             with self.add_static_attr():
                 with dpg.group(horizontal=True):
@@ -190,15 +207,7 @@ class NetlistParserNode(Node):
         return super().setup(build, parent)
 
     def onlink_callback(self):
-        input_pin = self.input_pins[0]
-        from_pin = self.connections[input_pin]
-
-        # traverse the connection to the connected node 
-        # and get the object from there
-        from_node_id = dpg.get_item_parent(from_pin)
-        from_node = self.editor.node_dic[from_node_id]
-        filepath = from_node.output_values.get(from_pin, "No value found")
-
+        filepath = self.get_input_pin_value(self.uuid("file_path_pin"))
         from NetlistParser import NetlistParser
 
         parser = NetlistParser()
@@ -280,8 +289,9 @@ class NetlistParserNode(Node):
 
         super().update()
 
+
 class FlattenNode(Node):
-    def __init__(self, label, position=(100, 100)): 
+    def __init__(self, label, position=(100, 100)):
         self.row_sources = []
 
         super().__init__(label, position)
@@ -299,8 +309,8 @@ class FlattenNode(Node):
                 dpg.add_string_value(default_value="No .out file currently selected!", tag=self.uuid("out_file_path"))
 
             with self.add_input_attr() as input_pin:
-                self.file_path_widget_id = dpg.add_text(default_value="Connect Circuit here! [circuit]")
-            self.input_pins.append(input_pin)
+                dpg.add_text(default_value="Connect Circuit here! [circuit]", tag=self.uuid("file_path_pin"))
+            self.input_pins[self.uuid("file_path_pin")] = input_pin
 
             with self.add_static_attr():
 
@@ -338,14 +348,7 @@ class FlattenNode(Node):
         return super().setup(build, parent)
 
     def onlink_callback(self):
-        input_pin = self.input_pins[0]
-        from_pin = self.connections[input_pin]
-
-        # traverse the connection to the connected node 
-        # and get the object from there
-        from_node_id = dpg.get_item_parent(from_pin)
-        from_node = self.editor.node_dic[from_node_id]
-        self.circuit = from_node.output_values.get(from_pin, "No value found")
+        self.circuit = self.get_input_pin_value(self.uuid("file_path_pin"))
 
         self.circuit.to_ai_string()
 
@@ -411,20 +414,178 @@ class FlattenNode(Node):
 
         super().update()
 
-class BodePlot(Node):
+class ModifiedNodalAnalysis(Node):
     def setup(self, parent):
         def build():
-            pass
+
+            with dpg.value_registry():
+                dpg.add_int_value(default_value=2, tag=self.uuid("start_log_int"))
+                dpg.add_int_value(default_value=8, tag=self.uuid("end_log_int"))
+                dpg.add_int_value(default_value=10000, tag=self.uuid("points_in_log"))
+
+            with self.add_input_attr() as input_pin:
+                dpg.add_text(default_value="Connect fully flattend Circuit here! [circuit]", tag=self.uuid("circuit_input_pin"))
+            self.input_pins[self.uuid("circuit_input_pin")] = input_pin
+
+            with self.add_static_attr():
+                dpg.add_text("Configure the log-Space")
+
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Start Frequenzy in 10^x")
+                    dpg.add_input_int(label="input int", source=self.uuid("start_log_int"))
+
+                with dpg.group(horizontal=True):
+                    dpg.add_text("End Frequenzy in 10^x")
+                    dpg.add_input_int(label="input int", source=self.uuid("end_log_int"))
+
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Number of Points between start and end")
+                    dpg.add_input_int(label="input int", source=self.uuid("points_in_log"))
+
+                dpg.add_button(label="Solve with MNA", callback=self.update)
 
         return super().setup(build, parent)
 
     def onlink_callback(self):
+
+        self.circuit = self.get_input_pin_value(self.uuid("circuit_input_pin"))
+
+
+        dpg.set_value(self.uuid("circuit_input_pin"), "Circuit connected!")
         super().onlink_callback()
 
     def update(self):
+        from Modified_Node_Analysis import ModifiedNodalAnalysis
+
+        import sympy as sp
+        import numpy as np
+
+        mna = ModifiedNodalAnalysis(self.circuit)
+        mna.buildEquationsSystem()
+        results = mna.solve()
+        estimation = mna.estimateTerms(mna.A)
+        num_results = mna.solveNumerical(mna.value_dict)
+
+        # --- 1. Symbolische Übertragungsfunktion definieren ---
+        s = sp.symbols('s')
+        # Beispiel: Tiefpass 1. Ordnung: H(s) = 1 / (s + 1)
+        H = num_results[sp.symbols('V_2')] / num_results[sp.symbols('V_1')]
+
+        # --- 2. SymPy → numerische Funktion umwandeln ---
+        H_lambdified = sp.lambdify(s, H, 'numpy')
+        # --- 3. Frequenzachse definieren ---
+        w = np.logspace(-2, 8, 10000)         # Kreisfrequenz
+        jw = 1j * w
+        H_eval = H_lambdified(jw)
+
+        # create solved arrays for later plotting 
+        freq_log = np.log10(w)
+        magnitude_db = 20 * np.log10(np.abs(H_eval))
+        phase_deg = np.angle(H_eval, deg=True)
+
+        print(freq_log)
+        print(magnitude_db)
+        print(phase_deg)
+
+        # create output pins for those arrays
+
+        # freq_log
+        with self.add_output_attr() as output_pin:
+            dpg.add_text("fraq_log (x-Achse)")
+        self.output_pins.append(output_pin)
+        self.add_output_value(0, freq_log)
+
+        # freq_log
+        with self.add_output_attr() as output_pin:
+            dpg.add_text("magnitude_db (y-Achse)")
+        self.output_pins.append(output_pin)
+        self.add_output_value(1, magnitude_db)
+
+        # freq_log
+        with self.add_output_attr() as output_pin:
+            dpg.add_text("phase_deg (y-Achse)")
+        self.output_pins.append(output_pin)
+        self.add_output_value(2, phase_deg)
+
         super().update()
 
-class ModifiedNodalAnalysis(Node):
+class BodePlot(Node):
+    def setup(self, parent):
+        def build():
+
+            # create pins for all nessary inputs
+            with self.add_input_attr() as input_pin:
+                dpg.add_text(default_value="Connect freq_log here!", tag=self.uuid("freq_log_pin"))
+            self.input_pins[self.uuid("freq_log_pin")] = input_pin
+
+            with self.add_input_attr() as magn_pin:
+                dpg.add_text(default_value="Connect magnitude here!", tag=self.uuid("magnitude_pin"))
+            self.input_pins[self.uuid("magnitude_pin")] = magn_pin
+
+            with self.add_input_attr() as phase_pin:
+                dpg.add_text(default_value="Connect phase here!", tag=self.uuid("phase_pin"))
+            self.input_pins[self.uuid("phase_pin")] = phase_pin
+
+            with dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Static):
+                # -------- Magnitude Plot --------
+                with dpg.plot(label="Betrag (dB)", height=250):
+                    dpg.add_plot_legend()
+                    dpg.add_plot_axis(dpg.mvXAxis, label="log10(ω) [rad/s]")
+                    y_mag = dpg.add_plot_axis(dpg.mvYAxis, label="Betrag [dB]")
+
+                    dpg.add_line_series(
+                        [], [],
+                        label="|H(jω)|",
+                        parent=y_mag,
+                        tag=self.uuid("mag_series")
+                    )
+
+                dpg.add_spacer(height=8)  # optional spacing
+
+                # -------- Phase Plot --------
+                with dpg.plot(label="Phase (°)", height=250):
+                    dpg.add_plot_legend()
+                    dpg.add_plot_axis(dpg.mvXAxis, label="log10(ω) [rad/s]")
+                    y_phase = dpg.add_plot_axis(dpg.mvYAxis, label="Phase [°]")
+
+                    dpg.add_line_series(
+                        [], [],
+                        label="∠H(jω)",
+                        parent=y_phase,
+                        tag=self.uuid("phase_series")
+                    )
+
+        return super().setup(build, parent)
+
+    def onlink_callback(self):
+        freq_log = self.get_input_pin_value(self.uuid("freq_log_pin"))
+        magnitude = self.get_input_pin_value(self.uuid("magnitude_pin"))
+        phase = self.get_input_pin_value(self.uuid("phase_pin"))
+        print(freq_log)
+        print(magnitude)
+        print(phase)
+
+        # update the plots with the new values
+        if freq_log is not None and magnitude is not None:
+            dpg.set_value(
+                self.uuid("mag_series"),
+                [freq_log.tolist(), magnitude.tolist()]
+            )
+
+        if freq_log is not None and phase is not None:
+            dpg.set_value(
+                self.uuid("phase_series"),
+                [freq_log.tolist(), phase.tolist()]
+            )
+
+        super().onlink_callback()
+
+    def update(self):
+
+        super().update()
+
+
+class PlankNodeForCopy(Node):
     def setup(self, parent):
         def build():
             pass

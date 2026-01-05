@@ -32,7 +32,8 @@ class NodeEditor:
         to_node = self.node_dic[to_node_id]
 
         # you can not connect multiple outputs to one input
-        if len(to_node.connections) == 0:
+        # check if the input pin already has a connection
+        if to_pin not in to_node.connections:
             to_node.add_connection(to_pin, from_pin)
             try:
                 to_node.onlink_callback()  # may raise
