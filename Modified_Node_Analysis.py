@@ -100,7 +100,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
             self.A[node1 - 1, node2 - 1] -= value
             self.A[node2 - 1, node1 - 1] -= value
 
-    def add_independent_current_source(self, node1, node2, value):
+    def add_independent_current_source(self, node1, node2, value, num_value):
         """Add independent current source. 
         Direction of the current is from node1 to node2.
 
@@ -110,10 +110,11 @@ class ModifiedNodalAnalysis(EquationFormulator):
             value (symbol): Symbol of the source.
 
         """
-        if node1 != 0:
-            self.z[node1 - 1] -= value
-        if node2 != 0:
-            self.z[node2 - 1] += value
+        if num_value != 0:
+            if node1 != 0:
+                self.z[node1 - 1] -= value
+            if node2 != 0:
+                self.z[node2 - 1] += value
 
     def add_independent_voltage_source(self, node1, node2, sym_value, num_value):  # noqa: D417
         """Add independent voltage source.
@@ -168,68 +169,24 @@ class ModifiedNodalAnalysis(EquationFormulator):
             beta (float): gain factor
 
         """
-        v_counter = 0
-        proof_counter = 0
+        self.expand_matrix(beta)
+        idx = self.A.rows - 1
 
-        for element in self.ct.elements:
-            proof_counter += 1
-            match element.type:
-                case "V" | "H" |  "E":            
-                    if {self.node_map[element.connections[0]], self.node_map[element.connections[1]]} == {node_ctrl1, node_ctrl2}:
-                        idx = self.n + v_counter
+        if node_out1 != 0:
+            self.A[node_out1 - 1, idx] += beta
 
-                        if node_out1 != 0:
-                            self.A[node_out1 - 1, idx] += beta
-
-                        if node_out2 != 0:
-                            self.A[node_out2 - 1, idx] += -beta
+        if node_out2 != 0:
+            self.A[node_out2 - 1, idx] += -beta
                         
-                        break
-
-                    v_counter += 1
-
-                
-                case  "R" | "C" | "L" | "I" | "F" | "G": 
-                    if {self.node_map[element.connections[0]], self.node_map[element.connections[1]]} == {node_ctrl1, node_ctrl2}:
-                    
-                        self.expand_matrix(beta)
-                        idx = self.A.rows - 1
-
-                        if node_out1 != 0:
-                            self.A[node_out1 - 1, idx] += beta
-
-                        if node_out2 != 0:
-                            self.A[node_out2 - 1, idx] += -beta
+        if node_ctrl1 != 0:
+            self.A[idx, node_ctrl1 - 1] += 1
+            self.A[node_ctrl1 - 1, idx] += 1
                         
-                        if node_ctrl1 != 0:
-                            self.A[idx, node_ctrl1 - 1] += 1
-                            self.A[node_ctrl1 - 1, idx] += 1
+        if node_ctrl2 != 0:
+            self.A[idx, node_ctrl2 - 1] += -1
+            self.A[node_ctrl2 - 1, idx] += -1
                         
-                        if node_ctrl2 != 0:
-                            self.A[idx, node_ctrl2 - 1] += -1
-                            self.A[node_ctrl2 - 1, idx] += -1
-                        
-                        self.z[idx] = 0
-                        
-                        break
-        
-        if proof_counter == len(self.ct.elements):
-            self.expand_matrix(beta)
-            idx = self.A.rows - 1
-
-            if node_out1 != 0:
-                self.A[node_out1 - 1, idx] += beta
-
-            if node_out2 != 0:
-                self.A[node_out2 - 1, idx] += -beta
-                        
-            if node_ctrl1 != 0:
-                self.A[idx, node_ctrl1 - 1] += 1
-                self.A[node_ctrl1 - 1, idx] += 1
-                        
-            if node_ctrl2 != 0:
-                self.A[idx, node_ctrl2 - 1] += -1
-                self.A[node_ctrl2 - 1, idx] += -1
+        self.z[idx] = 0
 
         
     def add_vcvs(self, node_out1, node_out2, node_ctrl1, node_ctrl2, gain):
@@ -267,100 +224,34 @@ class ModifiedNodalAnalysis(EquationFormulator):
             r_m (float): gain factor
 
         """
-        v_counter = 0
-        proof_counter = 0
-
-        for element in self.ct.elements:
-            proof_counter += 1
-            match element.type:
-                case "V" | "H" | "E":            
-                    if {self.node_map[element.connections[2]], self.node_map[element.connections[3]]} == {node_ctrl1, node_ctrl2}:
-                        ctrl_idx = self.n + v_counter
-
-                        self.expand_matrix(r_m)
-                        idx = self.A.rows - 1
-
-                        if node_out1 != 0:
-                            self.A[idx, node_out1 - 1] += 1
-                            self.A[node_out1 - 1, idx] += 1
-                        
-                        if node_ctrl2 != 0:
-                            self.A[idx, node_out2 - 1] += -1
-                            self.A[node_out2 - 1, idx] += -1
-                        
-                        self.z[idx] = 0
-                        
-                        self.A[idx, ctrl_idx] = -r_m
+        self.expand_matrix(r_m + "_ctrl")
+        ctrl_idx = self.A.rows - 1
 
                         
-                        break
+        if node_ctrl1 != 0:
+            self.A[ctrl_idx, node_ctrl1 - 1] += 1
+            self.A[node_ctrl1 - 1, ctrl_idx] += 1
+                        
+        if node_ctrl2 != 0:
+            self.A[ctrl_idx, node_ctrl2 - 1] += -1
+            self.A[node_ctrl2 - 1, ctrl_idx] += -1
+                        
+        self.z[ctrl_idx] = 0
+                        
+        self.expand_matrix(r_m)
+        idx = self.A.rows - 1
 
-                    v_counter += 1
+        if node_out1 != 0:
+            self.A[idx, node_out1 - 1] += 1
+            self.A[node_out1 - 1, idx] += 1
+                        
+        if node_ctrl2 != 0:
+            self.A[idx, node_out2 - 1] += -1
+            self.A[node_out2 - 1, idx] += -1
 
-                
-                case  "R" | "C" | "L" | "I" | "F" | "G": 
-                    if {self.node_map[element.connections[0]], self.node_map[element.connections[1]]} == {node_ctrl1, node_ctrl2}:
-                    
-                        self.expand_matrix(r_m)
-                        ctrl_idx = self.A.rows - 1
-
+        self.z[idx] = 0
                         
-                        if node_ctrl1 != 0:
-                            self.A[idx, node_ctrl1 - 1] += 1
-                            self.A[node_ctrl1 - 1, ctrl_idx] += 1
-                        
-                        if node_ctrl2 != 0:
-                            self.A[idx, node_ctrl2 - 1] += -1
-                            self.A[node_ctrl2 - 1, ctrl_idx] += -1
-                        
-                        self.z[ctrl_idx] = 0
-                        
-                        self.expand_matrix(r_m)
-                        idx = self.A.rows - 1
-
-                        if node_out1 != 0:
-                            self.A[idx, node_out1 - 1] += 1
-                            self.A[node_out1 - 1, idx] += 1
-                        
-                        if node_ctrl2 != 0:
-                            self.A[idx, node_out2 - 1] += -1
-                            self.A[node_out2 - 1, idx] += -1
-
-                        self.z[idx] = 0
-                        
-                        self.A[idx, ctrl_idx] = -r_m
-                        
-                        break
-        
-        if proof_counter == len(self.ct.bipoles):
-            self.expand_matrix(r_m)
-            ctrl_idx = self.A.rows - 1
-
-                        
-            if node_ctrl1 != 0:
-                self.A[idx, node_ctrl1 - 1] += 1
-                self.A[node_ctrl1 - 1, ctrl_idx] += 1
-                        
-            if node_ctrl2 != 0:
-                self.A[idx, node_ctrl2 - 1] += -1
-                self.A[node_ctrl2 - 1, ctrl_idx] += -1
-            
-            self.z[ctrl_idx] = 0
-                        
-            self.expand_matrix(r_m)
-            idx = self.A.rows - 1
-
-            if node_out1 != 0:
-                self.A[idx, node_out1 - 1] += 1
-                self.A[node_out1 - 1, idx] += 1
-                        
-            if node_ctrl2 != 0:
-                self.A[idx, node_out2 - 1] += -1
-                self.A[node_out2 - 1, idx] += -1
-            
-            self.z[idx] = 0
-                        
-            self.A[idx, ctrl_idx] = -r_m
+        self.A[idx, ctrl_idx] = -r_m
 
 
     def get_equation_system(self):
@@ -437,7 +328,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
                 case "I": 
                     self.add_independent_current_source(self.node_map[element.connections[0]], # noqa: E701
-                                                self.node_map[element.connections[1]], sp.symbols(element.name))
+                                                self.node_map[element.connections[1]], sp.symbols(element.name), element.params.get("value_ac", 0))
                     self.value_dict.update({sp.symbols(element.name): element.params.get("value_ac", 0)})
             
            

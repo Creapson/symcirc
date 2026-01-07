@@ -1,0 +1,30 @@
+* C:\Users\kevin\Documents\Uni\4.Semester\Softwareprojekt\Testschaltkreise\MOS\Conrad2st.sch
+
+* Schematics Version 8.0 - July 1997
+* Wed Jul 02 20:08:54 2025
+
+
+
+** Analysis setup **
+.ac DEC 101 1 1meg
+.OP 
+
+
+* From [SCHEMATICS NETLIST] section of msim.ini:
+.lib "D:\MSim_8\lib\OPAMP.LIB"
+.lib "D:\MSim_8\lib\mos.lib"
+.lib "D:\MSim_8\lib\EBIPOLAR.LIB"
+.lib "D:\MSim_8\lib\User\RASH_PCE3_MODEL.LIB"
+.lib "D:\MSim_8\lib\ts.lib"
+.lib "D:\msim_8\lib\nom.lib"
+
+.INC "Conrad2st.net"
+.INC "Conrad2st.als"
+
+
+.probe/CSDF N(VOUT) 
+.probe/CSDF N(4) 
+.probe/CSDF N(1) 
+
+
+.END
