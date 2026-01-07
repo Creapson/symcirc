@@ -15,7 +15,7 @@ class Node:
         self.connections = {}
         # {pin_id: variable}
         self.output_values = {}
-        self.output_pins = []
+        self.output_pins = {}
         self.input_pins = {}
 
     def setup(self, build_fn, parent):
@@ -43,9 +43,11 @@ class Node:
     def add_output_attr(self):
         return dpg.node_attribute(parent=self.node_id, attribute_type=dpg.mvNode_Attr_Output)
 
-    def add_output_value(self, pin_index, value):
-        pin_id = self.output_pins[pin_index]
-        self.output_values[pin_id] = value
+    def add_output_pin_value(self, output_pin_tag, value):
+        output_pin = self.output_pins.get(output_pin_tag, None)
+        self.output_values[output_pin] = value
+
+        self.editor.propagate(output_pin)
         print("Output Values", self.output_values)
 
     def add_connection(self, pin_id, connected_node):
@@ -77,8 +79,6 @@ class Node:
             return None
 
     def update(self):
-        if len(self.output_pins) > 0:
-            self.editor.propagate(self.output_pins[0])
         print("update was called!")
 
     def debug_print(self):
@@ -114,10 +114,10 @@ class ImportCircuit(Node):
 
         # when a file is selected create the output pin
         with self.add_output_attr() as output_pin:
-            dpg.add_text("Selected file")
-        self.output_pins.append(output_pin)
+            dpg.add_text("Selected file", tag=self.uuid("file_path_out"))
+        self.output_pins[self.uuid("file_path_out")] = output_pin
+        self.add_output_pin_value(self.uuid("file_path_out"), app_data["file_path_name"])
 
-        self.add_output_value(0, app_data["file_path_name"])
         dpg.set_value(
             self.file_path_widget_id,
             f"Loaded file with following Feedback:\n{format_feedback(feedback)}",
@@ -277,10 +277,9 @@ class NetlistParserNode(Node):
 
         # create a output pin for the flattend circuit
         with self.add_output_attr() as output_pin:
-            dpg.add_text("Flattend Circuit")
-        self.output_pins.append(output_pin)
-
-        self.add_output_value(0, flattend_circuit)
+            dpg.add_text("Flattend Circuit", tag=self.uuid("flattend_circuit"))
+        self.output_pins[self.uuid("flattend_circuit")] = output_pin
+        self.add_output_pin_value(self.uuid("flattend_circuit"), flattend_circuit)
 
         flattend_circuit.to_ai_string()
 
@@ -401,11 +400,11 @@ class FlattenNode(Node):
         flattend_circuit.flatten(True, self.out_file_path)
 
         # output pin
-        with self.add_output_attr() as ouput_pin:
-            self.circuit_out_pin = dpg.add_text(source=self.uuid("circuit_out"))
-        self.output_pins.append(ouput_pin)
+        with self.add_output_attr() as output_pin:
+            self.circuit_out_pin = dpg.add_text(source=self.uuid("flattend_circuit_out"))
+        self.output_pins[self.uuid("flattend_circuit_out")] = output_pin
 
-        self.add_output_value(0, flattend_circuit)
+        self.add_output_pin_value(self.uuid("flattend_circuit_out"), flattend_circuit)
 
         flattend_circuit.to_ai_string()
 
@@ -491,21 +490,21 @@ class ModifiedNodalAnalysis(Node):
 
         # freq_log
         with self.add_output_attr() as output_pin:
-            dpg.add_text("fraq_log (x-Achse)")
-        self.output_pins.append(output_pin)
-        self.add_output_value(0, freq_log)
+            dpg.add_text("fraq_log (x-Achse)", tag=self.uuid("freq_log_out"))
+        self.output_pins[self.uuid("freq_log_out")] = output_pin
+        self.add_output_pin_value(self.uuid("freq_log_out"), freq_log)
 
         # freq_log
         with self.add_output_attr() as output_pin:
-            dpg.add_text("magnitude_db (y-Achse)")
-        self.output_pins.append(output_pin)
-        self.add_output_value(1, magnitude_db)
+            dpg.add_text("magnitude_db (y-Achse)", tag=self.uuid("magnitude_out"))
+        self.output_pins[self.uuid("magnitude_out")] = output_pin
+        self.add_output_pin_value(self.uuid("magnitude_out"), magnitude_db)
 
         # freq_log
         with self.add_output_attr() as output_pin:
-            dpg.add_text("phase_deg (y-Achse)")
-        self.output_pins.append(output_pin)
-        self.add_output_value(2, phase_deg)
+            dpg.add_text("phase_deg (y-Achse)", tag=self.uuid("phase_out"))
+        self.output_pins[self.uuid("phase_out")] = output_pin
+        self.add_output_pin_value(self.uuid("phase_out"), phase_deg)
 
         super().update()
 
@@ -526,34 +525,25 @@ class BodePlot(Node):
                 dpg.add_text(default_value="Connect phase here!", tag=self.uuid("phase_pin"))
             self.input_pins[self.uuid("phase_pin")] = phase_pin
 
+
+
             with dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Static):
-                # -------- Magnitude Plot --------
-                with dpg.plot(label="Betrag (dB)", height=250):
-                    dpg.add_plot_legend()
-                    dpg.add_plot_axis(dpg.mvXAxis, label="log10(ω) [rad/s]")
-                    y_mag = dpg.add_plot_axis(dpg.mvYAxis, label="Betrag [dB]")
 
-                    dpg.add_line_series(
-                        [], [],
-                        label="|H(jω)|",
-                        parent=y_mag,
-                        tag=self.uuid("mag_series")
-                    )
+                with dpg.subplots(2, 1, label="", link_all_x=True, height=600) as subplot_id:
 
-                dpg.add_spacer(height=8)  # optional spacing
+                    # -------- Magnitude Plot --------
+                    with dpg.plot(label="Betrag (dB)"):
+                        dpg.add_plot_legend()
+                        dpg.plot_axis(dpg.mvXAxis, label="log10(ω) [rad/s]")
+                        with dpg.plot_axis(dpg.mvYAxis, label="Betrag [dB]"):
+                            dpg.add_line_series([], [],label="|H(jω)|", tag=self.uuid("mag_series"))
 
-                # -------- Phase Plot --------
-                with dpg.plot(label="Phase (°)", height=250):
-                    dpg.add_plot_legend()
-                    dpg.add_plot_axis(dpg.mvXAxis, label="log10(ω) [rad/s]")
-                    y_phase = dpg.add_plot_axis(dpg.mvYAxis, label="Phase [°]")
-
-                    dpg.add_line_series(
-                        [], [],
-                        label="∠H(jω)",
-                        parent=y_phase,
-                        tag=self.uuid("phase_series")
-                    )
+                    # -------- Phase Plot --------
+                    with dpg.plot(label="Phase (°)"):
+                        dpg.add_plot_legend()
+                        dpg.plot_axis(dpg.mvXAxis, label="log10(ω) [rad/s]")
+                        with dpg.plot_axis(dpg.mvYAxis, label="Phase [°]"):
+                            dpg.add_line_series([], [], label="∠H(jω)", tag=self.uuid("phase_series"))
 
         return super().setup(build, parent)
 
