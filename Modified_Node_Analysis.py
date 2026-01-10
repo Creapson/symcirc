@@ -28,6 +28,9 @@ class ModifiedNodalAnalysis(EquationFormulator):
         self.z = sp.zeros(self.n, 1)
         self.current_var_index = 0    # Gesamtanzahl von Stromvariablen
 
+        self.sym_result = {}
+        self.num_result = {}
+
         #create mapping for node names to integer values for easy matrix handling
    
         self.node_map = {}
@@ -379,7 +382,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
         print("Solving equation system...")
         logger.debug("Solving equation system...")
 
-        result = sp.solve(self.A * x - self.z, x)
+        self.sym_result = sp.solve(self.A * x - self.z, x)
         #result = self.A.LUsolve(self.z)
 
         #result_dict = dict(zip(x, result))
@@ -388,8 +391,9 @@ class ModifiedNodalAnalysis(EquationFormulator):
         logger.debug("Finished solving equation system!")
 
         #logger.debug(result_dict)
+        
 
-        return result
+        return self.sym_result
     
 
 
@@ -412,10 +416,10 @@ class ModifiedNodalAnalysis(EquationFormulator):
         print("Solving numerical equation system...")
         logger.debug("Solving numerical equation system...")
 
-        result = sp.solve(A_num * x - z_num, x)
+        self.num_result = sp.solve(A_num * x - z_num, x)
 
         print("Finished solving numerical equation system!")
         logger.debug("Finished solving numerical equation system!")
 
-        return result
+        return self.num_result
     

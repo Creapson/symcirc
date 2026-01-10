@@ -2,6 +2,7 @@ from Circuit import Circuit
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 from gui.NodeEditor import NodeEditor
 from NetlistParser import NetlistParser
+import Approximate as ap
 
 import sympy as sp
 import numpy as np
@@ -15,14 +16,14 @@ circuit = Circuit()
 
 parser = NetlistParser()
 
-parser.set_cir_file("test_circuits/Conrad2st.cir")
+parser.set_cir_file("test_circuits/Emitteramp_deutsch.cir")
 circuit = parser.parse_netlist()
 circuit.to_ai_string()
 print("\n\n\nThe now flattend subcircuits")
 circuit.flatten()
 circuit.to_ai_string()
 print("\n\n\nThe flattend circuit with small signal models")
-circuit.flatten(True, "test_circuits/Conrad2st.out")
+circuit.flatten(True, "test_circuits/Emitteramp_deutsch.out")
 circuit.to_ai_string()
 print(circuit.get_nodes())
 
@@ -47,13 +48,40 @@ sp.pprint(mna.A)
 print("Rechte Seite:")
 sp.pprint(mna.z)
 
+print("Unknown list:")
+print(num_results)
 
+
+term_list = ap.generate_relevance_coefficients(mna, sp.symbols('V_1'), sp.symbols('V_2'), (1e5))
+
+print("Term list with relevance coefficients:")
+sorted_terms = sorted(term_list, key=lambda x: x[2])
+for (i, j), term, error in sorted_terms:
+    print(f"Term at position ({i}, {j}): {term}, Relevance Coefficient: {error}")
+
+
+result = mna.solve()
+H = result[sp.symbols('V_2')] / result[sp.symbols('V_1')]
+print("Original transfer function:")
+print(H)
+
+print("\n\n\n\n\n\n")
+print("Approximation results:")
+approx = ap.approximate(mna, term_list, 0.024, sp.symbols('V_1'), sp.symbols('V_2'))
+
+approx = sp.simplify(approx)
+
+print(approx)
+
+approx_num = approx.subs(mna.value_dict)
+
+approx_H_lambdified = sp.lambdify(sp.symbols('s'), approx_num, 'numpy')
 
 
 # --- 1. Symbolische Übertragungsfunktion definieren ---
 s = sp.symbols('s')
 # Beispiel: Tiefpass 1. Ordnung: H(s) = 1 / (s + 1)
-H = num_results[sp.symbols('V_3')]
+H = num_results[sp.symbols('V_2') ] / num_results[sp.symbols('V_1')]
 
 # --- 2. SymPy → numerische Funktion umwandeln ---
 H_lambdified = sp.lambdify(s, H, 'numpy')
@@ -61,22 +89,31 @@ H_lambdified = sp.lambdify(s, H, 'numpy')
 w = np.logspace(-2, 10, 10000)         # Kreisfrequenz
 jw = 1j * w
 H_eval = H_lambdified(jw)
+approx_eval = approx_H_lambdified(jw)
+
+if np.isscalar(approx_eval):
+    approx_eval = np.full_like(H_eval, approx_eval)
 
 print("\n\n\n\n\n\n", H_eval, "\n\n\n\n\n")
 # --- 4. Bode-Plot erstellen ---
 fig, (ax_mag, ax_phase) = plt.subplots(2, 1, figsize=(8, 6))
 
 # Betrag (in dB)
-ax_mag.semilogx(w, 20 * np.log10(abs(H_eval)))
+ax_mag.semilogx(w, 20 * np.log10(abs(H_eval)), label="Original")
+ax_mag.semilogx(w, 20 * np.log10(abs(approx_eval)), 'r--', label="Approximiert")
 ax_mag.set_title("Bode-Diagramm der Übertragungsfunktion")
 ax_mag.set_ylabel("Betrag [dB]")
 ax_mag.grid(True, which="both")
+ax_mag.legend()
 
 # Phase (in Grad)
-ax_phase.semilogx(w, np.angle(H_eval, deg=True))
+ax_phase.semilogx(w, np.angle(H_eval, deg=True), label="Original")
+ax_phase.semilogx(w, np.angle(approx_eval, deg=True), 'r--', label="Approximiert")
 ax_phase.set_ylabel("Phase [°]")
 ax_phase.set_xlabel("Kreisfrequenz ω [rad/s]")
 ax_phase.grid(True, which="both")
+ax_phase.legend()
+
 
 plt.tight_layout()
 plt.show()

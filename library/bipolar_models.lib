@@ -1,9 +1,9 @@
 .subckt beta_with_r_be c b e
-R_be b e rpi
-C_be b e cbe
+R_be b ee rpi
+C_be b ee cbe
 C_bc b c cbc
 R_ce c e ro
-F1 c e b e betaac
+F1 c e ee e betaac
 .ends
 
 .subckt beta_with_r_be_G c b e
