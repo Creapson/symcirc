@@ -3,6 +3,7 @@ from Circuit import Circuit
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 from NetlistParser import NetlistParser
 import Approximate as ap
+import time as t
 
 import sympy as sp
 import numpy as np
@@ -47,13 +48,19 @@ sp.pprint(mna.z)
 print("Unknown list:")
 print(num_results)
 
+print("\n\n\n\n\n\n")
 
-term_list = ap.generate_relevance_coefficients(mna, sp.symbols('V_1'), sp.symbols('V_2'), (1e5))
+t0 = t.perf_counter_ns()
 
-print("Term list with relevance coefficients:")
-sorted_terms = sorted(term_list, key=lambda x: x[2])
-for (i, j), term, error in sorted_terms:
-    print(f"Term at position ({i}, {j}): {term}, Relevance Coefficient: {error}")
+term_list = ap.generate_relevance_coefficients(mna, sp.symbols('V_1'), sp.symbols('V_2'), (1e5,))
+
+t1 = t.perf_counter_ns()
+
+print(f"Time for relevance coefficient calculation: {(t1 - t0) / 1e6} ms")
+
+print("\n\n\n\n\n\n")
+
+
 
 
 result = mna.solve()
