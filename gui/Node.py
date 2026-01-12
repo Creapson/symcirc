@@ -3,6 +3,7 @@ import dearpygui.dearpygui as dpg
 BIPOLAR_MODELS = ["beta_with_r_be", "beta_with_r_be_G"]
 MOSFET_MODELS = ["BSIM"]
 
+
 class Node:
     def __init__(self, label, position=(100, 100)):
         self.label = label
@@ -19,7 +20,9 @@ class Node:
         self.input_pins = {}
 
     def setup(self, build_fn, parent):
-        with dpg.node(label=self.label, pos=self.position, parent=parent) as self.node_id:
+        with dpg.node(
+            label=self.label, pos=self.position, parent=parent
+        ) as self.node_id:
             build_fn()
 
             with self.add_static_attr():
@@ -30,18 +33,33 @@ class Node:
         dpg.set_item_pos(self.node_id, self.position)
 
         return self.node_id
-    
+
+    def delete_output_pins(self):
+        for pin_tag, attr_id in list(self.output_pins.items()):
+            if dpg.does_item_exist(attr_id):
+                dpg.delete_item(attr_id)
+
+            self.output_values.pop(attr_id, None)
+
+        self.output_pins.clear()
+
     def uuid(self, txt: str):
         return f"{self.node_id}_" + txt
 
     def add_input_attr(self):
-        return dpg.node_attribute(parent=self.node_id, attribute_type=dpg.mvNode_Attr_Input)
+        return dpg.node_attribute(
+            parent=self.node_id, attribute_type=dpg.mvNode_Attr_Input
+        )
 
     def add_static_attr(self):
-        return dpg.node_attribute(parent=self.node_id, attribute_type=dpg.mvNode_Attr_Static)
+        return dpg.node_attribute(
+            parent=self.node_id, attribute_type=dpg.mvNode_Attr_Static
+        )
 
     def add_output_attr(self):
-        return dpg.node_attribute(parent=self.node_id, attribute_type=dpg.mvNode_Attr_Output)
+        return dpg.node_attribute(
+            parent=self.node_id, attribute_type=dpg.mvNode_Attr_Output
+        )
 
     def add_output_pin_value(self, output_pin_tag, value):
         output_pin = self.output_pins.get(output_pin_tag, None)
@@ -61,7 +79,6 @@ class Node:
         pass
 
     def get_input_pin_value(self, input_pin_tag):
-
         if input_pin_tag in self.input_pins:
             input_pin = self.input_pins.get(input_pin_tag, None)
             from_pin = self.connections.get(input_pin, None)
@@ -82,7 +99,7 @@ class Node:
         print("update was called!")
 
     def debug_print(self):
-        print(f"Debug Output from Node: {self.label}")
+        print(f"\n\nDebug Output from Node: {self.label}")
         print("Label: ", self.label)
         print("Position: ", self.position)
         print("NodeID: ", self.node_id)
@@ -96,9 +113,9 @@ class Node:
 #   NODE CLASSES  #
 ###################
 
+
 class ImportCircuit(Node):
     def callback(self, sender, app_data):
-
         def format_feedback(feedback):
             message = ""
             for string in feedback:
@@ -112,24 +129,27 @@ class ImportCircuit(Node):
         parser.set_cir_file(app_data["file_path_name"])
         feedback = parser.pre_format()
 
+        self.delete_output_pins()
+
         # when a file is selected create the output pin
         with self.add_output_attr() as output_pin:
             dpg.add_text("Selected file", tag=self.uuid("file_path_out"))
         self.output_pins[self.uuid("file_path_out")] = output_pin
-        self.add_output_pin_value(self.uuid("file_path_out"), app_data["file_path_name"])
+        self.add_output_pin_value(
+            self.uuid("file_path_out"), app_data["file_path_name"]
+        )
 
         dpg.set_value(
             self.file_path_widget_id,
             f"Loaded file with following Feedback:\n{format_feedback(feedback)}",
         )
 
-
-
     def setup(self, parent):
         def build():
             with dpg.value_registry():
                 dpg.add_string_value(
-                    default_value="No file currently selected!", tag=f"{self.node_id}_file_path_string"
+                    default_value="No file currently selected!",
+                    tag=f"{self.node_id}_file_path_string",
                 )
 
             with dpg.file_dialog(
@@ -142,56 +162,98 @@ class ImportCircuit(Node):
             ):
                 dpg.add_file_extension(".cir")
 
-
             with self.add_static_attr():
-                dpg.add_button(label="Open File Dialog", callback=lambda: dpg.show_item(f"{self.node_id}_file_dialog_id"))               
-                self.file_path_widget_id = dpg.add_text(source=f"{self.node_id}_file_path_string")
+                dpg.add_button(
+                    label="Open File Dialog",
+                    callback=lambda: dpg.show_item(f"{self.node_id}_file_dialog_id"),
+                )
+                self.file_path_widget_id = dpg.add_text(
+                    source=f"{self.node_id}_file_path_string"
+                )
 
         return super().setup(build, parent)
 
 
 class NetlistParserNode(Node):
-    def __init__(self, label, position=(100, 100)): 
+    def __init__(self, label, position=(100, 100)):
         self.row_sources = []
+        self.table_rows = {}
 
         super().__init__(label, position)
 
     def setup(self, parent):
         def build():
             with dpg.value_registry():
-                dpg.add_string_value(default_value="Circuit is not flattend yet!", tag=self.uuid("circuit_parser"))
+                dpg.add_string_value(
+                    default_value="Circuit is not flattend yet!",
+                    tag=self.uuid("circuit_parser"),
+                )
                 dpg.add_string_value(default_value="_", tag=self.uuid("separator"))
-                dpg.add_string_value(default_value="beta_with_r_be", tag=self.uuid("bipolar_model"))
-                dpg.add_string_value(default_value="BSIM", tag=self.uuid("mosfet_model"))
+                dpg.add_string_value(
+                    default_value="beta_with_r_be", tag=self.uuid("bipolar_model")
+                )
+                dpg.add_string_value(
+                    default_value="BSIM", tag=self.uuid("mosfet_model")
+                )
 
             with self.add_input_attr() as input_pin:
-                self.file_path_widget_id = dpg.add_text(default_value="Connect ImportNode here! [filepath]", tag=self.uuid("file_path_pin"))
+                self.file_path_widget_id = dpg.add_text(
+                    default_value="Connect ImportNode here! [filepath]",
+                    tag=self.uuid("file_path_pin"),
+                )
             self.input_pins[self.uuid("file_path_pin")] = input_pin
 
             with self.add_static_attr():
                 with dpg.group(horizontal=True):
                     dpg.add_text("Seperator Symbol")
-                    dpg.add_combo(items=("_", ",", ".", ";"), width=50, source=self.uuid("separator"))
+                    dpg.add_combo(
+                        items=("_", ",", ".", ";"),
+                        width=50,
+                        source=self.uuid("separator"),
+                    )
 
                 with dpg.group(horizontal=True):
                     dpg.add_text("Default Bioplar model")
-                    dpg.add_combo(items=BIPOLAR_MODELS, width=200, source=self.uuid("bipolar_model"))
-
+                    dpg.add_combo(
+                        items=BIPOLAR_MODELS,
+                        width=200,
+                        source=self.uuid("bipolar_model"),
+                    )
 
                 with dpg.group(horizontal=True):
                     dpg.add_text("Default Mosfet Model")
-                    dpg.add_combo(items=MOSFET_MODELS, width=200, source=self.uuid("mosfet_model"))
+                    dpg.add_combo(
+                        items=MOSFET_MODELS, width=200, source=self.uuid("mosfet_model")
+                    )
 
                 # create table to edit all subcircuits
-                dpg.add_text("Select the default small signal models for the subcircuits")
-                with dpg.table(header_row=True, policy=dpg.mvTable_SizingFixedFit, resizable=True, no_host_extendX=True,
-                   borders_innerV=True, borders_outerV=True, borders_outerH=True, tag=self.uuid("subcircuit_table")):
+                dpg.add_text(
+                    "Select the default small signal models for the subcircuits"
+                )
 
+                # add a filter text-box above the table
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Filter by subcircuit name:")
+                    dpg.add_input_text(
+                        width=200,
+                        hint="type to filter...",
+                        callback=self.filter_table,
+                        tag=self.uuid("subckt_filter"),
+                    )
+                with dpg.table(
+                    header_row=True,
+                    policy=dpg.mvTable_SizingFixedFit,
+                    resizable=True,
+                    no_host_extendX=True,
+                    borders_innerV=True,
+                    borders_outerV=True,
+                    borders_outerH=True,
+                    tag=self.uuid("subcircuit_table"),
+                ):
                     # create the header of the table
                     dpg.add_table_column(label="name")
                     dpg.add_table_column(label="bpiolar_model")
                     dpg.add_table_column(label="mosfet_model")
-
 
                 dpg.add_text("When nothing is selected the default value will be used!")
 
@@ -217,22 +279,45 @@ class NetlistParserNode(Node):
         # populate the subcircuit table
         def add_cubcircuit_row(subct_name, bipolar_model, mosfet_model):
             with dpg.value_registry():
-                bipolar_source_id = dpg.add_string_value(default_value="", tag=self.uuid(f"{subct_name}_bipolar_model"))
+                bipolar_source_id = dpg.add_string_value(
+                    default_value="", tag=self.uuid(f"{subct_name}_bipolar_model")
+                )
                 self.row_sources.append(bipolar_source_id)
-                mosfet_source_id = dpg.add_string_value(default_value="", tag=self.uuid(f"{subct_name}_mosfet_model"))
+                mosfet_source_id = dpg.add_string_value(
+                    default_value="", tag=self.uuid(f"{subct_name}_mosfet_model")
+                )
                 self.row_sources.append(mosfet_source_id)
 
             row = dpg.add_table_row(parent=self.uuid("subcircuit_table"))
+            self.table_rows[subct_name] = row
+
             dpg.add_text(subct_name, parent=row)
-            dpg.add_combo(items=BIPOLAR_MODELS, source=self.uuid(f"{subct_name}_bipolar_model"), parent=row)
-            dpg.add_combo(items=MOSFET_MODELS, source=self.uuid(f"{subct_name}_mosfet_model"), parent=row)
+            dpg.add_combo(
+                items=BIPOLAR_MODELS,
+                source=self.uuid(f"{subct_name}_bipolar_model"),
+                parent=row,
+            )
+            dpg.add_combo(
+                items=MOSFET_MODELS,
+                source=self.uuid(f"{subct_name}_mosfet_model"),
+                parent=row,
+            )
 
         subct_list = self.circuit.get_subcircuits()
         self.delete_table()
         for subct_name, subct_obj in subct_list.items():
-            add_cubcircuit_row(subct_name, subct_obj.bipolar_model, subct_obj.mosfet_model)
+            add_cubcircuit_row(
+                subct_name, subct_obj.bipolar_model, subct_obj.mosfet_model
+            )
 
         super().onlink_callback()
+
+    def filter_table(self, sender, app_data):
+        filter_text = app_data.lower()
+
+        for subct_name, row_id in self.table_rows.items():
+            visible = filter_text in subct_name.lower()
+            dpg.configure_item(row_id, show=visible)
 
     def delete_table(self):
         dpg.delete_item(self.uuid("subcircuit_table"), children_only=True, slot=1)
@@ -241,11 +326,13 @@ class NetlistParserNode(Node):
         for source in self.row_sources:
             dpg.delete_item(source)
 
+        self.row_sources.clear()
+        self.table_rows.clear()
+
     def delink_callback(self):
         self.delete_table()
 
         super().delink_callback()
-
 
     def update(self):
         # apply all options to the circuit
@@ -275,6 +362,9 @@ class NetlistParserNode(Node):
         flattend_circuit = self.circuit.copy()
         flattend_circuit.flatten()
 
+        # delte all output pins that already exist
+        self.delete_output_pins()
+
         # create a output pin for the flattend circuit
         with self.add_output_attr() as output_pin:
             dpg.add_text("Flattend Circuit", tag=self.uuid("flattend_circuit"))
@@ -284,7 +374,7 @@ class NetlistParserNode(Node):
         flattend_circuit.to_ai_string()
 
         # apply it to UI
-        dpg.set_value(f"{self.node_id}_circuit_parser", "Circuit with flattend Subcircuits")
+        dpg.set_value(self.uuid("circuit_parser"), "Circuit with flattend Subcircuits")
 
         super().update()
 
@@ -292,6 +382,7 @@ class NetlistParserNode(Node):
 class FlattenNode(Node):
     def __init__(self, label, position=(100, 100)):
         self.row_sources = []
+        self.table_rows = {}
 
         super().__init__(label, position)
 
@@ -304,15 +395,23 @@ class FlattenNode(Node):
     def setup(self, parent):
         def build():
             with dpg.value_registry():
-                dpg.add_string_value(default_value="Circuit is not flattend yet!", tag=self.uuid("circuit_out"))
-                dpg.add_string_value(default_value="No .out file currently selected!", tag=self.uuid("out_file_path"))
+                dpg.add_string_value(
+                    default_value="Circuit is not flattend yet!",
+                    tag=self.uuid("flattend_circuit_out"),
+                )
+                dpg.add_string_value(
+                    default_value="No .out file currently selected!",
+                    tag=self.uuid("out_file_path"),
+                )
 
             with self.add_input_attr() as input_pin:
-                dpg.add_text(default_value="Connect Circuit here! [circuit]", tag=self.uuid("file_path_pin"))
+                dpg.add_text(
+                    default_value="Connect Circuit here! [circuit]",
+                    tag=self.uuid("file_path_pin"),
+                )
             self.input_pins[self.uuid("file_path_pin")] = input_pin
 
             with self.add_static_attr():
-
                 with dpg.file_dialog(
                     directory_selector=False,
                     show=False,
@@ -323,26 +422,41 @@ class FlattenNode(Node):
                 ):
                     dpg.add_file_extension(".out")
 
-                dpg.add_button(label="Select .out File", callback=lambda: dpg.show_item(self.uuid("file_dialog_id")))
+                dpg.add_button(
+                    label="Select .out File",
+                    callback=lambda: dpg.show_item(self.uuid("file_dialog_id")),
+                )
                 dpg.add_text(source=self.uuid("out_file_path"))
 
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Filter by element name:")
+                    dpg.add_input_text(
+                        width=200,
+                        hint="type to filter...",
+                        callback=self.filter_table,
+                        tag=self.uuid("subckt_filter"),
+                    )
                 # create table to edit all subcircuits
                 dpg.add_text("Select small signal models for every element")
-                with dpg.table(header_row=True, policy=dpg.mvTable_SizingFixedFit, resizable=True, no_host_extendX=True,
-                   borders_innerV=True, borders_outerV=True, borders_outerH=True, tag=self.uuid("element_table")):
-
+                with dpg.table(
+                    header_row=True,
+                    policy=dpg.mvTable_SizingFixedFit,
+                    resizable=True,
+                    no_host_extendX=True,
+                    borders_innerV=True,
+                    borders_outerV=True,
+                    borders_outerH=True,
+                    tag=self.uuid("element_table"),
+                ):
                     # create the header of the table
                     dpg.add_table_column(label="name")
                     dpg.add_table_column(label="bpiolar_model")
                     dpg.add_table_column(label="mosfet_model")
 
-
                 dpg.add_text("When nothing is selected the default value will be used!")
 
                 # temperary update button
                 dpg.add_button(label="Flatten Elements", callback=self.update)
-
-
 
         return super().setup(build, parent)
 
@@ -354,16 +468,32 @@ class FlattenNode(Node):
         # populate the subcircuit table
         def add_element_row(name, bipolar_model, mosfet_model):
             with dpg.value_registry():
-                bipolar_source_id = dpg.add_string_value(default_value=bipolar_model, tag=self.uuid(f"{name}_bipolar_model"))
+                bipolar_source_id = dpg.add_string_value(
+                    default_value=bipolar_model, tag=self.uuid(f"{name}_bipolar_model")
+                )
                 self.row_sources.append(bipolar_source_id)
-                mosfet_source_id = dpg.add_string_value(default_value=mosfet_model, tag=self.uuid(f"{name}_mosfet_model"))
+                mosfet_source_id = dpg.add_string_value(
+                    default_value=mosfet_model, tag=self.uuid(f"{name}_mosfet_model")
+                )
 
                 self.row_sources.append(mosfet_source_id)
 
             row = dpg.add_table_row(parent=self.uuid("element_table"))
+            self.table_rows[name] = row
+
             dpg.add_text(name, parent=row)
-            dpg.add_combo(items=BIPOLAR_MODELS, source=self.uuid(f"{name}_bipolar_model"), parent=row, width=-1)
-            dpg.add_combo(items=MOSFET_MODELS, source=self.uuid(f"{name}_mosfet_model"), parent=row, width=-1)
+            dpg.add_combo(
+                items=BIPOLAR_MODELS,
+                source=self.uuid(f"{name}_bipolar_model"),
+                parent=row,
+                width=-1,
+            )
+            dpg.add_combo(
+                items=MOSFET_MODELS,
+                source=self.uuid(f"{name}_mosfet_model"),
+                parent=row,
+                width=-1,
+            )
 
         # populate the table with all elements
         self.element_list = self.circuit.get_elements()
@@ -371,37 +501,53 @@ class FlattenNode(Node):
         self.delete_table()
         for item in self.element_list:
             if item.type == "Q":
-                add_element_row(item.name, item.params["bipolar_model"], item.params["mosfet_model"]), 
+                (
+                    add_element_row(
+                        item.name,
+                        item.params["bipolar_model"],
+                        item.params["mosfet_model"],
+                    ),
+                )
 
         super().onlink_callback()
 
+    def filter_table(self, sender, app_data):
+        filter_text = app_data.lower()
+
+        for subct_name, row_id in self.table_rows.items():
+            visible = filter_text in subct_name.lower()
+            dpg.configure_item(row_id, show=visible)
+
     def delete_table(self):
-        dpg.delete_item(self.uuid("element_table"), children_only=True, slot=1)
+        dpg.delete_item(self.uuid("subcircuit_table"), children_only=True, slot=1)
 
         # delete the used sources of each cell
         for source in self.row_sources:
             dpg.delete_item(source)
+
+        self.row_sources.clear()
+        self.table_rows.clear()
 
     def delink_callback(self):
         self.delete_table()
         super().delink_callback()
 
     def update(self):
-
         # apply the changed small signal models to all elements
         for element in self.element_list:
             bipolar_model = dpg.get_value(self.uuid(f"{element.name}_bipolar_model"))
             mosfet_model = dpg.get_value(self.uuid(f"{element.name}_mosfet_model"))
             element.params["bipolar_model"] = bipolar_model
-            element.params["mosfet_model"] = mosfet_model 
-
+            element.params["mosfet_model"] = mosfet_model
 
         flattend_circuit = self.circuit.copy()
         flattend_circuit.flatten(True, self.out_file_path)
 
+        self.delete_output_pins()
+
         # output pin
         with self.add_output_attr() as output_pin:
-            self.circuit_out_pin = dpg.add_text(source=self.uuid("flattend_circuit_out"))
+            dpg.add_text(source=self.uuid("flattend_circuit_out"))
         self.output_pins[self.uuid("flattend_circuit_out")] = output_pin
 
         self.add_output_pin_value(self.uuid("flattend_circuit_out"), flattend_circuit)
@@ -409,21 +555,24 @@ class FlattenNode(Node):
         flattend_circuit.to_ai_string()
 
         # apply it to UI
-        dpg.set_value(self.uuid("circuit_out"), "Circuit with flattend Models")
+        dpg.set_value(self.uuid("flattend_circuit_out"), "Circuit with flattend Models")
 
         super().update()
+
 
 class ModifiedNodalAnalysis(Node):
     def setup(self, parent):
         def build():
-
             with dpg.value_registry():
                 dpg.add_int_value(default_value=2, tag=self.uuid("start_log_int"))
                 dpg.add_int_value(default_value=8, tag=self.uuid("end_log_int"))
                 dpg.add_int_value(default_value=10000, tag=self.uuid("points_in_log"))
 
             with self.add_input_attr() as input_pin:
-                dpg.add_text(default_value="Connect fully flattend Circuit here! [circuit]", tag=self.uuid("circuit_input_pin"))
+                dpg.add_text(
+                    default_value="Connect fully flattend Circuit here! [circuit]",
+                    tag=self.uuid("circuit_input_pin"),
+                )
             self.input_pins[self.uuid("circuit_input_pin")] = input_pin
 
             with self.add_static_attr():
@@ -431,33 +580,37 @@ class ModifiedNodalAnalysis(Node):
 
                 with dpg.group(horizontal=True):
                     dpg.add_text("Start Frequenzy in 10^x")
-                    dpg.add_input_int(label="input int", source=self.uuid("start_log_int"))
+                    dpg.add_input_int(
+                        label="input int", source=self.uuid("start_log_int")
+                    )
 
                 with dpg.group(horizontal=True):
                     dpg.add_text("End Frequenzy in 10^x")
-                    dpg.add_input_int(label="input int", source=self.uuid("end_log_int"))
+                    dpg.add_input_int(
+                        label="input int", source=self.uuid("end_log_int")
+                    )
 
                 with dpg.group(horizontal=True):
                     dpg.add_text("Number of Points between start and end")
-                    dpg.add_input_int(label="input int", source=self.uuid("points_in_log"))
+                    dpg.add_input_int(
+                        label="input int", source=self.uuid("points_in_log")
+                    )
 
                 dpg.add_button(label="Solve with MNA", callback=self.update)
 
         return super().setup(build, parent)
 
     def onlink_callback(self):
-
         self.circuit = self.get_input_pin_value(self.uuid("circuit_input_pin"))
-
 
         dpg.set_value(self.uuid("circuit_input_pin"), "Circuit connected!")
         super().onlink_callback()
 
     def update(self):
-        from Modified_Node_Analysis import ModifiedNodalAnalysis
-
-        import sympy as sp
         import numpy as np
+        import sympy as sp
+
+        from Modified_Node_Analysis import ModifiedNodalAnalysis
 
         mna = ModifiedNodalAnalysis(self.circuit)
         mna.buildEquationsSystem()
@@ -466,18 +619,18 @@ class ModifiedNodalAnalysis(Node):
         num_results = mna.solveNumerical(mna.value_dict)
 
         # --- 1. Symbolische Übertragungsfunktion definieren ---
-        s = sp.symbols('s')
+        s = sp.symbols("s")
         # Beispiel: Tiefpass 1. Ordnung: H(s) = 1 / (s + 1)
-        H = num_results[sp.symbols('V_2')] / num_results[sp.symbols('V_1')]
+        H = num_results[sp.symbols("V_2")] / num_results[sp.symbols("V_1")]
 
         # --- 2. SymPy → numerische Funktion umwandeln ---
-        H_lambdified = sp.lambdify(s, H, 'numpy')
+        H_lambdified = sp.lambdify(s, H, "numpy")
         # --- 3. Frequenzachse definieren ---
-        w = np.logspace(-2, 8, 10000)         # Kreisfrequenz
+        w = np.logspace(-2, 8, 10000)  # Kreisfrequenz
         jw = 1j * w
         H_eval = H_lambdified(jw)
 
-        # create solved arrays for later plotting 
+        # create solved arrays for later plotting
         freq_log = np.log10(w)
         magnitude_db = 20 * np.log10(np.abs(H_eval))
         phase_deg = np.angle(H_eval, deg=True)
@@ -485,6 +638,8 @@ class ModifiedNodalAnalysis(Node):
         print(freq_log)
         print(magnitude_db)
         print(phase_deg)
+
+        self.delete_output_pins()
 
         # create output pins for those arrays
 
@@ -508,42 +663,52 @@ class ModifiedNodalAnalysis(Node):
 
         super().update()
 
+
 class BodePlot(Node):
     def setup(self, parent):
         def build():
-
             # create pins for all nessary inputs
             with self.add_input_attr() as input_pin:
-                dpg.add_text(default_value="Connect freq_log here!", tag=self.uuid("freq_log_pin"))
+                dpg.add_text(
+                    default_value="Connect freq_log here!",
+                    tag=self.uuid("freq_log_pin"),
+                )
             self.input_pins[self.uuid("freq_log_pin")] = input_pin
 
             with self.add_input_attr() as magn_pin:
-                dpg.add_text(default_value="Connect magnitude here!", tag=self.uuid("magnitude_pin"))
+                dpg.add_text(
+                    default_value="Connect magnitude here!",
+                    tag=self.uuid("magnitude_pin"),
+                )
             self.input_pins[self.uuid("magnitude_pin")] = magn_pin
 
             with self.add_input_attr() as phase_pin:
-                dpg.add_text(default_value="Connect phase here!", tag=self.uuid("phase_pin"))
+                dpg.add_text(
+                    default_value="Connect phase here!", tag=self.uuid("phase_pin")
+                )
             self.input_pins[self.uuid("phase_pin")] = phase_pin
 
-
-
             with dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Static):
-
-                with dpg.subplots(2, 1, label="", link_all_x=True, height=600) as subplot_id:
-
+                with dpg.subplots(
+                    2, 1, label="", link_all_x=True, height=600
+                ) as subplot_id:
                     # -------- Magnitude Plot --------
                     with dpg.plot(label="Betrag (dB)"):
                         dpg.add_plot_legend()
                         dpg.plot_axis(dpg.mvXAxis, label="log10(ω) [rad/s]")
                         with dpg.plot_axis(dpg.mvYAxis, label="Betrag [dB]"):
-                            dpg.add_line_series([], [],label="|H(jω)|", tag=self.uuid("mag_series"))
+                            dpg.add_line_series(
+                                [], [], label="|H(jω)|", tag=self.uuid("mag_series")
+                            )
 
                     # -------- Phase Plot --------
                     with dpg.plot(label="Phase (°)"):
                         dpg.add_plot_legend()
                         dpg.plot_axis(dpg.mvXAxis, label="log10(ω) [rad/s]")
                         with dpg.plot_axis(dpg.mvYAxis, label="Phase [°]"):
-                            dpg.add_line_series([], [], label="∠H(jω)", tag=self.uuid("phase_series"))
+                            dpg.add_line_series(
+                                [], [], label="∠H(jω)", tag=self.uuid("phase_series")
+                            )
 
         return super().setup(build, parent)
 
@@ -558,20 +723,17 @@ class BodePlot(Node):
         # update the plots with the new values
         if freq_log is not None and magnitude is not None:
             dpg.set_value(
-                self.uuid("mag_series"),
-                [freq_log.tolist(), magnitude.tolist()]
+                self.uuid("mag_series"), [freq_log.tolist(), magnitude.tolist()]
             )
 
         if freq_log is not None and phase is not None:
             dpg.set_value(
-                self.uuid("phase_series"),
-                [freq_log.tolist(), phase.tolist()]
+                self.uuid("phase_series"), [freq_log.tolist(), phase.tolist()]
             )
 
         super().onlink_callback()
 
     def update(self):
-
         super().update()
 
 
