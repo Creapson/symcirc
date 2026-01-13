@@ -142,6 +142,25 @@ class NodeEditor:
                             ),
                         )
 
+                with dpg.menu(label="Settings"):
+                    dpg.add_menu_item(
+                        label="Style Editor", callback=lambda: dpg.show_style_editor()
+                    )
+                    dpg.add_menu_item(
+                        label="Font Manager", callback=lambda: dpg.show_font_manager()
+                    )
+
+                with dpg.menu(label="Debug"):
+                    dpg.add_menu_item(label="Debug", callback=lambda: dpg.show_debug())
+
+                    dpg.add_menu_item(
+                        label="Item Registry", callback=lambda: dpg.show_item_registry()
+                    )
+
+                    dpg.add_menu_item(
+                        label="Metrics", callback=lambda: dpg.show_metrics()
+                    )
+
             # ---------- NODE EDITOR ----------
             with dpg.node_editor(
                 tag="node_editor",
