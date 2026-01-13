@@ -561,6 +561,11 @@ class FlattenNode(Node):
 
 
 class ModifiedNodalAnalysis(Node):
+    def __init__(self, label, position=(100, 100)):
+        self.nma = None
+
+        super().__init__(label, position)
+
     def setup(self, parent):
         def build():
             with dpg.value_registry():
@@ -576,6 +581,15 @@ class ModifiedNodalAnalysis(Node):
             self.input_pins[self.uuid("circuit_input_pin")] = input_pin
 
             with self.add_static_attr():
+                # add selection for the transfer-function
+                with dpg.group(horizontal=True):
+                    dpg.add_text("From Node:")
+                    dpg.add_combo(tag=self.uuid("from_node"))
+
+                with dpg.group(horizontal=True):
+                    dpg.add_text("To Node:")
+                    dpg.add_combo(tag=self.uuid("to_node"))
+
                 dpg.add_text("Configure the log-Space")
 
                 with dpg.group(horizontal=True):
@@ -603,6 +617,15 @@ class ModifiedNodalAnalysis(Node):
     def onlink_callback(self):
         self.circuit = self.get_input_pin_value(self.uuid("circuit_input_pin"))
 
+        from Modified_Node_Analysis import ModifiedNodalAnalysis
+
+        self.mna = ModifiedNodalAnalysis(self.circuit)
+        # populate the from and to_node combo boxes
+        # with the possible nodes
+        nodes = list(self.mna.node_map.keys())
+        dpg.configure_item(self.uuid("from_node"), items=nodes)
+        dpg.configure_item(self.uuid("to_node"), items=nodes)
+
         dpg.set_value(self.uuid("circuit_input_pin"), "Circuit connected!")
         super().onlink_callback()
 
@@ -610,18 +633,20 @@ class ModifiedNodalAnalysis(Node):
         import numpy as np
         import sympy as sp
 
-        from Modified_Node_Analysis import ModifiedNodalAnalysis
+        self.mna.buildEquationsSystem()
+        results = self.mna.solve()
+        estimation = self.mna.estimateTerms(self.mna.A)
+        num_results = self.mna.solveNumerical(self.mna.value_dict)
 
-        mna = ModifiedNodalAnalysis(self.circuit)
-        mna.buildEquationsSystem()
-        results = mna.solve()
-        estimation = mna.estimateTerms(mna.A)
-        num_results = mna.solveNumerical(mna.value_dict)
-
-        # --- 1. Symbolische Übertragungsfunktion definieren ---
         s = sp.symbols("s")
-        # Beispiel: Tiefpass 1. Ordnung: H(s) = 1 / (s + 1)
-        H = num_results[sp.symbols("V_2")] / num_results[sp.symbols("V_1")]
+        # use the selected nodes
+        from_node = dpg.get_value(self.uuid("from_node"))
+        to_node = dpg.get_value(self.uuid("to_node"))
+
+        H = (
+            num_results[sp.symbols(f"V_{to_node}")]
+            / num_results[sp.symbols(f"V_{from_node}")]
+        )
 
         # --- 2. SymPy → numerische Funktion umwandeln ---
         H_lambdified = sp.lambdify(s, H, "numpy")

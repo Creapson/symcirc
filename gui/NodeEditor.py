@@ -1,6 +1,12 @@
 import dearpygui.dearpygui as dpg
 
-from gui.Node import ImportCircuit, NetlistParserNode, BodePlot, FlattenNode, ModifiedNodalAnalysis
+from gui.Node import (
+    BodePlot,
+    FlattenNode,
+    ImportCircuit,
+    ModifiedNodalAnalysis,
+    NetlistParserNode,
+)
 
 
 class NodeEditor:
@@ -41,8 +47,6 @@ class NodeEditor:
                 to_node.connections = {}
                 print(f"Link rejected: {e}")
                 return
-
-
 
             link_id = dpg.add_node_link(from_pin, to_pin, parent=sender)
             # store link metadata
@@ -91,9 +95,8 @@ class NodeEditor:
                 to_node.onlink_callback()
 
     def render(self):
-        
         with dpg.window(tag="Node Editor"):
-           # ---------- MENU BAR ----------
+            # ---------- MENU BAR ----------
             with dpg.menu_bar():
                 with dpg.menu(label="File"):
                     dpg.add_menu_item(label="New", enabled=False)
@@ -106,17 +109,46 @@ class NodeEditor:
                     dpg.add_menu_item(label="Redo", enabled=False)
                     # sub menu (dropdown with all node types
                     with dpg.menu(label="Add Node"):
-                        dpg.add_menu_item(label="ImportCircuit", callback=lambda: self.add_node(ImportCircuit, "Circuit import Node", (000, 100)))
-                        dpg.add_menu_item(label="NetlistParserNode", callback=lambda: self.add_node(NetlistParserNode, "Netlist Parser Node", (600, 100)))
-                        dpg.add_menu_item(label="ModifiedNodalAnalysis", callback=lambda: self.add_node(ModifiedNodalAnalysis, "ModifiedNodalAnalysis Node", (000, 300)))
-                        dpg.add_menu_item(label="BodeBlot", callback=lambda: self.add_node(BodePlot, "BodePlot Node", (300, 300)))
-                        dpg.add_menu_item(label="Flatten", callback=lambda: self.add_node(FlattenNode, "Flatten Node", (600, 300)))
+                        dpg.add_menu_item(
+                            label="ImportCircuit",
+                            callback=lambda: self.add_node(
+                                ImportCircuit, "Circuit import Node", (000, 100)
+                            ),
+                        )
+                        dpg.add_menu_item(
+                            label="NetlistParserNode",
+                            callback=lambda: self.add_node(
+                                NetlistParserNode, "Netlist Parser Node", (600, 100)
+                            ),
+                        )
+                        dpg.add_menu_item(
+                            label="ModifiedNodalAnalysis",
+                            callback=lambda: self.add_node(
+                                ModifiedNodalAnalysis,
+                                "ModifiedNodalAnalysis Node",
+                                (000, 300),
+                            ),
+                        )
+                        dpg.add_menu_item(
+                            label="BodeBlot",
+                            callback=lambda: self.add_node(
+                                BodePlot, "BodePlot Node", (300, 300)
+                            ),
+                        )
+                        dpg.add_menu_item(
+                            label="Flatten",
+                            callback=lambda: self.add_node(
+                                FlattenNode, "Flatten Node", (600, 300)
+                            ),
+                        )
 
             # ---------- NODE EDITOR ----------
             with dpg.node_editor(
                 tag="node_editor",
                 callback=self.onlink_callback,
                 delink_callback=self.delink_callback,
+                minimap=True,
+                minimap_location=dpg.mvNodeMiniMap_Location_BottomRight,
             ):
                 for node in self.nodes:
                     node_id = node.setup()
