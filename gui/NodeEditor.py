@@ -6,6 +6,7 @@ from gui.Node import (
     ImportCircuit,
     ModifiedNodalAnalysis,
     NetlistParserNode,
+    NumericSolver,
 )
 
 
@@ -139,6 +140,13 @@ class NodeEditor:
                             label="Flatten",
                             callback=lambda: self.add_node(
                                 FlattenNode, "Flatten Node", (600, 300)
+                            ),
+                        )
+
+                        dpg.add_menu_item(
+                            label="NumericSolver",
+                            callback=lambda: self.add_node(
+                                NumericSolver, "NumericSolver", (600, 300)
                             ),
                         )
 
