@@ -1,21 +1,24 @@
 import dearpygui.dearpygui as dpg
 
-from gui.Node import (
-    BodePlot,
-    FlattenNode,
-    ImportCircuit,
-    ModifiedNodalAnalysis,
-    NetlistParserNode,
-    NumericSolver,
-)
+from gui.nodes.BodePlot import BodePlot
+from gui.nodes.Flatten import FlattenNode
+from gui.nodes.ImportCircuit import ImportCircuit
+from gui.nodes.ModifiedNodalAnalysis import ModifiedNodalAnalysis
+from gui.nodes.NetlistParserNode import NetlistParserNode
+from gui.nodes.NumericSolver import NumericSolver
+from gui.windows.Window import Window
 
 
-class NodeEditor:
+class NodeEditor(Window):
     def __init__(self):
+        self.title = "Node Editor"
+
         self.node_dic = {}
         self.nodes = []
-        self.node_editor_tag = "node_editor"
+        self.node_editor_tag = None
         self.links = {}
+
+        super().__init__(title=self.title)
 
     def add_node(self, node_constructor, label, pos=(0, 100)):
         node = node_constructor(label, pos)
@@ -23,7 +26,7 @@ class NodeEditor:
         self.nodes.append(node)
 
         # CREATE DearPyGui items immediately
-        node_id = node.setup(parent=self.node_editor_tag)
+        node_id = node.setup(node_editor_tag=self.node_editor_tag)
         self.node_dic[node_id] = node
 
         # debug
@@ -95,8 +98,8 @@ class NodeEditor:
                 to_node = self.node_dic[to_node_id]
                 to_node.onlink_callback()
 
-    def render(self):
-        with dpg.window(tag="Node Editor"):
+    def setup(self):
+        def build():
             # ---------- MENU BAR ----------
             with dpg.menu_bar():
                 with dpg.menu(label="File"):
@@ -170,8 +173,10 @@ class NodeEditor:
                     )
 
             # ---------- NODE EDITOR ----------
+            self.node_editor_tag = self.uuid("node_editor")
+
             with dpg.node_editor(
-                tag="node_editor",
+                tag=self.node_editor_tag,
                 callback=self.onlink_callback,
                 delink_callback=self.delink_callback,
                 minimap=True,
@@ -182,19 +187,4 @@ class NodeEditor:
                     self.node_dic[node_id] = node
                 print(self.node_dic)
 
-    def start(self):
-        dpg.create_context()
-
-        # Viewport
-        dpg.create_viewport(title="OOP Node Editor Example", width=1200, height=800)
-        editor = NodeEditor()
-        # Add nodes
-        editor.render()
-        dpg.setup_dearpygui()
-
-        dpg.show_viewport()
-        dpg.set_primary_window("Node Editor", True)
-
-        # Render Loop
-        dpg.start_dearpygui()
-        dpg.destroy_context()
+        return super().setup(build, show_menu_bar=True)

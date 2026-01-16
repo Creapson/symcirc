@@ -1,4 +1,4 @@
-from gui.NodeEditor import NodeEditor
+from Application import Application
 
-nodeEditor = NodeEditor()
-nodeEditor.start()
+app = Application()
+app.start()
