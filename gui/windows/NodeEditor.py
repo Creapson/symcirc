@@ -1,5 +1,6 @@
 import dearpygui.dearpygui as dpg
 
+from gui.nodes.Approximator import ApproximatorNode
 from gui.nodes.BodePlot import BodePlot
 from gui.nodes.Flatten import FlattenNode
 from gui.nodes.ImportCircuit import ImportCircuit
@@ -150,6 +151,13 @@ class NodeEditor(Window):
                             label="NumericSolver",
                             callback=lambda: self.add_node(
                                 NumericSolver, "NumericSolver", (600, 300)
+                            ),
+                        )
+
+                        dpg.add_menu_item(
+                            label="Approximator",
+                            callback=lambda: self.add_node(
+                                ApproximatorNode, "Approimate", (600, 300)
                             ),
                         )
 
