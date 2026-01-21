@@ -35,7 +35,9 @@ class Circuit:
         new.models = {name: model.copy() for name, model in self.models.items()}
 
         # Copy subcircuits recursively
-        new.subcircuits = {name: sub_ct.copy() for name, sub_ct in self.subcircuits.items()}
+        new.subcircuits = {
+            name: sub_ct.copy() for name, sub_ct in self.subcircuits.items()
+        }
 
         new.separator = self.separator
         return new
@@ -100,17 +102,17 @@ class Circuit:
         pass
 
     def flatten_subcircuit(
-        self, subcircuit_name, element_name, subct_element_connections
+        self, subcircuit_name, element_name, subct_element_connections, subcircuits={}
     ):
-
         if len(self.subcircuits) == 0:
             return
-        subct = self.subcircuits[subcircuit_name]
+        combined_subct_list = self.subcircuits | subcircuits
+
+        subct = combined_subct_list[subcircuit_name]
         subct_connections = subct.inner_connecting_nodes
 
         # If this node is in connection use the nodeID of the root circuit
         def new_node_IDs(nodeID):
-            
             new_IDs = []
             for node in nodeID:
                 if node == "0":
@@ -139,16 +141,17 @@ class Circuit:
             self.add_model(model)
         return subct_elements
 
-    def flatten(self, flatten_models=False, out_file_path=None):
+    def flatten(self, flatten_models=False, out_file_path=None, subcircuits={}):
         # Make sure all subcircuits are already flattend
         for name, subct in self.subcircuits.items():
-            subct.flatten()
+            subct.flatten(subcircuits=self.subcircuits)
 
         # parse the element params before creating
         # the small signal subcircuits
         if flatten_models:
             # add the missing element params from the .out file
             from NetlistParser import NetlistParser
+
             parser = NetlistParser()
             # the elements get changed by reference
             parser.parse_element_params(out_file_path, self.elements)
@@ -159,9 +162,13 @@ class Circuit:
                 element_connections = element.connections
                 subcircuit_name = element.params["ref_cir"]
                 subct_elements = self.flatten_subcircuit(
-                    subcircuit_name, element.name, element_connections
+                    subcircuit_name,
+                    element.name,
+                    element_connections,
+                    subcircuits,
                 )
-                new_elements += subct_elements
+                if subct_elements is not None:
+                    new_elements += subct_elements
                 continue
 
             # Create a subcircuit for each element where this is needed
@@ -176,10 +183,14 @@ class Circuit:
 
                 bipolar_model = element.params.get("bipolar_model", self.bipolar_model)
                 mosfet_model = element.params.get("mosfet_model", self.mosfet_model)
-                model_subct = model.get_generated_subcircuit(element.params, bipolar_model, mosfet_model)
+                model_subct = model.get_generated_subcircuit(
+                    element.params, bipolar_model, mosfet_model
+                )
 
                 self.add_subcircuit(subct_name, model_subct)
-                subct_elements = self.flatten_subcircuit(subct_name, element.name, element.connections)
+                subct_elements = self.flatten_subcircuit(
+                    subct_name, element.name, element.connections
+                )
                 new_elements += subct_elements
                 continue
 

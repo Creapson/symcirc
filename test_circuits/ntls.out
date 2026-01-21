@@ -1,0 +1,402 @@
+
+**** 08/26/125 13:35:59 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * Incremental Netlister - Release : 1.83.1.4
+
+
+ ****     CIRCUIT DESCRIPTION
+
+
+******************************************************************************
+
+
+
+* Netlist Time: Jun 26 15:40:42 1997
+* ViewList: UNIspice cmos.sch schematic gate.sch UNImacro extracted
+*           symbolic
+* StopList: UNIspice UNImacro
+
+*--------------------------------------------------------------------
+* Sub-Circuit Netlist:
+* Block  : Transconduttore
+* Library: bench_gyr
+* Last Time Saved: Jun 26 15:39:46 1997
+*--------------------------------------------------------------------
+.SUBCKT SUB0 IN N0 OUT N1
+VV5 NET15 0 3
+VI3 NET7 0 2.4
+II0 NET9 0 500u
+II1 NET11 0 500u
+II2 NET13 0 1m
+QQ3 NET15 NET7 NET21 0 C41 1
+QQ1 NET18 N0 NET11 0 C41 1
+QQ0 NET21 IN NET9 0 C41 1
+QQ4 NET15 NET7 NET18 0 C41 1
+QQ5 N1 NET18 NET13 0 C41 1
+QQ12 OUT NET21 NET13 0 C41 1
+RREE NET9 NET11 20
+RR10 N1 NET15 2.8K
+RR11 OUT NET15 2.8K
+.ENDS SUB0
+
+
+*--------------------------------------------------------------------
+* Sub-Circuit Netlist:
+* Block  : Phase_Shifter
+* Library: bench_gyr
+* Last Time Saved: Jun 26 15:39:47 1997
+*--------------------------------------------------------------------
+.SUBCKT SUB1 IN N0 OUT N1
+RR3 N1 OUT 2.5K
+* Cell : Transconduttore (bench_gyr)
+XI2  NET11 NET6 N1 OUT SUB0
+* Cell : Transconduttore (bench_gyr)
+XI1  OUT N1 NET11 NET6 SUB0
+CC1 N1 N0 1.778p
+CC1A OUT IN 1.778p
+CCL NET11 NET6 8.887p
+CC0 OUT N1 8p
+.ENDS SUB1
+
+
+*--------------------------------------------------------------------
+* Main Circuit Netlist:
+* Block  : Test_phs_shf
+* Library: bench_gyr
+* Last Time Saved: Jun 26 15:39:47 1997
+*--------------------------------------------------------------------
+VV1 NET7 0 5 AC 1 SIN 0 10m 102.6MEG 0 0
+RR7 0 IN 1
+RR3 0 OUT 1
+EE8 IN 0 NET7 0 1
+EE2 OUT 0 NET3 NET11 1
+* Cell : Phase_Shifter (bench_gyr)
+XI0  NET7 0 NET3 NET11 SUB1
+
+.ac DEC 101 10k 1.00G
+.tran 1.0e-9 100.0e-9 0 1.0e-9
+.OP 
+
+.probe
+
+*---------------------------------------------------------------
+* Spice Model : C41
+*---------------------------------------------------------------
+.model C41 
++ NPN
++ IS=2.27E-018 BF=1.00E+002 BR=1.00E+000 NF=1.00E+000
++ NR=1.00E+000 TF=6.00E-012 TR=1.00E-008 XTF=1.00E+001
++ VTF=1.50E+000 ITF=6.87E-003 PTF=3.75E+001 VAF=4.50E+001
++ VAR=3.00E+000 IKF=9.23E-003 IKR=1.16E-003 ISE=8.27E-017
++ NE=2.00E+000 ISC=4.47E-017 NC=1.50E+000 RE=1.34E+001
++ RB=2.00E+002 IRB=0.00E+000 RBM=3.49E+001 RC=2.22E+002
++ CJE=1.06E-014 VJE=1.05E+000 MJE=1.60E-001 CJC=1.03E-014
++ VJC=8.60E-001 MJC=3.40E-001 XCJC=1.80E-001 CJS=9.69E-015
++ VJS=8.20E-001 MJS=3.20E-001 EG=1.17E+000 XTB=1.70E+000
++ XTI=3.00E+000 KF=0.00E+000 AF=1.00E+000 FC=5.00E-001
+*
+
+**** 08/26/125 13:35:59 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * Incremental Netlister - Release : 1.83.1.4
+
+
+ ****     BJT MODEL PARAMETERS
+
+
+******************************************************************************
+
+
+
+
+               C41             
+               NPN             
+          IS    2.270000E-18 
+          EG    1.17         
+          BF  100            
+          NF    1            
+         VAF   45            
+         IKF    9.230000E-03 
+         ISE   82.700000E-18 
+          NE    2            
+          BR    1            
+          NR    1            
+         VAR    3            
+         IKR    1.160000E-03 
+         ISC   44.700000E-18 
+          NC    1.5          
+          RB  200            
+         RBM   34.9          
+          RE   13.4          
+          RC  222            
+         CJE   10.600000E-15 
+         VJE    1.05         
+         MJE     .16         
+         CJC   10.300000E-15 
+         VJC     .86         
+         MJC     .34         
+        XCJC     .18         
+         CJS    9.690000E-15 
+         VJS     .82         
+         MJS     .32         
+          TF    6.000000E-12 
+         XTF   10            
+         VTF    1.5          
+         ITF    6.870000E-03 
+         PTF   37.5          
+          TR   10.000000E-09 
+         XTB    1.7          
+
+
+**** 08/26/125 13:35:59 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * Incremental Netlister - Release : 1.83.1.4
+
+
+ ****     SMALL SIGNAL BIAS SOLUTION       TEMPERATURE =   27.000 DEG C
+
+
+******************************************************************************
+
+
+
+ NODE   VOLTAGE     NODE   VOLTAGE     NODE   VOLTAGE     NODE   VOLTAGE
+
+
+(   IN)    5.0000  (  OUT)-1.332E-15  ( NET3)    1.5999  ( NET7)    5.0000      
+
+(NET11)    1.5999  (XI0.NET6)    1.5999                  (XI0.NET11)    1.5999  
+
+(XI0.XI1.NET7)    2.4000              (XI0.XI1.NET9)     .7275                  
+
+(XI0.XI2.NET7)    2.4000              (XI0.XI2.NET9)     .7275                  
+
+(XI0.XI1.NET11)     .7275             (XI0.XI1.NET13)     .6559                 
+
+(XI0.XI1.NET15)    3.0000             (XI0.XI1.NET18)    1.5282                 
+
+(XI0.XI1.NET21)    1.5282             (XI0.XI2.NET11)     .7275                 
+
+(XI0.XI2.NET13)     .6559             (XI0.XI2.NET15)    3.0000                 
+
+(XI0.XI2.NET18)    1.5282             (XI0.XI2.NET21)    1.5282             
+
+
+
+
+    VOLTAGE SOURCE CURRENTS
+    NAME         CURRENT
+
+    VV1          0.000E+00
+    XI0.XI2.VV5  -1.985E-03
+    XI0.XI2.VI3  -1.464E-05
+    XI0.XI1.VV5  -1.985E-03
+    XI0.XI1.VI3  -1.464E-05
+
+    TOTAL POWER DISSIPATION   1.20E-02  WATTS
+
+
+**** 08/26/125 13:35:59 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * Incremental Netlister - Release : 1.83.1.4
+
+
+ ****     OPERATING POINT INFORMATION      TEMPERATURE =   27.000 DEG C
+
+
+******************************************************************************
+
+
+
+
+
+
+**** VOLTAGE-CONTROLLED VOLTAGE SOURCES
+
+
+NAME         EE8         EE2       
+V-SOURCE     5.000E+00  -1.332E-15
+I-SOURCE    -5.000E+00   1.332E-15
+
+
+**** BIPOLAR JUNCTION TRANSISTORS
+
+
+NAME         XI0.XI2.QQ3             XI0.XI2.QQ1           
+MODEL        C41                     C41                   
+IB           7.32E-06                7.48E-06             
+IC           4.93E-04                4.93E-04             
+VBE          8.72E-01                8.72E-01             
+VBC         -6.00E-01                7.17E-02             
+VCE          1.47E+00                8.01E-01             
+BETADC       6.73E+01                6.58E+01             
+GM           1.76E-02                1.75E-02             
+RPI          3.53E+03                3.46E+03             
+RX           1.46E+02                1.44E+02             
+RO           6.60E+04                6.47E+04             
+CBE          1.42E-13                1.51E-13             
+CBC          1.59E-15                2.01E-15             
+CJS          5.98E-15                7.03E-15             
+BETAAC       6.21E+01                6.06E+01             
+CBX          7.24E-15                9.15E-15             
+FT           1.86E+10                1.72E+10             
+
+
+
+NAME         XI0.XI2.QQ0             XI0.XI2.QQ4           
+MODEL        C41                     C41                   
+IB           7.48E-06                7.32E-06             
+IC           4.93E-04                4.93E-04             
+VBE          8.72E-01                8.72E-01             
+VBC          7.17E-02               -6.00E-01             
+VCE          8.01E-01                1.47E+00             
+BETADC       6.58E+01                6.73E+01             
+GM           1.75E-02                1.76E-02             
+RPI          3.46E+03                3.53E+03             
+RX           1.44E+02                1.46E+02             
+RO           6.47E+04                6.60E+04             
+CBE          1.51E-13                1.42E-13             
+CBC          2.01E-15                1.59E-15             
+CJS          7.03E-15                5.98E-15             
+BETAAC       6.06E+01                6.21E+01             
+CBX          9.15E-15                7.24E-15             
+FT           1.72E+10                1.86E+10             
+
+
+
+NAME         XI0.XI2.QQ5             XI0.XI2.QQ12          
+MODEL        C41                     C41                   
+IB           7.45E-06                7.45E-06             
+IC           4.93E-04                4.93E-04             
+VBE          8.72E-01                8.72E-01             
+VBC         -7.17E-02               -7.17E-02             
+VCE          9.44E-01                9.44E-01             
+BETADC       6.61E+01                6.61E+01             
+GM           1.76E-02                1.76E-02             
+RPI          3.47E+03                3.47E+03             
+RX           1.44E+02                1.44E+02             
+RO           6.50E+04                6.50E+04             
+CBE          1.49E-13                1.49E-13             
+CBC          1.88E-15                1.88E-15             
+CJS          6.96E-15                6.96E-15             
+BETAAC       6.10E+01                6.10E+01             
+CBX          8.58E-15                8.58E-15             
+FT           1.75E+10                1.75E+10             
+
+
+
+NAME         XI0.XI1.QQ3             XI0.XI1.QQ1           
+MODEL        C41                     C41                   
+IB           7.32E-06                7.48E-06             
+IC           4.93E-04                4.93E-04             
+VBE          8.72E-01                8.72E-01             
+VBC         -6.00E-01                7.17E-02             
+VCE          1.47E+00                8.01E-01             
+BETADC       6.73E+01                6.58E+01             
+GM           1.76E-02                1.75E-02             
+RPI          3.53E+03                3.46E+03             
+RX           1.46E+02                1.44E+02             
+RO           6.60E+04                6.47E+04             
+CBE          1.42E-13                1.51E-13             
+CBC          1.59E-15                2.01E-15             
+CJS          5.98E-15                7.03E-15             
+BETAAC       6.21E+01                6.06E+01             
+CBX          7.24E-15                9.15E-15             
+FT           1.86E+10                1.72E+10             
+
+
+
+NAME         XI0.XI1.QQ0             XI0.XI1.QQ4           
+MODEL        C41                     C41                   
+IB           7.48E-06                7.32E-06             
+IC           4.93E-04                4.93E-04             
+VBE          8.72E-01                8.72E-01             
+VBC          7.17E-02               -6.00E-01             
+VCE          8.01E-01                1.47E+00             
+BETADC       6.58E+01                6.73E+01             
+GM           1.75E-02                1.76E-02             
+RPI          3.46E+03                3.53E+03             
+RX           1.44E+02                1.46E+02             
+RO           6.47E+04                6.60E+04             
+CBE          1.51E-13                1.42E-13             
+CBC          2.01E-15                1.59E-15             
+CJS          7.03E-15                5.98E-15             
+BETAAC       6.06E+01                6.21E+01             
+CBX          9.15E-15                7.24E-15             
+FT           1.72E+10                1.86E+10             
+
+
+
+NAME         XI0.XI1.QQ5             XI0.XI1.QQ12          
+MODEL        C41                     C41                   
+IB           7.45E-06                7.45E-06             
+IC           4.93E-04                4.93E-04             
+VBE          8.72E-01                8.72E-01             
+VBC         -7.17E-02               -7.17E-02             
+VCE          9.44E-01                9.44E-01             
+BETADC       6.61E+01                6.61E+01             
+GM           1.76E-02                1.76E-02             
+RPI          3.47E+03                3.47E+03             
+RX           1.44E+02                1.44E+02             
+RO           6.50E+04                6.50E+04             
+CBE          1.49E-13                1.49E-13             
+CBC          1.88E-15                1.88E-15             
+CJS          6.96E-15                6.96E-15             
+BETAAC       6.10E+01                6.10E+01             
+CBX          8.58E-15                8.58E-15             
+FT           1.75E+10                1.75E+10             
+
+
+**** 08/26/125 13:35:59 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * Incremental Netlister - Release : 1.83.1.4
+
+
+ ****     INITIAL TRANSIENT SOLUTION       TEMPERATURE =   27.000 DEG C
+
+
+******************************************************************************
+
+
+
+ NODE   VOLTAGE     NODE   VOLTAGE     NODE   VOLTAGE     NODE   VOLTAGE
+
+
+(   IN)    0.0000  (  OUT)-1.332E-15  ( NET3)    1.5999  ( NET7)    0.0000      
+
+(NET11)    1.5999  (XI0.NET6)    1.5999                  (XI0.NET11)    1.5999  
+
+(XI0.XI1.NET7)    2.4000              (XI0.XI1.NET9)     .7275                  
+
+(XI0.XI2.NET7)    2.4000              (XI0.XI2.NET9)     .7275                  
+
+(XI0.XI1.NET11)     .7275             (XI0.XI1.NET13)     .6559                 
+
+(XI0.XI1.NET15)    3.0000             (XI0.XI1.NET18)    1.5282                 
+
+(XI0.XI1.NET21)    1.5282             (XI0.XI2.NET11)     .7275                 
+
+(XI0.XI2.NET13)     .6559             (XI0.XI2.NET15)    3.0000                 
+
+(XI0.XI2.NET18)    1.5282             (XI0.XI2.NET21)    1.5282             
+
+
+
+
+    VOLTAGE SOURCE CURRENTS
+    NAME         CURRENT
+
+    VV1          0.000E+00
+    XI0.XI2.VV5  -1.985E-03
+    XI0.XI2.VI3  -1.464E-05
+    XI0.XI1.VV5  -1.985E-03
+    XI0.XI1.VI3  -1.464E-05
+
+    TOTAL POWER DISSIPATION   1.20E-02  WATTS
+
+
+
+          JOB CONCLUDED
+
+          TOTAL JOB TIME             .05
+
