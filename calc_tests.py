@@ -1,4 +1,10 @@
+import time as t
 
+import matplotlib.pyplot as plt
+import numpy as np
+import sympy as sp
+
+import Approximate as ap
 from Circuit import Circuit
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 from NetlistParser import NetlistParser
@@ -13,19 +19,19 @@ circuit = Circuit()
 
 parser = NetlistParser()
 
-parser.set_cir_file("test_circuits/Emitteramp_deutsch.cir")
+parser.set_cir_file("test_circuits/labor10.cir")
 circuit = parser.parse_netlist()
 circuit.to_ai_string()
 print("\n\n\nThe now flattend subcircuits")
 circuit.flatten()
 circuit.to_ai_string()
 print("\n\n\nThe flattend circuit with small signal models")
-circuit.flatten(True, "test_circuits/Emitteramp_deutsch.out")
+circuit.flatten(True, "test_circuits/labor10.out")
 circuit.to_ai_string()
 print(circuit.get_nodes())
 
 
-#circuit.elements[0].connections.append("2")
+# circuit.elements[0].connections.append("2")
 
 mna = ModifiedNodalAnalysis(circuit)
 mna.buildEquationsSystem()
@@ -51,12 +57,8 @@ print(num_results)
 print("\n\n\n\n\n\n")
 
 
-
-
-
-
 result = mna.solve()
-H = result[sp.symbols('V_2')] / result[sp.symbols('V_1')]
+H = result[sp.symbols("V_7")] / result[sp.symbols("V_1")]
 print("Original transfer function:")
 print(H)
 
@@ -67,25 +69,24 @@ t0 = t.perf_counter_ns()
 approx = ap.approximate(sp.symbols('V_1'), sp.symbols('V_2'), ((1e5,0.024),(1e9, 0.02)), 0.1, "column", 1)
 t1 = t.perf_counter_ns()
 print(f"Time for approximation: {(t1 - t0) / 1e6} ms")
-
 approx = sp.simplify(approx)
 
 print(approx)
 
 approx_num = approx.subs(mna.value_dict)
 
-approx_H_lambdified = sp.lambdify(sp.symbols('s'), approx_num, 'numpy')
+approx_H_lambdified = sp.lambdify(sp.symbols("s"), approx_num, "numpy")
 
 
 # --- 1. Symbolische Übertragungsfunktion definieren ---
-s = sp.symbols('s')
+s = sp.symbols("s")
 # Beispiel: Tiefpass 1. Ordnung: H(s) = 1 / (s + 1)
-H = num_results[sp.symbols('V_2') ] / num_results[sp.symbols('V_1')]
+H = num_results[sp.symbols("V_7")] / num_results[sp.symbols("V_1")]
 
 # --- 2. SymPy → numerische Funktion umwandeln ---
-H_lambdified = sp.lambdify(s, H, 'numpy')
+H_lambdified = sp.lambdify(s, H, "numpy")
 # --- 3. Frequenzachse definieren ---
-w = np.logspace(-2, 10, 10000)         # Kreisfrequenz
+w = np.logspace(-2, 10, 10000)  # Kreisfrequenz
 jw = 1j * w
 H_eval = H_lambdified(jw)
 approx_eval = approx_H_lambdified(jw)
@@ -99,7 +100,7 @@ fig, (ax_mag, ax_phase) = plt.subplots(2, 1, figsize=(8, 6))
 
 # Betrag (in dB)
 ax_mag.semilogx(w, 20 * np.log10(abs(H_eval)), label="Original")
-ax_mag.semilogx(w, 20 * np.log10(abs(approx_eval)), 'r--', label="Approximiert")
+ax_mag.semilogx(w, 20 * np.log10(abs(approx_eval)), "r--", label="Approximiert")
 ax_mag.set_title("Bode-Diagramm der Übertragungsfunktion")
 ax_mag.set_ylabel("Betrag [dB]")
 ax_mag.grid(True, which="both")
@@ -107,7 +108,7 @@ ax_mag.legend()
 
 # Phase (in Grad)
 ax_phase.semilogx(w, np.angle(H_eval, deg=True), label="Original")
-ax_phase.semilogx(w, np.angle(approx_eval, deg=True), 'r--', label="Approximiert")
+ax_phase.semilogx(w, np.angle(approx_eval, deg=True), "r--", label="Approximiert")
 ax_phase.set_ylabel("Phase [°]")
 ax_phase.set_xlabel("Kreisfrequenz ω [rad/s]")
 ax_phase.grid(True, which="both")

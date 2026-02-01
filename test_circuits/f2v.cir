@@ -1,0 +1,39 @@
+* Frequenz-Spannungswandler
+v0 1 0 sffm 0 200mv 1khz 5 100hz
+vp 7 0 15v
+vm 8 0 -15v
+x1 1 2 3 7 8 macro741
+x2 5 0 6 7 8 macro741
+r0 1 0 100
+r1 2 3 100k
+r2 2 0 100
+r3 5 6 1meg
+c1 3 4 180pF ic=15V
+c2 5 6 4.7nF ic=-5.2V
+d1 4 0 diode
+d2 5 4 diode
+.model diode d (is=7nA n=2 rs=0.8)
+* Teilschaltung OP741
+.subckt macro741    2    3    6    7     4
+*                   -in  +in  out   vp    vm
+i0 7 1 1uA
+vm1 9 4 0 
+vm2 8 4 0
+f1 7 5 vm1 1k
+f2 5 4 vm2 1k
+r1 7 5 10meg
+r2 5 4 10meg
+q1 9 2 1 nn1
+q2 8 3 1 nn1
+q3 4 5 6 nn2
+q4 7 5 6 nn3
+.model nn1 pnp (is=1p)
+.model nn2 pnp (is=1p bf=1meg cjc=1nF mjc=0 re=100 nf=0.3)
+.model nn3 npn (is=1p bf=1meg cjc=1nF mjc=0 re=100 nf=0.3)
+.ends macro741
+* End Teilschaltung OP741
+.tran 40uS 20mS uic
+.print tran v(1) v(3) v(6)
+.options itl5=15000 limpts=501
+.probe
+.end

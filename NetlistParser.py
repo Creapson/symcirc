@@ -1,4 +1,5 @@
 import re
+
 from Circuit import Circuit
 from Element import Element
 from Model import Model
@@ -119,27 +120,32 @@ class NetlistParser:
     def parse_inc(self, index: int):
         line_splits = self.netlist_lines[index].split()
         # try leading the file
-        file_path = line_splits[1].replace("\"", "")
+        file_path = line_splits[1].replace('"', "")
 
         import os
+
         dir_path = os.path.dirname(self.file_path)
         new_file_path = os.path.join(dir_path, file_path)
 
         lines = []
         try:
             with open(new_file_path, "r") as file:
-                lines = [line.strip() for line in file if not line.lstrip().startswith("*")]
+                lines = [
+                    line.strip() for line in file if not line.lstrip().startswith("*")
+                ]
                 # Remove empty lines from the list
                 include_lines = list(filter(None, lines))
                 # squeeze the includes lines into the main line array
-                self.netlist_lines = self.netlist_lines[:index] + include_lines + self.netlist_lines[index+1:]
+                self.netlist_lines = (
+                    self.netlist_lines[:index]
+                    + include_lines
+                    + self.netlist_lines[index + 1 :]
+                )
 
             print(f"Succesfully loaded {file_path}!")
             return None
         except FileNotFoundError:
             return f"The file: {file_path} could not be found!"
-        
-
 
     def parse_element(self, line: str, circuit=None):
         """Parses the element from the given string.
@@ -185,7 +191,10 @@ class NetlistParser:
                         param_token_str = "value_" + token_str.lower()
                         value = ""
                         index += 1
-                        while index < len(line_splits) and line_splits[index].upper() not in token_list:
+                        while (
+                            index < len(line_splits)
+                            and line_splits[index].upper() not in token_list
+                        ):
                             value += line_splits[index]
                             index += 1
                         element.add_param(param_token_str, value)
@@ -218,7 +227,7 @@ class NetlistParser:
                         elif token == "SFFM":
                             i += 1
                             continue
-                        
+
                         else:
                             i += 1
                 return element
@@ -228,7 +237,7 @@ class NetlistParser:
                 if len(line_splits) == 6:
                     element.connections = line_splits[1:-1]
                     element.add_param("value", line_splits[5])
-                
+
                 # Special Case connctions refernces another element
                 elif len(line_splits) == 5:
                     ref_element = circuit.get_element(line_splits[3])
@@ -377,26 +386,28 @@ class NetlistParser:
     def parse_element_params(self, out_filepath, elements):
         """
         text:     the full SPICE-like dump string
-        elements: list or dict of objects that have .name and .add_param(key, value)
+        elements: list of elements
         """
         with open(out_filepath, "r") as file:
             lines = [line.rstrip() for line in file]
 
         param_start_index = 0
         for line in lines:
-            if "BIPOLAR JUNCTION TRANSISTORS" in line:
+            if any(
+                s in line
+                for s in ("BIPOLAR JUNCTION TRANSISTORS", "BJT MODEL PARAMETERS")
+            ):
                 param_start_index += 1
                 break
             else:
                 param_start_index += 1
-        
 
         # Build fast lookup
         lookup = {el.name: el for el in elements}
         i = 0
         n = len(lines)
 
-        current_names = []    # list of transistor names in the current block
+        current_names = []  # list of transistor names in the current block
 
         while i < n:
             line = lines[i].strip()
@@ -420,11 +431,14 @@ class NetlistParser:
                 # it belongs
                 if len(values) != len(current_names):
                     # ERROR: mismatched count
-                    print(f"Warning: key {key} has {len(values)} values but {len(current_names)} names.")
+                    print(
+                        f"Warning: key {key} has {len(values)} values but {
+                            len(current_names)
+                        } names."
+                    )
                 else:
                     # Assign each value to the corresponding element
                     for name, raw in zip(current_names, values):
-
                         # convert str to float
                         try:
                             val = float(raw)
