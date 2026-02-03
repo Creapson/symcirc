@@ -113,7 +113,8 @@ class NetlistParser:
                 self.print_parser_error(line)
             else:
                 element = self.parse_element(line, circuit)
-                circuit.add_element(element)
+                if element is not None:
+                    circuit.add_element(element)
             index += 1
         return circuit
 
@@ -388,6 +389,22 @@ class NetlistParser:
         text:     the full SPICE-like dump string
         elements: list of elements
         """
+
+        def normalize_name(name: str) -> str:
+            """
+            Normalize element names so different separators map to the same key.
+            Examples:
+                X1.Q1  -> X1.Q1
+                X1_Q1  -> X1.Q1
+                X1,Q1  -> X1.Q1
+            """
+            import re
+
+            # Replace any separator with a dot
+            name = re.sub(r"[,_]", ".", name)
+
+            return name.strip()
+
         with open(out_filepath, "r") as file:
             lines = [line.rstrip() for line in file]
 
@@ -403,7 +420,7 @@ class NetlistParser:
                 param_start_index += 1
 
         # Build fast lookup
-        lookup = {el.name: el for el in elements}
+        lookup = {normalize_name(el.name): el for el in elements}
         i = 0
         n = len(lines)
 
@@ -415,7 +432,8 @@ class NetlistParser:
             # Detect "NAME Q201 Q202 ..."
             if line.startswith("NAME"):
                 parts = line.split()
-                current_names = parts[1:]  # all device names on that line
+                # all device names on that line
+                current_names = [normalize_name(n) for n in parts[1:]]
                 row_index = 0
                 i += 1
                 continue

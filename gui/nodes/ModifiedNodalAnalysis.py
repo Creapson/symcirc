@@ -69,6 +69,6 @@ class ModifiedNodalAnalysis(Node):
         with self.add_output_attr() as output_pin:
             dpg.add_text("H", tag=self.uuid("h_out"))
         self.output_pins[self.uuid("h_out")] = output_pin
-        self.add_output_pin_value(self.uuid("h_out"), H)
+        self.add_output_pin_value(self.uuid("h_out"), (H, self.mna))
 
         super().update()

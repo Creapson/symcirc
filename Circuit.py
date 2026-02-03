@@ -6,6 +6,9 @@ from Model import Model
 
 class Circuit:
     def __init__(self):
+        self.name = ""
+        self.netlist_file_path = ""
+
         self.inner_connecting_nodes: List[str] = []
 
         self.bipolar_model = "beta_with_r_be"
@@ -23,6 +26,9 @@ class Circuit:
     # --- COPY METHOD ---
     def copy(self) -> "Circuit":
         new = Circuit()
+        new.name = self.name
+        new.netlist_file_path = self.netlist_file_path
+
         new.inner_connecting_nodes = list(self.inner_connecting_nodes)
         new.bipolar_model = self.bipolar_model
         new.mosfet_model = self.mosfet_model
@@ -41,6 +47,12 @@ class Circuit:
 
         new.separator = self.separator
         return new
+
+    def set_name(self, name):
+        self.name = name
+
+    def set_netlist_path(self, path):
+        self.netlist_file_path = path
 
     def set_separator(self, separator):
         self.separator = separator
@@ -154,7 +166,13 @@ class Circuit:
 
             parser = NetlistParser()
             # the elements get changed by reference
-            parser.parse_element_params(out_file_path, self.elements)
+
+            if out_file_path is not None:
+                parser.parse_element_params(out_file_path, self.elements)
+            else:
+                # build .out path
+                out_file_path = self.netlist_file_path + self.name + ".out"
+                parser.parse_element_params(out_file_path, self.elements)
 
         new_elements = []
         for element in self.elements:
@@ -205,6 +223,8 @@ class Circuit:
     def to_ai_string(self, indent=0):
         # currently a placeholder for debuging
         # print inner connecting nodes
+        print("\t" * indent + "Name:", self.name)
+        print("\t" * indent + "Netlist_File_Path:", self.netlist_file_path)
         print("\t" * indent + "Connectionss:", self.inner_connecting_nodes)
         print("\t" * indent + "Nodes:", self.nodes)
 

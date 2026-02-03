@@ -95,11 +95,23 @@ class NetlistParserNode(Node):
 
     def onlink_callback(self):
         filepath = self.get_input_pin_value(self.uuid("file_path_pin"))
+
+        from pathlib import Path
+
         from NetlistParser import NetlistParser
 
         parser = NetlistParser()
         parser.set_cir_file(filepath)
         self.circuit = parser.parse_netlist()
+
+        # extract name and folder_path from the file_path
+        p = Path(filepath)
+
+        ct_name = p.stem
+        ct_folder_path = str(p.parent) + "\\"
+
+        self.circuit.set_name(ct_name)
+        self.circuit.set_netlist_path(ct_folder_path)
 
         # populate the subcircuit table
         def add_cubcircuit_row(subct_name, bipolar_model, mosfet_model):

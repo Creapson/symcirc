@@ -7,6 +7,7 @@ class FlattenNode(Node):
     def __init__(self, label, position=(100, 100)):
         self.row_sources = []
         self.table_rows = {}
+        self.out_file_path = None
 
         super().__init__(label, position)
 
