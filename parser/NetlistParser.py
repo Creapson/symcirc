@@ -1,8 +1,8 @@
 import re
 
-from Circuit import Circuit
-from Element import Element
-from Model import Model
+from netlist.Circuit import Circuit
+from netlist.Element import Element
+from netlist.Model import Model
 
 
 class NetlistParser:
@@ -79,7 +79,6 @@ class NetlistParser:
         """
         # Recognice what this line does(e.x descripe element or subcircuit)
         # and call the acording functions
-        print(self.netlist_lines)
         if circuit is None:
             circuit = Circuit()
         if end_index is None:
@@ -98,16 +97,8 @@ class NetlistParser:
                 if line.startswith((".model", ".MODEL")):
                     index, model = self.parse_model(index)
                     circuit.add_model(model)
-                    index += 1
+                    # index += 1
                     continue
-
-                """
-                if line.startswith((".inc", ".INC")):
-                    self.parse_inc(index)
-                    end_index = len(self.netlist_lines)
-                    index += 1
-                    continue
-                """
 
                 # output currently not parsable lines
                 self.print_parser_error(line)
@@ -172,7 +163,7 @@ class NetlistParser:
 
         match line_splits[0].upper()[0]:
             # Admittance
-            case "R" | "C" | "L":
+            case "R" | "C" | "L" | "D":
                 element.connections = line_splits[1:-1]
                 element.add_param("value_dc", line_splits[3])
                 return element
@@ -264,11 +255,29 @@ class NetlistParser:
 
             # Subcircuits
             case "X":
-                if "PARAMS" in line:
-                    self.print_parser_error("Cant parse this line! " + line)
-                    return None
-                element.connections = line_splits[1:-1]
-                element.add_param("ref_cir", line_splits[-1])
+                # find param start
+                params_index = None
+                for i, tok in enumerate(line_splits):
+                    if tok.startswith("PARAMS:"):
+                        params_index = i
+                        break
+
+                # without PARAMS
+                if params_index is None:
+                    element.connections = line_splits[1:-1]
+                    element.add_param("ref_cir", line_splits[-1])
+                    return element
+
+                # with PARAMS
+                element.connections = line_splits[1 : params_index - 1]
+                element.add_param("ref_cir", line_splits[params_index - 1])
+
+                # parse params
+                params = line_splits[params_index][len("PARAMS:") :]
+                for p in params.split():
+                    key, val = p.split("=")
+                    element.add_param(key.lower(), val)
+
                 return element
             case _:
                 self.print_parser_error(line)
@@ -333,29 +342,45 @@ class NetlistParser:
                 # remove the brackets from the parameters
                 param.removeprefix("(")
                 param.removesuffix(")")
-                param_split = param.split("=")
-                model.add_param(param_split[0], param_split[1])
 
-        # There are two different syntax for models
+                if "NPN" in param:
+                    model.add_param("type", "NPN")
+                if "PNP" in param:
+                    model.add_param("type", "PNP")
+
+                if "=" in param:
+                    key, val = param.split("=", 1)
+                    model.add_param(key.upper(), val)
+
         # 1. .model name type (params)
+        # 1. .model name type (param
+        #    + param=value param=value)
         # 2. .model name
         #    + type
         #    + params ...
+        # 3. .model name type param=value
+        #    + param=value param=value
 
         line = self.netlist_lines[index]
         line_splits = line.split()
+
         model = Model()
 
         model.name = line_splits[1]
 
-        # chech if is first Type
-        if "(" in line:
-            model.add_param("type", line_splits[2])
-            parse_params(line_splits[3:])
-
-        # If a ')' is in this line all params are parsed
-        if ")" in line:
-            return index, model
+        match len(line_splits):
+            # 2nd Type
+            case _ if len(line_splits) < 2:
+                self.print_parser_error("Failed to parse this Model:\t", line)
+                return index, None
+            case 2:
+                pass
+            case 3:
+                model.add_param("type", line_splits[2])
+            case _ if len(line_splits) > 3:
+                model.add_param("type", line_splits[2])
+                parse_params(line_splits[3:])
+                pass
 
         # Check for params after the model name
         index += 1
@@ -366,22 +391,12 @@ class NetlistParser:
 
             # parse the model Parameters
             param_line = self.netlist_lines[index].removeprefix("+").strip()
-            if "NPN" in param_line:
-                model.add_param("type", "NPN")
-                index += 1
-                continue
-            if "PNP" in param_line:
-                model.add_param("type", "PNP")
-                index += 1
-                continue
-
             parse_params(param_line.split())
 
             if ")" in param_line:
                 return index, model
             index += 1
 
-        # return the line number where the model ends
         return index, model
 
     def parse_element_params(self, out_filepath, elements):

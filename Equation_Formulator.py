@@ -1,6 +1,6 @@
 """Defines analyzing classes for EquationFormulator.
 """
-import Circuit
+import netlist.Circuit as Circuit
 import sympy as sp
 import logging
 import Pspice_util as pu

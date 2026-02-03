@@ -1,7 +1,7 @@
 from typing import List
 
-from Element import Element
-from Model import Model
+from netlist.Element import Element
+from netlist.Model import Model
 
 
 class Circuit:
@@ -116,8 +116,6 @@ class Circuit:
     def flatten_subcircuit(
         self, subcircuit_name, element_name, subct_element_connections, subcircuits={}
     ):
-        if len(self.subcircuits) == 0:
-            return
         combined_subct_list = self.subcircuits | subcircuits
 
         subct = combined_subct_list[subcircuit_name]
@@ -149,7 +147,7 @@ class Circuit:
                 new_ele.add_param("mosfet_model", subct.mosfet_model)
             subct_elements.append(new_ele)
             pass
-        for model in subct.models:
+        for model_name, model in subct.models.items():
             self.add_model(model)
         return subct_elements
 
@@ -162,7 +160,7 @@ class Circuit:
         # the small signal subcircuits
         if flatten_models:
             # add the missing element params from the .out file
-            from NetlistParser import NetlistParser
+            from parser.NetlistParser import NetlistParser
 
             parser = NetlistParser()
             # the elements get changed by reference

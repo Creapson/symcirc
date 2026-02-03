@@ -98,7 +98,7 @@ class NetlistParserNode(Node):
 
         from pathlib import Path
 
-        from NetlistParser import NetlistParser
+        from parser.NetlistParser import NetlistParser
 
         parser = NetlistParser()
         parser.set_cir_file(filepath)
