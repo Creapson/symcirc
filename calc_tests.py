@@ -8,6 +8,12 @@ import Approximate as ap
 from Circuit import Circuit
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 from NetlistParser import NetlistParser
+from Approximate import Approximation 
+import time as t
+
+import sympy as sp
+import numpy as np
+import matplotlib.pyplot as plt
 
 circuit = Circuit()
 
@@ -58,8 +64,9 @@ print(H)
 
 print("\n\n\n\n\n\n")
 print("Approximation results:")
+ap = Approximation(mna)
 t0 = t.perf_counter_ns()
-approx = ap.approximate(mna, 0.024, sp.symbols("V_1"), sp.symbols("V_7"), (1e5,), 46)
+approx = ap.approximate(sp.symbols('V_1'), sp.symbols('V_2'), ((1e5,0.024),(1e9, 0.02)), 0.1, "column", 1)
 t1 = t.perf_counter_ns()
 print(f"Time for approximation: {(t1 - t0) / 1e6} ms")
 approx = sp.simplify(approx)
