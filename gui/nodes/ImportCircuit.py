@@ -12,7 +12,7 @@ class ImportCircuit(Node):
                     message += "\n" + string
             return message
 
-        from NetlistParser import NetlistParser
+        from parser.NetlistParser import NetlistParser
 
         parser = NetlistParser()
         parser.set_cir_file(app_data["file_path_name"])

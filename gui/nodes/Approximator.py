@@ -1,7 +1,7 @@
 import dearpygui.dearpygui as dpg
 
 from gui.nodes.Node import Node
-from gui.windows.Approximator import ApproximatorWindow
+from gui.windows.ApproximatorWindow import ApproximatorWindow
 
 
 class ApproximatorNode(Node):

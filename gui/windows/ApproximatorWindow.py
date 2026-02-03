@@ -20,17 +20,16 @@ class ApproximatorWindow(Window):
 
         self.approx_mag = None
         self.approx_phase = None
-        super().__init__(title=self.title)
+        super().__init__(title=self.title, autosize=False)
         pass
 
     def update(self):
         import sympy as sp
+        from Approximate import Approximation 
 
-        import Approximate as ap
-
-        self.approx = ap.approximate(
-            self.mna, 0.024, sp.symbols("V_1"), sp.symbols("V_2"), (1e5,), 46
-        )
+        ap = Approximation(self.mna)
+        print(self.approximation_points)
+        self.approx = ap.approximate(sp.symbols('V_1'), sp.symbols('V_2'), self.approximation_points, 0.1, "column", 1)
 
         self.approx = sp.simplify(self.approx)
 
@@ -94,7 +93,7 @@ class ApproximatorWindow(Window):
 
         s = sp.symbols("s")
         H_lambdified = sp.lambdify(s, transfer_func, "numpy")
-        w = np.logspace(-2, 8, 10000)  # Kreisfrequenz
+        w = np.logspace(-2, 10, 10000)  # Kreisfrequenz
         jw = 1j * w
 
         H_eval = np.asarray(H_lambdified(jw), dtype=complex)
@@ -264,21 +263,33 @@ class ApproximatorWindow(Window):
         self.drag_to_inputs.clear()
 
     def setup_bode_plot(self):
-        freq_log, magnitude_db, phase_deg = self.calculate_numeric_values(self.h)
+        freq, magnitude_db, phase_deg = self.calculate_numeric_values(self.h)
 
-        # Bode Plot
-        with dpg.subplots(2, 1, label="", link_all_x=True, height=300):
+        x_min = freq.min()
+        x_max = freq.max()
+
+        with dpg.subplots(2, 1, label="", link_all_x=True, width=-1, height=500):
+
             # -------- Magnitude Plot --------
             with dpg.plot(label="Betrag (dB)", no_menus=True) as self.bode_plot_id:
                 dpg.add_plot_legend()
-                dpg.plot_axis(
-                    dpg.mvXAxis, label="log10(ω) [rad/s]", scale=dpg.mvPlotScale_Log10
+
+                # X axis (log scale)
+                xaxis = dpg.add_plot_axis(
+                    dpg.mvXAxis,
+                    label="Frequency (Hz)",
+                    scale=dpg.mvPlotScale_Log10
                 )
+                dpg.set_axis_limits(xaxis, x_min, x_max)
+
+                # Y axis
                 with dpg.plot_axis(
-                    dpg.mvYAxis, label="Betrag [dB]", tag=self.uuid("y_axis_mag")
+                    dpg.mvYAxis,
+                    label="Betrag [dB]",
+                    tag=self.uuid("y_axis_mag")
                 ):
                     dpg.add_line_series(
-                        freq_log.tolist(),
+                        freq.tolist(),          # ← linear frequency values!
                         magnitude_db.tolist(),
                         label="|H(jω)|",
                         tag=self.uuid("mag_series"),
@@ -287,18 +298,28 @@ class ApproximatorWindow(Window):
             # -------- Phase Plot --------
             with dpg.plot(label="Phase (°)", no_menus=True) as self.phase_plot_id:
                 dpg.add_plot_legend()
-                dpg.plot_axis(
-                    dpg.mvXAxis, label="log10(ω) [rad/s]", scale=dpg.mvPlotScale_Log10
+
+                # X axis (log scale)
+                xaxis = dpg.add_plot_axis(
+                    dpg.mvXAxis,
+                    label="Frequency (Hz)",
+                    scale=dpg.mvPlotScale_Log10
                 )
+                dpg.set_axis_limits(xaxis, x_min, x_max)
+
+                # Y axis
                 with dpg.plot_axis(
-                    dpg.mvYAxis, label="Phase [°]", tag=self.uuid("y_axis_phase")
+                    dpg.mvYAxis,
+                    label="Phase [°]",
+                    tag=self.uuid("y_axis_phase")
                 ):
                     dpg.add_line_series(
-                        freq_log.tolist(),
+                        freq.tolist(),          # ← same linear frequency data
                         phase_deg.tolist(),
                         label="∠H(jω)",
                         tag=self.uuid("phase_series"),
                     )
+
 
         # Create on_click callback for the plot
 
