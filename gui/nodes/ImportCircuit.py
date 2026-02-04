@@ -18,12 +18,12 @@ class ImportCircuit(Node):
         parser.set_cir_file(app_data["file_path_name"])
         feedback = parser.pre_format()
 
-        self.delete_output_pins()
-
         # when a file is selected create the output pin
-        with self.add_output_attr() as output_pin:
-            dpg.add_text("Selected file", tag=self.uuid("file_path_out"))
-        self.output_pins[self.uuid("file_path_out")] = output_pin
+        if not dpg.does_item_exist(self.uuid("file_path_out")):
+            with self.add_output_attr() as output_pin:
+                dpg.add_text("Selected file", tag=self.uuid("file_path_out"))
+            self.output_pins[self.uuid("file_path_out")] = output_pin
+
         self.add_output_pin_value(
             self.uuid("file_path_out"), app_data["file_path_name"]
         )

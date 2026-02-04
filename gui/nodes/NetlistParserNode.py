@@ -199,13 +199,11 @@ class NetlistParserNode(Node):
         flattend_circuit = self.circuit.copy()
         flattend_circuit.flatten()
 
-        # delte all output pins that already exist
-        self.delete_output_pins()
-
         # create a output pin for the flattend circuit
-        with self.add_output_attr() as output_pin:
-            dpg.add_text("Flattend Circuit", tag=self.uuid("flattend_circuit"))
-        self.output_pins[self.uuid("flattend_circuit")] = output_pin
+        if not dpg.does_item_exist(self.uuid("flattend_circuit")):
+            with self.add_output_attr() as output_pin:
+                dpg.add_text("Flattend Circuit", tag=self.uuid("flattend_circuit"))
+            self.output_pins[self.uuid("flattend_circuit")] = output_pin
         self.add_output_pin_value(self.uuid("flattend_circuit"), flattend_circuit)
 
         flattend_circuit.to_ai_string()

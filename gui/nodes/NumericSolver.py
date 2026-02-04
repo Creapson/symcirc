@@ -70,20 +70,12 @@ class NumericSolver(Node):
         print(phase_deg)
 
         # freq_log
-        with self.add_output_attr() as output_pin:
-            dpg.add_text("fraq_log (x-Achse)", tag=self.uuid("freq_log_out"))
-        self.output_pins[self.uuid("freq_log_out")] = output_pin
-        self.add_output_pin_value(self.uuid("freq_log_out"), freq_log)
+        if not dpg.does_item_exist(self.uuid("line_out")):
+            with self.add_output_attr() as output_pin:
+                dpg.add_text("Numeric Values for BodePlots", tag=self.uuid("line_out"))
+            self.output_pins[self.uuid("line_out")] = output_pin
+        self.add_output_pin_value(
+            self.uuid("line_out"), (freq_log, magnitude_db, phase_deg)
+        )
 
-        # freq_log
-        with self.add_output_attr() as output_pin:
-            dpg.add_text("magnitude_db (y-Achse)", tag=self.uuid("magnitude_out"))
-        self.output_pins[self.uuid("magnitude_out")] = output_pin
-        self.add_output_pin_value(self.uuid("magnitude_out"), magnitude_db)
-
-        # freq_log
-        with self.add_output_attr() as output_pin:
-            dpg.add_text("phase_deg (y-Achse)", tag=self.uuid("phase_out"))
-        self.output_pins[self.uuid("phase_out")] = output_pin
-        self.add_output_pin_value(self.uuid("phase_out"), phase_deg)
         super().update()

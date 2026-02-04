@@ -16,6 +16,10 @@ class Node:
         self.output_pins = {}
         self.input_pins = {}
 
+        # enable if self.update() should be called
+        # when the inputs change
+        self.do_propagation = False
+
         self.BIPOLAR_MODELS = ["beta_with_r_be", "beta_with_r_be_G"]
         self.MOSFET_MODELS = ["BSIM"]
 
@@ -73,6 +77,8 @@ class Node:
         print("Connections in Node: ", self.connections)
 
     def onlink_callback(self):
+        if self.do_propagation:
+            self.update()
         pass
 
     def delink_callback(self):
@@ -96,7 +102,8 @@ class Node:
             return None
 
     def update(self):
-        print("update was called!")
+        # when update is called all settings should be set
+        self.do_propagation = True
 
     def debug_print(self):
         print(f"\n\nDebug Output from Node: {self.label}")

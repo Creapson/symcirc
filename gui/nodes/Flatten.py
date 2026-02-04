@@ -168,13 +168,10 @@ class FlattenNode(Node):
         flattend_circuit = self.circuit.copy()
         flattend_circuit.flatten(True, self.out_file_path)
 
-        self.delete_output_pins()
-
-        # output pin
-        with self.add_output_attr() as output_pin:
-            dpg.add_text(source=self.uuid("flattend_circuit_out"))
-        self.output_pins[self.uuid("flattend_circuit_out")] = output_pin
-
+        if not dpg.does_item_exist(self.uuid("flattend_circuit_out")):
+            with self.add_output_attr() as output_pin:
+                dpg.add_text(source=self.uuid("flattend_circuit_out"))
+            self.output_pins[self.uuid("flattend_circuit_out")] = output_pin
         self.add_output_pin_value(self.uuid("flattend_circuit_out"), flattend_circuit)
 
         flattend_circuit.to_ai_string()

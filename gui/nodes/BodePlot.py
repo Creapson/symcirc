@@ -10,22 +10,9 @@ class BodePlot(Node):
             with self.add_input_attr() as input_pin:
                 dpg.add_text(
                     default_value="Connect freq_log here!",
-                    tag=self.uuid("freq_log_pin"),
+                    tag=self.uuid("line_pin"),
                 )
-            self.input_pins[self.uuid("freq_log_pin")] = input_pin
-
-            with self.add_input_attr() as magn_pin:
-                dpg.add_text(
-                    default_value="Connect magnitude here!",
-                    tag=self.uuid("magnitude_pin"),
-                )
-            self.input_pins[self.uuid("magnitude_pin")] = magn_pin
-
-            with self.add_input_attr() as phase_pin:
-                dpg.add_text(
-                    default_value="Connect phase here!", tag=self.uuid("phase_pin")
-                )
-            self.input_pins[self.uuid("phase_pin")] = phase_pin
+            self.input_pins[self.uuid("line_pin")] = input_pin
 
             with dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Static):
                 with dpg.subplots(
@@ -52,12 +39,7 @@ class BodePlot(Node):
         return super().setup(build, node_editor_tag)
 
     def onlink_callback(self):
-        freq_log = self.get_input_pin_value(self.uuid("freq_log_pin"))
-        magnitude = self.get_input_pin_value(self.uuid("magnitude_pin"))
-        phase = self.get_input_pin_value(self.uuid("phase_pin"))
-        print(freq_log)
-        print(magnitude)
-        print(phase)
+        freq_log, magnitude, phase = self.get_input_pin_value(self.uuid("line_pin"))
 
         # update the plots with the new values
         if freq_log is not None and magnitude is not None:

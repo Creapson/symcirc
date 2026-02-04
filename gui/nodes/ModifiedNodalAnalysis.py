@@ -62,13 +62,10 @@ class ModifiedNodalAnalysis(Node):
             / num_results[sp.symbols(f"V_{from_node}")]
         )
 
-        self.delete_output_pins()
-
-        # create output pins for those arrays
-
-        with self.add_output_attr() as output_pin:
-            dpg.add_text("H", tag=self.uuid("h_out"))
-        self.output_pins[self.uuid("h_out")] = output_pin
+        if not dpg.does_item_exist(self.uuid("h_out")):
+            with self.add_output_attr() as output_pin:
+                dpg.add_text("H", tag=self.uuid("h_out"))
+            self.output_pins[self.uuid("h_out")] = output_pin
         self.add_output_pin_value(self.uuid("h_out"), (H, self.mna))
 
         super().update()
