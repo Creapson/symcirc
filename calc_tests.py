@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sympy as sp
 
-import Approximate as ap
+
 from Circuit import Circuit
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 from NetlistParser import NetlistParser
@@ -58,7 +58,7 @@ print("\n\n\n\n\n\n")
 
 
 result = mna.solve()
-H = result[sp.symbols("V_7")] / result[sp.symbols("V_1")]
+H = result[sp.symbols("V_2")] / result[sp.symbols("V_1")]
 print("Original transfer function:")
 print(H)
 
@@ -66,7 +66,8 @@ print("\n\n\n\n\n\n")
 print("Approximation results:")
 ap = Approximation(mna)
 t0 = t.perf_counter_ns()
-approx = ap.approximate(sp.symbols('V_1'), sp.symbols('V_2'), ((1e5,0.024),(1e9, 0.02)), 0.1, "column", 1)
+#approximate(self, in_var, out_var, points/errors, term_removal_method, tolerance (tbt- rel_error; block - jmp_threshold), sorting_criterion, sorting_extra_var(column - col_num))
+approx = ap.approximate(sp.symbols('V_1'), sp.symbols('V_2'), ((1e5,0.024),), "tbt",0.1, "max", 1)
 t1 = t.perf_counter_ns()
 print(f"Time for approximation: {(t1 - t0) / 1e6} ms")
 approx = sp.simplify(approx)
@@ -81,7 +82,7 @@ approx_H_lambdified = sp.lambdify(sp.symbols("s"), approx_num, "numpy")
 # --- 1. Symbolische Übertragungsfunktion definieren ---
 s = sp.symbols("s")
 # Beispiel: Tiefpass 1. Ordnung: H(s) = 1 / (s + 1)
-H = num_results[sp.symbols("V_7")] / num_results[sp.symbols("V_1")]
+H = num_results[sp.symbols("V_2")] / num_results[sp.symbols("V_1")]
 
 # --- 2. SymPy → numerische Funktion umwandeln ---
 H_lambdified = sp.lambdify(s, H, "numpy")

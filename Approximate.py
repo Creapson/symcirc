@@ -1,10 +1,11 @@
 import sympy as sp
+import math
 from sympy.matrices.exceptions import NonInvertibleMatrixError
-import numexpr
 import numpy as np
 import time
 import scipy.linalg as scipy
 from Modified_Node_Analysis import ModifiedNodalAnalysis
+from sympy.utilities.autowrap import ufuncify
 
 
 class Approximation:
@@ -34,6 +35,87 @@ class Approximation:
                     term_list.append(((i, j), t, 0.0))  # Placeholder for numerical value
         return term_list
 
+    def generate_relevance_coefficients_x(
+        self,
+        input_potential,
+        output_potential,
+        approx_points,
+        sysMatrix
+    ):
+        t0 = time.perf_counter_ns()
+        term_list = self.generate_term_list(sysMatrix)
+        n = sysMatrix.shape[0]
+
+        x_syms = list(self.analysis.get_unknowns())
+        idx_in = x_syms.index(input_potential)
+        idx_out = x_syms.index(output_potential)
+
+        se_results = []
+
+        s = sp.symbols('s')
+
+        
+        
+        sysMatrix_num = sysMatrix.subs(self.analysis.value_dict)
+        z_num = self.analysis.z.subs(self.analysis.value_dict)
+
+          
+
+
+        A_inv = sysMatrix_num.inv()
+        ref_result = A_inv * z_num
+        ref_func = ref_result[idx_out, 0] / ref_result[idx_in, 0]
+
+        for w in approx_points:
+            sysMatrix_num_w = sysMatrix_num.subs(s, 1j * w)
+
+            cond = np.linalg.cond(np.array(sysMatrix_num_w).astype(np.complex128))
+            print(f"Condition number at w={w}: {cond}")
+
+        for ((i, j), t, _) in term_list:
+            # Term t an dieser Stelle evaluieren
+            t_val = t.subs(self.analysis.value_dict)
+               
+
+             # Sherman-Morrison: (A + u*v^T)^-1 = A^-1 - A^-1 u v^T A^-1 / (1 + v^T A^-1 u)
+            # Hier ist u = vektor mit 1 an i, 0 sonst, v = t_val * Basisvektor j
+            u = sp.zeros(n, 1)
+            u[i, 0] = 1
+            v = sp.zeros(n, 1)
+            v[j, 0] = t_val
+
+            
+            denom = 1 + (v.T * A_inv * u)[0]
+            denom_num = [abs(denom.subs(s, 1j * w).evalf()) for w in approx_points]
+            print(f"Denominator for term at ({i}, {j}): {denom_num}")
+           
+            
+            A_inv_updated = A_inv - (A_inv * u * v.T * A_inv) / denom
+
+            updated_result = A_inv_updated * z_num
+
+            updated_func = updated_result[idx_out, 0] / updated_result[idx_in, 0]
+
+            se_func = sp.simplify(abs(ref_func - updated_func) / abs(ref_func))
+
+            se = [float(abs(se_func.subs(s, 1j * w).evalf())) for w in approx_points]
+
+                
+            se_results.append(((i, j), t, se))
+        
+        t1 = time.perf_counter_ns()
+        print(f"Sensitivity calculation took {(t1 - t0) / 1e6} ms")
+        for ((i, j), t, se) in se_results:
+            print(f"Term at position ({i}, {j}): {t}, Sensitivity: {se}")
+        
+        
+
+        return se_results
+
+
+
+
+    
     def generate_relevance_coefficients(self, input_potential,  output_potential, approx_points, sysMatrix):
         """Generate relevance coefficients for each term in the term list.
 
@@ -46,7 +128,11 @@ class Approximation:
         Returns:
             list: updated term list with relevance coefficients
         """
+        
+
         term_list = self.generate_term_list(sysMatrix)
+
+       
 
     
         s = sp.symbols('s')
@@ -76,6 +162,8 @@ class Approximation:
         z_num_cache = []
         x_ref_cache = []
 
+        
+
         for k, w in enumerate(jw):
             A_num = np.array(A_func(w), dtype=complex)
             z_num = np.array(z_func(w), dtype=complex).reshape(n)
@@ -92,9 +180,14 @@ class Approximation:
             x_ref_cache.append(x)
 
         for idx, ((i, j), term, _) in enumerate(term_list):
-            #print(f"Processing term {idx + 1} / {len(term_list)}")
+
+            t0 = time.perf_counter_ns()
+            
 
             term_num = sp.lambdify(s, term.subs(self.analysis.value_dict), "numpy")
+
+            t1 = time.perf_counter_ns()
+            print(f"Term lambdification took {(t1 - t0) / 1e6} ms")
 
             abs_H_mod = np.empty(n_freq)
 
@@ -124,6 +217,9 @@ class Approximation:
             relative_error = np.abs((abs_H_ref - abs_H_mod) / abs_H_ref)
             term_list[idx] = ((i, j), term, relative_error) 
 
+        for ((i, j), t, rel) in term_list:
+            print(f"Term at position ({i}, {j}): {t}, Relevance Coefficient: {rel}")
+
         
         return term_list
 
@@ -133,6 +229,7 @@ class Approximation:
         input_potential,
         output_potential,
         reference_points,
+        elimination_method,
         rel_error_threshold,
         sorting_method,
         column
@@ -171,8 +268,6 @@ class Approximation:
         term_list_sym = self.sort_term_list(term_list_sym, sorting_method, column)
         term_list_sym.sort(key=lambda x: x[2].real)
 
-        print("Initial term list:")
-        print(term_list_sym)
 
         # ------------------------------------------------------------------------------------------
 
@@ -203,117 +298,248 @@ class Approximation:
         abs_H_ref = np.abs(H_ref)
         
 
-        #Initialize error trackers an removed terms list
+        #Initialize error trackers and removed terms list
         accumulated_relevance_error = 0.0
         true_error = 0.0
         removed_terms = []   
 
-        
-        
-        while term_list:
-            
-            #get next, least relevant, term
-            
-
-            (i, j), t0, t1, rel_coeff = term_list.pop(0) #get least relevant numeric term
-
-
-            (i_sym, j_sym), term, rel_coeff_sym = term_list_sym.pop(0) # get least relevant symbolic term for record keeping
-
-            print(f"Trying to remove term {term} at position ({i}, {j}) with relevance coefficient {rel_coeff}")
-
-            #-------------------------------------------------------------------------------
-            # create trial matrices
-
-
-            A0_trial = A0.copy()
-            A1_trial = A1.copy()
-
-            A0_trial[i, j] -= t0
-            A1_trial[i, j] -= t1
-
-            #-------------------------------------------------------------------------------
-            # compute trial transfer function
-
-            try:
+        match elimination_method:
+            case "block":
+                error_flag = False
                 
-                H_trial = self.compute_transfer_function_numeric(
-                        A0_trial,
-                        A1_trial,
-                        z_num_func,
-                        approx_points,
-                        idx_in,
-                        idx_out
+
+                while term_list:
+                    mag_jump = self.find_order_jumps(term_list, rel_error_threshold)
+
+                    trial_term_list = term_list.copy()
+                    trial_term_list_sym = term_list_sym.copy()
+                    # create trial matrices
+                    A0_trial = A0.copy()
+                    A1_trial = A1.copy()
+
+                    for k in range(mag_jump + 1):
+                        (i, j), t0, t1, rel_coeff = trial_term_list.pop(0) #get least relevant numeric term
+                        (i_sym, j_sym), term, rel_coeff_sym = trial_term_list_sym.pop(0) # get least relevant symbolic term for record keeping
+                        
+                        A0_trial[i, j] -= t0
+                        A1_trial[i, j] -= t1
+
+                    # compute trial transfer function
+                    try:
+                        
+                        H_trial = self.compute_transfer_function_numeric(
+                                A0_trial,
+                                A1_trial,
+                                z_num_func,
+                                approx_points,
+                                idx_in,
+                                idx_out
+                            )
+                        print("Computed trial transfer function.")
+                        print(H_trial)
+                        
+
+                    except NonInvertibleMatrixError:
+                        error_flag = True
+                    
+                    if not error_flag:
+                        if self.has_phase_sign_jump(H_ref, H_trial):# check for phase jumps
+                            continue
+
+                        abs_H_trial= np.abs(H_trial)
+
+                        # calculate true error
+                        true_error = np.max(
+                            np.abs(abs_H_ref - abs_H_trial) / abs_H_ref
+                        )
+                    #check if true error is acceptable
+                    if true_error > max_error or error_flag: #TODO: max_error per frequency point
+                        for k in range(mag_jump + 1):
+                    
+                            #get next, least relevant, term
+                            
+
+                            (i, j), t0, t1, rel_coeff = term_list.pop(0) #get least relevant numeric term
+
+
+                            (i_sym, j_sym), term, rel_coeff_sym = term_list_sym.pop(0) # get least relevant symbolic term for record keeping
+
+                            print(f"Trying to remove term {term} at position ({i}, {j}) with relevance coefficient {rel_coeff}")
+
+                            #-------------------------------------------------------------------------------
+                            # create trial matrices
+
+
+                            A0_trial = A0.copy()
+                            A1_trial = A1.copy()
+
+                            A0_trial[i, j] -= t0
+                            A1_trial[i, j] -= t1
+
+                            #-------------------------------------------------------------------------------
+                            # compute trial transfer function
+
+                            try:
+                                
+                                H_trial = self.compute_transfer_function_numeric(
+                                        A0_trial,
+                                        A1_trial,
+                                        z_num_func,
+                                        approx_points,
+                                        idx_in,
+                                        idx_out
+                                    )
+                                print("Computed trial transfer function.")
+                                print(H_trial)
+                                
+
+                            except NonInvertibleMatrixError:
+                                continue
+                            
+
+                            if self.has_phase_sign_jump(H_ref, H_trial):# check for phase jumps 
+                                continue
+
+                        
+                            abs_H_trial= np.abs(H_trial)
+
+
+                            #-------------------------------------------------------------------------------
+                            # calculate true error
+                            
+                            
+                            true_error = np.max(
+                                np.abs(abs_H_ref - abs_H_trial) / abs_H_ref
+                            )
+                            
+                            
+                            #check if true error is acceptable
+                            if true_error > max_error: #TODO: max_error per frequency point
+                                break
+
+
+                            #-------------------------------------------------------------------------------
+                        
+                            #accept removal
+                            A0 = A0_trial.copy()
+                            A1 = A1_trial.copy()
+                            
+
+                            removed_terms.append(((i_sym, j_sym), term, rel_coeff_sym)) # record keeping
+
+                       
+            
+            case "tbt":
+        
+                while term_list:
+                    
+                    #get next, least relevant, term
+                    
+
+                    (i, j), t0, t1, rel_coeff = term_list.pop(0) #get least relevant numeric term
+
+
+                    (i_sym, j_sym), term, rel_coeff_sym = term_list_sym.pop(0) # get least relevant symbolic term for record keeping
+
+                    print(f"Trying to remove term {term} at position ({i}, {j}) with relevance coefficient {rel_coeff}")
+
+                    #-------------------------------------------------------------------------------
+                    # create trial matrices
+
+
+                    A0_trial = A0.copy()
+                    A1_trial = A1.copy()
+
+                    A0_trial[i, j] -= t0
+                    A1_trial[i, j] -= t1
+
+                    #-------------------------------------------------------------------------------
+                    # compute trial transfer function
+
+                    try:
+                        
+                        H_trial = self.compute_transfer_function_numeric(
+                                A0_trial,
+                                A1_trial,
+                                z_num_func,
+                                approx_points,
+                                idx_in,
+                                idx_out
+                            )
+                        print("Computed trial transfer function.")
+                        print(H_trial)
+                        
+
+                    except NonInvertibleMatrixError:
+                        continue
+                    
+
+                    if self.has_phase_sign_jump(H_ref, H_trial):# check for phase jumps 
+                        continue
+
+                
+                    abs_H_trial= np.abs(H_trial)
+
+
+                    #-------------------------------------------------------------------------------
+                    # calculate true error
+                    
+                    
+                    true_error = np.max(
+                        np.abs(abs_H_ref - abs_H_trial) / abs_H_ref
                     )
+                    
+                    
+                    #check if true error is acceptable
+                    if (true_error > max_error) or (np.isnan(true_error) and (accumulated_relevance_error > max_error)): #TODO: max_error per frequency point
+                        break
+
+
+                    #-------------------------------------------------------------------------------
                 
+                    #accept removal
+                    A0 = A0_trial.copy()
+                    A1 = A1_trial.copy()
+                    accumulated_relevance_error += rel_coeff
 
-            except NonInvertibleMatrixError:
-                continue
-            
+                    removed_terms.append(((i_sym, j_sym), term, rel_coeff_sym)) # record keeping
 
-            if self.has_phase_sign_jump(H_ref, H_trial):# check for phase jumps 
-                continue
+                    #-------------------------------------------------------------------------------
+                    rel_diff = np.abs(true_error - accumulated_relevance_error) # difference check
+                    print("True error: ",true_error, " Accumulated error: ",accumulated_relevance_error, " Difference: ", rel_diff)
+                    print("-----------------\n")
 
-        
-            abs_H_trial= np.abs(H_trial)
+                    #-------------------------------------------------------------------------------
+                    # calculate new relevance coefficients if necessary
 
+                    if rel_diff > rel_error_threshold:
+                        print("Updating relevance coefficients...")
+                        t3_extra = time.perf_counter_ns()
 
-            #-------------------------------------------------------------------------------
-            # calculate true error
-            
-            
-            true_error = np.max(
-                np.abs(abs_H_ref - abs_H_trial) / abs_H_ref
-            )
-            
-            
-            #check if true error is acceptable
-            if true_error > max_error: #TODO: max_error per frequency point
-                break
+                        term_list_sym = self.update_remaining_terms(
+                            removed_terms,
+                            term_list_sym,
+                            input_potential,
+                            output_potential,
+                            approx_points,
+                            sorting_method,
+                            column
+                        )
+                        t4_extra = time.perf_counter_ns()
+                        print(f"Update took {(t4_extra - t3_extra) / 1e6} ms")
+                        _, _, term_list = self.split_linear_s_dependence(
+                            self.get_reduced_matrix(removed_terms),
+                            term_list_sym,
+                            s
+                        )
+                        t5_extra = time.perf_counter_ns()
+                        print(f"Splitting took {(t5_extra - t4_extra) / 1e6} ms")
 
+                        #term_list_sym.sort(key=lambda x: x[2].any())
+                        term_list.sort(key=lambda x: x[2].real)
+                        accumulated_relevance_error = 0.0
 
-            #-------------------------------------------------------------------------------
-           
-            #accept removal
-            A0 = A0_trial.copy()
-            A1 = A1_trial.copy()
-            accumulated_relevance_error += rel_coeff
-
-            removed_terms.append(((i_sym, j_sym), term, rel_coeff_sym)) # record keeping
-
-            #-------------------------------------------------------------------------------
-            rel_diff = np.abs(true_error - accumulated_relevance_error) # difference check
-            print("True error: ",true_error, " Accumulated error: ",accumulated_relevance_error, " Difference: ", rel_diff)
-            print("-----------------\n")
-
-            #-------------------------------------------------------------------------------
-            # calculate new relevance coefficients if necessary
-
-            if rel_diff > rel_error_threshold:
-                print("Updating relevance coefficients...")
-                t3_extra = time.perf_counter_ns()
-
-                term_list_sym = self.update_remaining_terms(
-                    removed_terms,
-                    term_list_sym,
-                    input_potential,
-                    output_potential,
-                    approx_points,
-                    sorting_method,
-                    column
-                )
-                _, _, term_list = self.split_linear_s_dependence(
-                    self.get_reduced_matrix(removed_terms),
-                    term_list_sym,
-                    s
-                )
-
-                term_list_sym.sort(key=lambda x: x[2].any())
-                term_list.sort(key=lambda x: x[2].real)
-                accumulated_relevance_error = 0.0
-
-                t4_extra = time.perf_counter_ns()
-                print(f"Update took {(t4_extra - t3_extra) / 1e6} ms")
+                
 
             
         
@@ -339,12 +565,15 @@ class Approximation:
         return result
     
     def get_reduced_matrix(self, rem_terms):
+       
 
+        
         A_sym = self.analysis.A.copy()
 
         for (i, j), term_sym, _ in rem_terms:
             A_sym[i, j] -= term_sym
 
+        
         return A_sym
 
     def compute_transfer_function_numeric(self, A0, A1, z_func ,approx_points, input_potential, output_potential):
@@ -404,6 +633,7 @@ class Approximation:
         """
         A_current = self.get_reduced_matrix(rem_terms)
        
+        t0 = time.perf_counter_ns()
 
         updated = self.generate_relevance_coefficients(
             input_potential,
@@ -412,10 +642,14 @@ class Approximation:
             A_current
         )
 
+        t1 = time.perf_counter_ns()
+        print(f"Relevance coefficient generation took {(t1 - t0) / 1e6} ms")
 
-    
+        
         # updated = new_list
         updated = self.sort_term_list(updated, sorting_method, column)
+        
+        
 
         updated.sort(key=lambda x: x[2])
 
@@ -425,6 +659,8 @@ class Approximation:
             for ((i, j), _,coeff) in updated
         }
 
+      
+
        
 
         new_term_list = []
@@ -432,9 +668,13 @@ class Approximation:
             new_term_list.append(
                 ((i, j), term, updated_dict[(i, j)])
             )
+        
+        
 
 
         new_term_list = [entry for entry in new_term_list if not np.isnan(entry[2]).any()]
+
+      
         
 
         return new_term_list
@@ -517,3 +757,24 @@ class Approximation:
         term_list = new_list
 
         return term_list
+    
+    def find_order_jump(term_list, threshold):
+
+        for i in range(len(term_list) - 1):
+            _,_,_,a= term_list[i] 
+            _,_,_,b= term_list[i + 1]
+            # 0 -> positive Zahl: immer ein Sprung
+            if a == 0 and b > 0:
+                return i
+                
+
+            # 0 -> 0 oder negative Fälle ignorieren
+            if a <= 0 or b <= 0:
+                continue
+
+            diff = abs(math.log10(b) - math.log10(a))
+
+            if diff >= threshold:
+                return i
+
+        return len(term_list)
