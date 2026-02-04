@@ -1,5 +1,5 @@
 import sympy as sp
-import Circuit
+import netlist.Circuit as Circuit
 import logging as logger
 import Pspice_util as pu
 import numpy as np

@@ -4,7 +4,7 @@ class Model:
         self.filename: str = ""
         self.params: dict[str, str] = {}
 
-   # --- COPY METHOD ---
+    # --- COPY METHOD ---
     def copy(self) -> "Model":
         new = Model()
         new.name = self.name
@@ -16,19 +16,18 @@ class Model:
         self.params[paramSymbol] = value
 
     def get_generated_subcircuit(self, element_params, bipolar_model, mosfet_model):
-
         # convert all params to lowercase
         param_list = {k.lower(): v for k, v in (self.params | element_params).items()}
 
         import re
 
-        from NetlistParser import NetlistParser
+        from parser.NetlistParser import NetlistParser
 
         parser = NetlistParser()
 
         # chose the correct small signal model
         # todo for those types: NPN, PNP, LPNP, D, ...
-        if param_list["type"] == "NPN":
+        if param_list["type"] in ("NPN", "PNP"):
             parser.set_cir_file("library/bipolar_models.lib")
         else:
             parser.set_cir_file("library/mosfet_models.lib")

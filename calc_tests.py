@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sympy as sp
 
-
-from Circuit import Circuit
+import Approximate as ap
+from netlist.Circuit import Circuit
 from Modified_Node_Analysis import ModifiedNodalAnalysis
-from NetlistParser import NetlistParser
+from parser.NetlistParser import NetlistParser
 from Approximate import Approximation 
 import time as t
 

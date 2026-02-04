@@ -95,11 +95,23 @@ class NetlistParserNode(Node):
 
     def onlink_callback(self):
         filepath = self.get_input_pin_value(self.uuid("file_path_pin"))
-        from NetlistParser import NetlistParser
+
+        from pathlib import Path
+
+        from parser.NetlistParser import NetlistParser
 
         parser = NetlistParser()
         parser.set_cir_file(filepath)
         self.circuit = parser.parse_netlist()
+
+        # extract name and folder_path from the file_path
+        p = Path(filepath)
+
+        ct_name = p.stem
+        ct_folder_path = str(p.parent) + "\\"
+
+        self.circuit.set_name(ct_name)
+        self.circuit.set_netlist_path(ct_folder_path)
 
         # populate the subcircuit table
         def add_cubcircuit_row(subct_name, bipolar_model, mosfet_model):
@@ -187,13 +199,11 @@ class NetlistParserNode(Node):
         flattend_circuit = self.circuit.copy()
         flattend_circuit.flatten()
 
-        # delte all output pins that already exist
-        self.delete_output_pins()
-
         # create a output pin for the flattend circuit
-        with self.add_output_attr() as output_pin:
-            dpg.add_text("Flattend Circuit", tag=self.uuid("flattend_circuit"))
-        self.output_pins[self.uuid("flattend_circuit")] = output_pin
+        if not dpg.does_item_exist(self.uuid("flattend_circuit")):
+            with self.add_output_attr() as output_pin:
+                dpg.add_text("Flattend Circuit", tag=self.uuid("flattend_circuit"))
+            self.output_pins[self.uuid("flattend_circuit")] = output_pin
         self.add_output_pin_value(self.uuid("flattend_circuit"), flattend_circuit)
 
         flattend_circuit.to_ai_string()

@@ -1,7 +1,7 @@
 import dearpygui.dearpygui as dpg
 
 from gui.nodes.Node import Node
-from gui.windows.ApproximatorSettings import ApproximatorWindow
+from gui.windows.ApproximatorWindow import ApproximatorWindow
 
 
 class ApproximatorNode(Node):
@@ -25,11 +25,11 @@ class ApproximatorNode(Node):
 
     def open_settings_window(self):
         if self.h is not None:
-            self.settings_window = ApproximatorWindow(self.h, self.node_id)
+            self.settings_window = ApproximatorWindow(self.h, self.mna, self.node_id)
             self.settings_window.setup()
 
     def onlink_callback(self):
-        self.h = self.get_input_pin_value(self.uuid("h_input"))
+        self.h, self.mna = self.get_input_pin_value(self.uuid("h_input"))
 
         super().onlink_callback()
 
