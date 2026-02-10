@@ -57,8 +57,11 @@ class BodePlot(Node):
 
         filepath = app_data["file_path_name"]
         print(filepath)
-        csd.parse_csd(filepath)
+        df, singal_names = csd.parse_csd(filepath)
+        print(df)
 
+        with self.add_static_attr():
+            dpg.add_combo(items=singal_names, filter_key=True, width=100)
         pass
 
     def onlink_callback(self):

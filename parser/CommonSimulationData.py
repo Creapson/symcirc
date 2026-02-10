@@ -1,5 +1,4 @@
 import re
-from pathlib import Path
 
 import pandas as pd
 
@@ -12,11 +11,11 @@ DATA_RE = re.compile(
 )
 
 
-def parse_csd(path: str | Path) -> pd.DataFrame:
+def parse_csd(path):
     signal_names = []
     rows = []
     current_freq = None
-    reading_names = True
+    reading_names = False
 
     with open(path, "r") as f:
         for line in f:
@@ -28,6 +27,9 @@ def parse_csd(path: str | Path) -> pd.DataFrame:
             # End of file
             if line.startswith("#;"):
                 break
+            if line.startswith("#N"):
+                reading_names = True
+                continue
 
             # Frequency block starts → stop reading names
             if line.startswith("#C"):
@@ -53,20 +55,6 @@ def parse_csd(path: str | Path) -> pd.DataFrame:
 
     # Build DataFrame
     df = pd.DataFrame(rows)
-    print(df)
-    print(signal_names)
 
-    # Map index → signal name
-    name_map = dict(enumerate(signal_names))
-    df["signal"] = df["index"].map(name_map)
-
-    # Safety check
-    if df["signal"].isna().any():
-        missing = df[df["signal"].isna()]["index"].unique()
-        raise ValueError(f"Unmapped indices found: {missing}")
-
-    # Pivot to one column per signal
-    wide_df = df.pivot(index="frequency_hz", columns="signal", values="value")
-
-    return wide_df.sort_index()
+    return df, signal_names
 
