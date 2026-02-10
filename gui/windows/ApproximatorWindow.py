@@ -41,7 +41,7 @@ class ApproximatorWindow(Window):
             "tbt",
             0.1,
             "column",
-            1,
+            0,
         )
 
         self.approx = sp.simplify(self.approx)
