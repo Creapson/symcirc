@@ -11,7 +11,7 @@ class Circuit:
 
         self.inner_connecting_nodes: List[str] = []
 
-        self.bipolar_model = "beta_with_r_be"
+        self.bipolar_model = "beta_with_r_be_G"
         self.mosfet_model = "BSIM"
 
         self.nodes: List[str] = []
