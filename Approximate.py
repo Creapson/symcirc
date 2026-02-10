@@ -5,7 +5,7 @@ import numpy as np
 import time
 import scipy.linalg as scipy
 from Modified_Node_Analysis import ModifiedNodalAnalysis
-from sympy.utilities.autowrap import ufuncify
+
 
 
 class Approximation:
@@ -35,7 +35,7 @@ class Approximation:
                     term_list.append(((i, j), t, 0.0))  # Placeholder for numerical value
         return term_list
 
-    def generate_relevance_coefficients_x(
+    def generate_relevance_coefficients(
         self,
         input_potential,
         output_potential,
@@ -44,10 +44,10 @@ class Approximation:
     ):
         t0 = time.perf_counter_ns()
         term_list = self.generate_term_list(sysMatrix)
-        n = sysMatrix.shape[0]
+       
 
         x_syms = list(self.analysis.get_unknowns())
-        idx_in = x_syms.index(input_potential)
+        
         idx_out = x_syms.index(output_potential)
 
         se_results = []
@@ -61,52 +61,37 @@ class Approximation:
 
           
 
-
         A_inv = sysMatrix_num.inv()
-        ref_result = A_inv * z_num
-        ref_func = ref_result[idx_out, 0] / ref_result[idx_in, 0]
+        x = A_inv * z_num
+        ref_result_k = x[idx_out,0]
+        
 
-        for w in approx_points:
-            sysMatrix_num_w = sysMatrix_num.subs(s, 1j * w)
+        
 
-            cond = np.linalg.cond(np.array(sysMatrix_num_w).astype(np.complex128))
-            print(f"Condition number at w={w}: {cond}")
+            
+            
 
         for ((i, j), t, _) in term_list:
-            # Term t an dieser Stelle evaluieren
+                # Term t an dieser Stelle evaluieren
             t_val = t.subs(self.analysis.value_dict)
-               
 
-             # Sherman-Morrison: (A + u*v^T)^-1 = A^-1 - A^-1 u v^T A^-1 / (1 + v^T A^-1 u)
-            # Hier ist u = vektor mit 1 an i, 0 sonst, v = t_val * Basisvektor j
-            u = sp.zeros(n, 1)
-            u[i, 0] = 1
-            v = sp.zeros(n, 1)
-            v[j, 0] = t_val
+                
 
+                
+                
+            se_func = (((-t_val * A_inv[idx_out,i]) / (1 + t_val * A_inv[j, i]))*ref_result_k)
+
+            se = [float(abs(se_func.subs(s, 1j * w)/abs(ref_result_k.subs(s, 1j * w)))) for w in approx_points]
+                
+                
             
-            denom = 1 + (v.T * A_inv * u)[0]
-            denom_num = [abs(denom.subs(s, 1j * w).evalf()) for w in approx_points]
-            print(f"Denominator for term at ({i}, {j}): {denom_num}")
-           
-            
-            A_inv_updated = A_inv - (A_inv * u * v.T * A_inv) / denom
-
-            updated_result = A_inv_updated * z_num
-
-            updated_func = updated_result[idx_out, 0] / updated_result[idx_in, 0]
-
-            se_func = sp.simplify(abs(ref_func - updated_func) / abs(ref_func))
-
-            se = [float(abs(se_func.subs(s, 1j * w).evalf())) for w in approx_points]
 
                 
             se_results.append(((i, j), t, se))
         
         t1 = time.perf_counter_ns()
         print(f"Sensitivity calculation took {(t1 - t0) / 1e6} ms")
-        for ((i, j), t, se) in se_results:
-            print(f"Term at position ({i}, {j}): {t}, Sensitivity: {se}")
+       
         
         
 
@@ -116,7 +101,7 @@ class Approximation:
 
 
     
-    def generate_relevance_coefficients(self, input_potential,  output_potential, approx_points, sysMatrix):
+    def generate_relevance_coefficients_(self, input_potential,  output_potential, approx_points, sysMatrix):
         """Generate relevance coefficients for each term in the term list.
 
         Args:
@@ -205,6 +190,7 @@ class Approximation:
 
                     H_mod = x_mod[idx_out] / x_mod[idx_in]
                     abs_H_mod[k] = np.abs(H_mod)
+                    print("H_mod: ", abs_H_mod[k])
 
                 except Exception:
                     term_list[idx] = ((i, j), term, float("inf"))
@@ -250,10 +236,12 @@ class Approximation:
         idx_in = x_syms.index(input_potential)
         idx_out = x_syms.index(output_potential)
 
+        
+
         #z numeric function
         z_num = self.analysis.z.subs(self.analysis.value_dict)
         z_num_func = sp.lambdify(sp.symbols('s'), z_num, "numpy")
-
+        
         #Compute sensitivities
         term_list_sym = self.generate_relevance_coefficients( 
                                                          input_potential, 
@@ -262,12 +250,18 @@ class Approximation:
                                                          self.analysis.A)
         term_list_sym = [entry for entry in term_list_sym if not np.isnan(entry[2]).any()]
 
-
+        
         # Sort term list by relevance coefficient --------------------------------------------------
 
         term_list_sym = self.sort_term_list(term_list_sym, sorting_method, column)
+        
+        
         term_list_sym.sort(key=lambda x: x[2].real)
 
+        print("Sorted term list:")
+        for ((i, j), t, rel) in term_list_sym:
+            print(f"Term at position ({i}, {j}): {t}, Relevance Coefficient: {rel}")
+        
 
         # ------------------------------------------------------------------------------------------
 
@@ -284,7 +278,7 @@ class Approximation:
             s
         )
 
-
+        
 
         # Compute reference transfer function
         H_ref = self.compute_transfer_function_numeric(
@@ -296,6 +290,7 @@ class Approximation:
             idx_out
         )
         abs_H_ref = np.abs(H_ref)
+        
         
 
         #Initialize error trackers and removed terms list
@@ -430,16 +425,16 @@ class Approximation:
                        
             
             case "tbt":
-        
+               
                 while term_list:
                     
                     #get next, least relevant, term
+            
                     
-
                     (i, j), t0, t1, rel_coeff = term_list.pop(0) #get least relevant numeric term
-
-
+                    
                     (i_sym, j_sym), term, rel_coeff_sym = term_list_sym.pop(0) # get least relevant symbolic term for record keeping
+                   
 
                     print(f"Trying to remove term {term} at position ({i}, {j}) with relevance coefficient {rel_coeff}")
 
@@ -488,11 +483,15 @@ class Approximation:
                     true_error = np.max(
                         np.abs(abs_H_ref - abs_H_trial) / abs_H_ref
                     )
+                    accumulated_relevance_error += rel_coeff
+
+                    print("True error: ",true_error, " Accumulated error: ",accumulated_relevance_error)
                     
                     
                     #check if true error is acceptable
                     if (true_error > max_error) or (np.isnan(true_error) and (accumulated_relevance_error > max_error)): #TODO: max_error per frequency point
-                        break
+                        print("Error too high, ending approximation...")
+                        return self.calc_End_Result(removed_terms, input_potential, output_potential)
 
 
                     #-------------------------------------------------------------------------------
@@ -500,7 +499,7 @@ class Approximation:
                     #accept removal
                     A0 = A0_trial.copy()
                     A1 = A1_trial.copy()
-                    accumulated_relevance_error += rel_coeff
+                    
 
                     removed_terms.append(((i_sym, j_sym), term, rel_coeff_sym)) # record keeping
 
@@ -605,7 +604,7 @@ class Approximation:
 
             
 
-            H[k] = x[output_potential] / x[input_potential]
+            H[k] = x[output_potential] #/ x[input_potential]
 
         return H
 

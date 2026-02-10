@@ -70,7 +70,7 @@ class EquationFormulator:
 
         matrix_ones = matrix.subs(subs_dict)
 
-        return matrix_ones.det()    
+        return sp.det(matrix_ones)    
 
 
 
