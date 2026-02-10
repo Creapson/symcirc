@@ -14,7 +14,21 @@ class BodePlot(Node):
                 )
             self.input_pins[self.uuid("line_pin")] = input_pin
 
+            with dpg.file_dialog(
+                directory_selector=False,
+                show=False,
+                callback=self.csd_select_callback,
+                tag=f"{self.node_id}_file_dialog_id",
+                width=700,
+                height=400,
+            ):
+                dpg.add_file_extension(".csd")
+
             with dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Static):
+                dpg.add_button(
+                    label="Open File Dialog",
+                    callback=lambda: dpg.show_item(f"{self.node_id}_file_dialog_id"),
+                )
                 with dpg.subplots(
                     2, 1, label="", link_all_x=True, height=600
                 ) as subplot_id:
@@ -37,6 +51,15 @@ class BodePlot(Node):
                             )
 
         return super().setup(build, node_editor_tag)
+
+    def csd_select_callback(self, sender, app_data):
+        import parser.CommonSimulationData as csd
+
+        filepath = app_data["file_path_name"]
+        print(filepath)
+        csd.parse_csd(filepath)
+
+        pass
 
     def onlink_callback(self):
         freq_log, magnitude, phase = self.get_input_pin_value(self.uuid("line_pin"))

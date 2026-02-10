@@ -7,6 +7,7 @@ from gui.nodes.ImportCircuit import ImportCircuit
 from gui.nodes.ModifiedNodalAnalysis import ModifiedNodalAnalysis
 from gui.nodes.NetlistParserNode import NetlistParserNode
 from gui.nodes.NumericSolver import NumericSolver
+from gui.nodes.TransferFunctionNode import TransferFunctionNode
 from gui.windows.Window import Window
 
 
@@ -131,6 +132,14 @@ class NodeEditor(Window):
                             callback=lambda: self.add_node(
                                 ModifiedNodalAnalysis,
                                 "ModifiedNodalAnalysis Node",
+                                (000, 300),
+                            ),
+                        )
+                        dpg.add_menu_item(
+                            label="TransferFunction Node",
+                            callback=lambda: self.add_node(
+                                TransferFunctionNode,
+                                "TransferFunction Node",
                                 (000, 300),
                             ),
                         )

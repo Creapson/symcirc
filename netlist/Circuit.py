@@ -127,11 +127,17 @@ class Circuit:
             for node in nodeID:
                 if node == "0":
                     new_IDs.append("0")
-                if node in subct_connections:
+                elif node in subct_connections:
                     position = subct.inner_connecting_nodes.index(node)
                     new_IDs.append(subct_element_connections[position])
                 else:
-                    new_IDs.append(subcircuit_name + self.separator + node)
+                    new_IDs.append(
+                        subcircuit_name
+                        + self.separator
+                        + element_name
+                        + self.separator
+                        + node
+                    )
             # if list is empty
             return new_IDs
 
