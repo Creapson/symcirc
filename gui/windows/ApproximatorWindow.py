@@ -25,50 +25,80 @@ class ApproximatorWindow(Window):
 
     def update(self):
         import sympy as sp
-        from Approximate import Approximation 
+
+        from Approximate import Approximation
 
         ap = Approximation(self.mna)
         print(self.approximation_points)
-        self.approx = ap.approximate(sp.symbols('V_1'), sp.symbols('V_2'), self.approximation_points, 0.1, "column", 1)
+
+        from_node = "V_" + dpg.get_value(self.uuid("from_node"))
+        to_node = "V_" + dpg.get_value(self.uuid("to_node"))
+
+        self.approx = ap.approximate(
+            sp.symbols(from_node),
+            sp.symbols(to_node),
+            self.approximation_points,
+            "tbt",
+            0.1,
+            "column",
+            0,
+        )
 
         self.approx = sp.simplify(self.approx)
 
         approx_num = self.approx.subs(self.mna.value_dict)
 
-        # calculate numeric values
+        # calculate numeric values and plot them
         freq_log, magnitude_db, phase_deg = self.calculate_numeric_values(approx_num)
-        # delete existing line_series
-        if self.approx_mag is not None:
-            dpg.delete_item(self.approx_mag)
-            self.approx_mag = None
-        if self.approx_phase is not None:
-            dpg.delete_item(self.approx_phase)
-            self.approx_phase = None
-
-        # magnitude
-        self.approx_mag = dpg.add_line_series(
-            freq_log.tolist(),
-            magnitude_db.tolist(),
-            label="Approx",
-            parent=self.uuid("y_axis_mag"),
-        )
-        # phase
-        self.approx_phase = dpg.add_line_series(
-            freq_log.tolist(),
-            phase_deg.tolist(),
-            label="Approx",
-            parent=self.uuid("y_axis_phase"),
-        )
+        self.add_plot_line(freq_log, magnitude_db, phase_deg, "Approximation")
         # show approx_func as Text
-        dpg.configure_item(self.uuid("approx_func_txt"), label=str(self.approx))
+        dpg.configure_item(
+            self.uuid("approx_func_txt"), default_value=f"TF: {str(self.approx)}"
+        )
 
         print(self.approx)
 
         super().update()
 
+    def add_plot_line(self, freq_log, magnitude_db, phase_deg, label="None"):
+        # delete existing line_series
+        if dpg.does_item_exist(self.uuid(label + "_mag")):
+            dpg.delete_item(self.uuid(label + "_mag"))
+
+        if dpg.does_item_exist(self.uuid(label + "_phase")):
+            dpg.delete_item(self.uuid(label + "_phase"))
+
+        # magnitude
+        dpg.add_line_series(
+            freq_log.tolist(),
+            magnitude_db.tolist(),
+            label=label,
+            tag=self.uuid(label + "_mag"),
+            parent=self.uuid("y_axis_mag"),
+        )
+        # phase
+        dpg.add_line_series(
+            freq_log.tolist(),
+            phase_deg.tolist(),
+            label=label,
+            tag=self.uuid(label + "_phase"),
+            parent=self.uuid("y_axis_phase"),
+        )
+
     def setup(self):
         def build():
-            dpg.add_text(label="Test")
+            # add selection for the transfer-function
+            nodes = list(self.mna.node_map.keys())
+            with dpg.group(horizontal=True):
+                dpg.add_text("From Node:")
+                dpg.add_combo(items=nodes, tag=self.uuid("from_node"))
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("To Node:")
+                dpg.add_combo(items=nodes, tag=self.uuid("to_node"))
+
+            dpg.add_button(label="Confirm TransferFunction", callback=self.tf_selected)
+
             self.setup_bode_plot()
 
             # create table
@@ -83,9 +113,23 @@ class ApproximatorWindow(Window):
             dpg.add_text(
                 default_value="Not Calculated yet!", tag=self.uuid("approx_func_txt")
             )
+
             dpg.add_button(label="Calculate Approx", callback=self.update)
 
         super().setup(build)
+
+    def tf_selected(self, sender, app_data):
+        import sympy as sp
+
+        from_node = "V_" + dpg.get_value(self.uuid("from_node"))
+        to_node = "V_" + dpg.get_value(self.uuid("to_node"))
+
+        num_results = self.mna.solveNumerical(self.mna.value_dict)
+
+        self.h = num_results[sp.symbols(to_node)] / num_results[sp.symbols(from_node)]
+
+        freq_log, magnitude_db, phase_deg = self.calculate_numeric_values(self.h)
+        self.add_plot_line(freq_log, magnitude_db, phase_deg, "Numeric Calculation")
 
     def calculate_numeric_values(self, transfer_func):
         import numpy as np
@@ -263,37 +307,20 @@ class ApproximatorWindow(Window):
         self.drag_to_inputs.clear()
 
     def setup_bode_plot(self):
-        freq, magnitude_db, phase_deg = self.calculate_numeric_values(self.h)
-
-        x_min = freq.min()
-        x_max = freq.max()
-
         with dpg.subplots(2, 1, label="", link_all_x=True, width=-1, height=500):
-
             # -------- Magnitude Plot --------
             with dpg.plot(label="Betrag (dB)", no_menus=True) as self.bode_plot_id:
                 dpg.add_plot_legend()
 
                 # X axis (log scale)
                 xaxis = dpg.add_plot_axis(
-                    dpg.mvXAxis,
-                    label="Frequency (Hz)",
-                    scale=dpg.mvPlotScale_Log10
+                    dpg.mvXAxis, label="Frequency (Hz)", scale=dpg.mvPlotScale_Log10
                 )
-                dpg.set_axis_limits(xaxis, x_min, x_max)
 
                 # Y axis
-                with dpg.plot_axis(
-                    dpg.mvYAxis,
-                    label="Betrag [dB]",
-                    tag=self.uuid("y_axis_mag")
-                ):
-                    dpg.add_line_series(
-                        freq.tolist(),          # ← linear frequency values!
-                        magnitude_db.tolist(),
-                        label="|H(jω)|",
-                        tag=self.uuid("mag_series"),
-                    )
+                dpg.add_plot_axis(
+                    dpg.mvYAxis, label="Betrag [dB]", tag=self.uuid("y_axis_mag")
+                )
 
             # -------- Phase Plot --------
             with dpg.plot(label="Phase (°)", no_menus=True) as self.phase_plot_id:
@@ -301,25 +328,13 @@ class ApproximatorWindow(Window):
 
                 # X axis (log scale)
                 xaxis = dpg.add_plot_axis(
-                    dpg.mvXAxis,
-                    label="Frequency (Hz)",
-                    scale=dpg.mvPlotScale_Log10
+                    dpg.mvXAxis, label="Frequency (Hz)", scale=dpg.mvPlotScale_Log10
                 )
-                dpg.set_axis_limits(xaxis, x_min, x_max)
 
                 # Y axis
-                with dpg.plot_axis(
-                    dpg.mvYAxis,
-                    label="Phase [°]",
-                    tag=self.uuid("y_axis_phase")
-                ):
-                    dpg.add_line_series(
-                        freq.tolist(),          # ← same linear frequency data
-                        phase_deg.tolist(),
-                        label="∠H(jω)",
-                        tag=self.uuid("phase_series"),
-                    )
-
+                dpg.add_plot_axis(
+                    dpg.mvYAxis, label="Phase [°]", tag=self.uuid("y_axis_phase")
+                )
 
         # Create on_click callback for the plot
 

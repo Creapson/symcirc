@@ -44,7 +44,7 @@ class NumericSolver(Node):
         return super().setup(build, node_editor_tag)
 
     def onlink_callback(self):
-        self.h, _ = self.get_input_pin_value(self.uuid("h_input_pin"))
+        self.h = self.get_input_pin_value(self.uuid("h_input_pin"))
 
         super().onlink_callback()
 

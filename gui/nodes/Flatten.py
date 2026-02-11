@@ -213,7 +213,6 @@ class FlattenNode(Node):
         flattend_circuit.flatten(True, self.out_file_path)
 
         if not dpg.does_item_exist(self.uuid("flattend_circuit_out_pin")):
-            print("CREATED OUTPUT PIN!!!!\n\n\n")
             with self.add_output_attr() as output_pin:
                 dpg.add_text(source=self.uuid("flattend_circuit_out"))
             self.output_pins[self.uuid("flattend_circuit_out_pin")] = output_pin

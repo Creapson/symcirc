@@ -117,6 +117,10 @@ class Node:
 
 
 """
+import dearpygui.dearpygui as dpg
+
+from gui.nodes.Node import Node
+
 class Copy(Node):
     def setup(self, node_editor_tag):
         def build():

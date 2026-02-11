@@ -3,6 +3,7 @@ import netlist.Circuit as Circuit
 import logging as logger
 import Pspice_util as pu
 import numpy as np
+import scipy.linalg as scipy
 from Equation_Formulator import EquationFormulator
 
 class ModifiedNodalAnalysis(EquationFormulator):
@@ -179,15 +180,15 @@ class ModifiedNodalAnalysis(EquationFormulator):
             self.A[node_out1 - 1, idx] += beta
 
         if node_out2 != 0:
-            self.A[node_out2 - 1, idx] += -beta
+            self.A[node_out2 - 1, idx] -= beta
                         
         if node_ctrl1 != 0:
             self.A[idx, node_ctrl1 - 1] += 1
             self.A[node_ctrl1 - 1, idx] += 1
                         
         if node_ctrl2 != 0:
-            self.A[idx, node_ctrl2 - 1] += -1
-            self.A[node_ctrl2 - 1, idx] += -1
+            self.A[idx, node_ctrl2 - 1] -= 1
+            self.A[node_ctrl2 - 1, idx] -= 1
                         
         self.z[idx] = 0
 
@@ -397,7 +398,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
     
 
 
-    def solveNumerical(self, value_dict):
+    def solveNumerical(self, value_dict, frequencies, idx_out):
 
         """Solve the equation system numerically based on the value dictionary.
 
@@ -408,18 +409,35 @@ class ModifiedNodalAnalysis(EquationFormulator):
             sol(array): array with numerical solutions
 
         """
-        x = self.get_unknowns()
+        #x = self.get_unknowns()
+        H = np.zeros(len(frequencies), dtype=complex)
 
         A_num = self.toNumerical(self.A, value_dict)
         z_num = self.toNumerical(self.z, value_dict)
 
+        A_num_func = sp.lambdify(sp.symbols("s"), A_num, "numpy")
+        z_num_func = sp.lambdify(sp.symbols("s"), z_num, "numpy")
+        
+        for k, freq in enumerate(frequencies):
+            s_val = 1j * freq
+            A_num_eval = A_num_func(s_val)
+            
+            z_num_eval = z_num_func(s_val)
+            x = scipy.solve(A_num_eval, z_num_eval)
+
+            H[k] = x[idx_out] #/ x[idx_in]
+
+
+        
+            
+
         print("Solving numerical equation system...")
         logger.debug("Solving numerical equation system...")
 
-        self.num_result = sp.solve(A_num * x - z_num, x)
+        #self.num_result = sp.solve(A_num * x - z_num, x)
 
         print("Finished solving numerical equation system!")
         logger.debug("Finished solving numerical equation system!")
 
-        return self.num_result
+        return H#self.num_result
     
