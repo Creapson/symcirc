@@ -135,7 +135,7 @@ class Approximation:
         reference_points,
         rel_error_threshold,
         sorting_method,
-        column
+        column=0
     ):
         #Initialize
         approx_points = [a for a, _ in reference_points]

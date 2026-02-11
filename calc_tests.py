@@ -57,10 +57,10 @@ print(num_results)
 print("\n\n\n\n\n\n")
 
 
-result = mna.solve()
-H = result[sp.symbols("V_7")] / result[sp.symbols("V_1")]
+#result = mna.solve()
+#H = result[sp.symbols("V_7")] / result[sp.symbols("V_1")]
 print("Original transfer function:")
-print(H)
+#print(H)
 
 print("\n\n\n\n\n\n")
 print("Approximation results:")

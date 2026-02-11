@@ -58,9 +58,33 @@ class FlattenNode(Node):
                     dpg.add_input_text(
                         width=200,
                         hint="type to filter...",
-                        callback=self.filter_table,
+                        callback=self.filter_table_callback,
                         tag=self.uuid("subckt_filter"),
                     )
+
+                # group for selecting small signal model
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Bipolar Model")
+                    dpg.add_text("Mosfet Model")
+                    dpg.add_text("Apply Selection")
+
+                with dpg.group(horizontal=True):
+                    dpg.add_combo(
+                        self.BIPOLAR_MODELS,
+                        tag=self.uuid("bipolar_model_filter_selection"),
+                        width=100,
+                    )
+                    dpg.add_combo(
+                        self.MOSFET_MODELS,
+                        tag=self.uuid("mosfet_model_filter_selection"),
+                        width=100,
+                    )
+
+                    dpg.add_button(
+                        label="Apply Changes",
+                        callback=self.filtered_model_selection_callback,
+                    )
+
                 # create table to edit all subcircuits
                 dpg.add_text("Select small signal models for every element")
                 with dpg.table(
@@ -90,7 +114,10 @@ class FlattenNode(Node):
 
         self.circuit.to_ai_string()
 
+        # clear the table before populating it
+        self.delete_table()
         # populate the subcircuit table
+
         def add_element_row(name, bipolar_model, mosfet_model):
             with dpg.value_registry():
                 bipolar_source_id = dpg.add_string_value(
@@ -136,12 +163,29 @@ class FlattenNode(Node):
 
         super().onlink_callback()
 
-    def filter_table(self, sender, app_data):
+    def filter_table_callback(self, sender, app_data):
         filter_text = app_data.lower()
-
         for subct_name, row_id in self.table_rows.items():
             visible = filter_text in subct_name.lower()
             dpg.configure_item(row_id, show=visible)
+
+        # show model selection if rows are filtered
+        if filter_text != "":
+            for child in dpg.get_item_children(self.uuid("model_selection_group")):
+                dpg.disable_item(child)
+        else:
+            for child in dpg.get_item_children(self.uuid("model_selection_group")):
+                dpg.enable_item(child)
+
+    def filtered_model_selection_callback(self, sender, app_data):
+        bipolar_model = dpg.get_value(self.uuid("bipolar_model_filter_selection"))
+        mosfet_model = dpg.get_value(self.uuid("mosfet_model_filter_selection"))
+
+        for subct_name, row_id in self.table_rows.items():
+            # check if row is visible
+            if dpg.is_item_visible(row_id):
+                dpg.set_value(self.uuid(f"{subct_name}_bipolar_model"), bipolar_model)
+                dpg.set_value(self.uuid(f"{subct_name}_mosfet_model"), mosfet_model)
 
     def delete_table(self):
         dpg.delete_item(self.uuid("subcircuit_table"), children_only=True, slot=1)
@@ -168,11 +212,14 @@ class FlattenNode(Node):
         flattend_circuit = self.circuit.copy()
         flattend_circuit.flatten(True, self.out_file_path)
 
-        if not dpg.does_item_exist(self.uuid("flattend_circuit_out")):
+        if not dpg.does_item_exist(self.uuid("flattend_circuit_out_pin")):
+            print("CREATED OUTPUT PIN!!!!\n\n\n")
             with self.add_output_attr() as output_pin:
                 dpg.add_text(source=self.uuid("flattend_circuit_out"))
-            self.output_pins[self.uuid("flattend_circuit_out")] = output_pin
-        self.add_output_pin_value(self.uuid("flattend_circuit_out"), flattend_circuit)
+            self.output_pins[self.uuid("flattend_circuit_out_pin")] = output_pin
+        self.add_output_pin_value(
+            self.uuid("flattend_circuit_out_pin"), flattend_circuit
+        )
 
         flattend_circuit.to_ai_string()
 
