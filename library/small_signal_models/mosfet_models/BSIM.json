@@ -1,0 +1,55 @@
+{
+  "name": "BSIM",
+  "netlist_file_path": "",
+  "inner_connecting_nodes": ["d", "g", "s", "b"],
+  "bipolar_model": "beta_with_r_be_G",
+  "mosfet_model": "BSIM",
+  "nodes": ["g", "s", "d", "b"],
+  "elements": [
+    {
+      "name": "C_gs",
+      "symbol": "C_gs",
+      "connections": ["g", "s"],
+      "type": "C",
+      "params": { "value_dc": "cgs" }
+    },
+    {
+      "name": "C_gd",
+      "symbol": "C_gd",
+      "connections": ["g", "d"],
+      "type": "C",
+      "params": { "value_dc": "cgd" }
+    },
+    {
+      "name": "r_ds",
+      "symbol": "r_ds",
+      "connections": ["d", "s"],
+      "type": "r",
+      "params": { "value_dc": "rds" }
+    },
+    {
+      "name": "C_bd",
+      "symbol": "C_bd",
+      "connections": ["b", "d"],
+      "type": "C",
+      "params": { "value_dc": "cbd" }
+    },
+    {
+      "name": "C_bs",
+      "symbol": "C_bs",
+      "connections": ["b", "s"],
+      "type": "C",
+      "params": { "value_dc": "cbs" }
+    },
+    {
+      "name": "G1",
+      "symbol": "G1",
+      "connections": ["d", "s", "g", "s"],
+      "type": "G",
+      "params": { "value": "gm" }
+    }
+  ],
+  "models": {},
+  "subcircuits": {},
+  "separator": "."
+}

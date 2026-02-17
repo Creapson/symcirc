@@ -319,6 +319,7 @@ class NetlistParser:
 
         line_splits = self.netlist_lines[index].split()
         ct_name = line_splits[1]
+        ct.name = ct_name
 
         # Create a NEW Circuit object for this subcircuit
         ct.inner_connecting_nodes = line_splits[2:]

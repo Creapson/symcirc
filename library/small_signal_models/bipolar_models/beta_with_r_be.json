@@ -1,0 +1,48 @@
+{
+  "name": "beta_with_r_be",
+  "netlist_file_path": "",
+  "inner_connecting_nodes": ["c", "b", "e"],
+  "bipolar_model": "beta_with_r_be_G",
+  "mosfet_model": "BSIM",
+  "nodes": ["b", "ee", "c", "e"],
+  "elements": [
+    {
+      "name": "R_be",
+      "symbol": "R_be",
+      "connections": ["b", "ee"],
+      "type": "R",
+      "params": { "value_dc": "rpi" }
+    },
+    {
+      "name": "C_be",
+      "symbol": "C_be",
+      "connections": ["b", "ee"],
+      "type": "C",
+      "params": { "value_dc": "cbe" }
+    },
+    {
+      "name": "C_bc",
+      "symbol": "C_be",
+      "connections": ["b", "c"],
+      "type": "C",
+      "params": { "value_dc": "cbc" }
+    },
+    {
+      "name": "R_ce",
+      "symbol": "R_ce",
+      "connections": ["c", "e"],
+      "type": "R",
+      "params": { "value_dc": "ro" }
+    },
+    {
+      "name": "F1",
+      "symbol": "F1",
+      "connections": ["c", "e", "ee", "e"],
+      "type": "F",
+      "params": { "value": "betaac" }
+    }
+  ],
+  "models": {},
+  "subcircuits": {},
+  "separator": "."
+}

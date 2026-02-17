@@ -1,8 +1,0 @@
-.subckt BSIM d g s b
-C_gs g s cgs
-C_gd g d cgd
-r_ds d s rds
-C_bd b d cbd
-C_bs b s cbs
-G1 d s g s gm
-.end

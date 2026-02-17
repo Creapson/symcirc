@@ -25,41 +25,35 @@ class Model(BaseModel):
         # Merge model params and element params
         param_list = {k.lower(): v for k, v in (self.params | element_params).items()}
 
-        import re
-
-        from parser.NetlistParser import NetlistParser
-
-        parser = NetlistParser()
+        from netlist.Circuit import Circuit
 
         # Choose correct small signal model library
         if param_list["type"] in ("NPN", "PNP"):
-            parser.set_cir_file("library/bipolar_models.lib")
-            target_model = bipolar_model
-        else:
-            parser.set_cir_file("library/mosfet_models.lib")
-            target_model = mosfet_model
-
-        parser.pre_format()
-
-        # Replace parameters in template
-        regex = r"\b(" + "|".join(map(re.escape, param_list.keys())) + r")\b"
-
-        new_netlist_lines = []
-        for line in parser.netlist_lines:
-            new_line = re.sub(
-                regex,
-                lambda m: str(param_list[m.group(1)]),
-                line,
+            target_model = (
+                "library/small_signal_models/bipolar_models/"
+                + str(bipolar_model)
+                + ".json"
             )
-            new_netlist_lines.append(new_line)
+        elif param_list["type"] in ("MOS"):
+            target_model = (
+                "library/small_signal_models/mosfet_models/"
+                + str(mosfet_model)
+                + ".json"
+            )
+        else:
+            print(f"Failed to load model! Type: {param_list['type']} is not known!")
+            return None
 
-        parser.netlist_lines = new_netlist_lines
+        # load small signal model from library
+        with open(target_model, "r", encoding="utf-8") as f:
+            json_string = f.read()
+        circuit = Circuit.model_validate_json(json_string)
 
-        # Parse generated subcircuit
-        subct_start_index = parser.find_subcircuit(target_model)
-        start_index, end_index, ct = parser.parse_subcircuit(subct_start_index)
+        # replace the str in the value slot with the numeric values
+        for element in circuit.elements:
+            element.remap_values(param_list)
 
-        return ct
+        return circuit
 
     def to_ai_string(self, indent: int):
         param_string = ", ".join(f'"{k}" -> {v}' for k, v in self.params.items())
