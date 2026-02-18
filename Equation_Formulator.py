@@ -20,16 +20,16 @@ class EquationFormulator:
         value_dict = {}
 
         for element in self.ct.elements:
-
+            symbol = element.get_symbol()
             match element.type:
                 case "R" | "L" | "C": 
-                    value_dict.update({sp.symbols(element.name): pu.pspice_to_float(element.params["value_dc"])})
+                    value_dict.update({sp.symbols(symbol): pu.pspice_to_float(element.params["value_dc"])})
 
                 case "V" | "I": 
-                    value_dict.update({sp.symbols(element.name): element.params.get("value_ac", 0)})
+                    value_dict.update({sp.symbols(symbol): element.params.get("value_ac", 0)})
                 
                 case "H" | "F" | "E" | "G": 
-                    value_dict.update({sp.symbols(element.name): pu.pspice_to_float(element.params["value"])})
+                    value_dict.update({sp.symbols(symbol): pu.pspice_to_float(element.params["value"])})
 
         return value_dict
     
