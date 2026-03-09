@@ -1,53 +1,60 @@
-class Model:
-    def __init__(self):
-        self.name: str
-        self.filename: str = ""
-        self.params: dict[str, str] = {}
+from typing import Dict, Optional
 
-    # --- COPY METHOD ---
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class Model(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    name: Optional[str] = None
+    filename: str = ""
+    params: Dict[str, str] = Field(default_factory=dict)
+
     def copy(self) -> "Model":
-        new = Model()
-        new.name = self.name
-        new.filename = self.filename
-        new.params = dict(self.params)  # copy the dictionary
-        return new
+        return self.model_copy(deep=True)
 
-    def add_param(self, paramSymbol, value):
+    def add_param(self, paramSymbol: str, value):
         self.params[paramSymbol] = value
 
-    def get_generated_subcircuit(self, element_params, bipolar_model, mosfet_model):
-        # convert all params to lowercase
+    def get_generated_subcircuit(
+        self,
+        element_params: Dict[str, str],
+        bipolar_model: str,
+        mosfet_model: str,
+    ):
+        # Merge model params and element params
         param_list = {k.lower(): v for k, v in (self.params | element_params).items()}
 
-        import re
+        from netlist.Circuit import Circuit
 
-        from parser.NetlistParser import NetlistParser
-
-        parser = NetlistParser()
-
-        # chose the correct small signal model
-        # todo for those types: NPN, PNP, LPNP, D, ...
+        # Choose correct small signal model library
         if param_list["type"] in ("NPN", "PNP"):
-            parser.set_cir_file("library/bipolar_models.lib")
+            target_model = (
+                "library/small_signal_models/bipolar_models/"
+                + str(bipolar_model)
+                + ".json"
+            )
+        elif param_list["type"] in ("MOS"):
+            target_model = (
+                "library/small_signal_models/mosfet_models/"
+                + str(mosfet_model)
+                + ".json"
+            )
         else:
-            parser.set_cir_file("library/mosfet_models.lib")
-        parser.pre_format()
+            print(f"Failed to load model! Type: {param_list['type']} is not known!")
+            return None
 
-        # loop over all lines and replace the param_name with
-        # the respecting value
-        new_netlist_lines = []
-        regex = r"\b(" + "|".join(map(re.escape, param_list.keys())) + r")\b"
-        for line in parser.netlist_lines:
-            new_line = re.sub(regex, lambda m: str(param_list[m.group(1)]), line)
-            new_netlist_lines.append(new_line)
-        parser.netlist_lines = new_netlist_lines
+        # load small signal model from library
+        with open(target_model, "r", encoding="utf-8") as f:
+            json_string = f.read()
+        circuit = Circuit.model_validate_json(json_string)
 
-        # parse the replaced subcircuit normaly
-        subct_start_index = parser.find_subcircuit(bipolar_model)
-        start_index, end_index, ct = parser.parse_subcircuit(subct_start_index)
-        return ct
+        # replace the str in the value slot with the numeric values
+        for element in circuit.elements:
+            element.remap_values(param_list)
 
-    def to_ai_string(self, indent):
+        return circuit
+
+    def to_ai_string(self, indent: int):
         param_string = ", ".join(f'"{k}" -> {v}' for k, v in self.params.items())
         print("\t" * indent, self.name, self.filename, param_string)
-        return

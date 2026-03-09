@@ -100,42 +100,40 @@ class SparseTableau(EquationFormulator):
          
         
         for j, element in enumerate(self.ct.elements):
-
-            
-
+            symbol = element.get_symbol()
             match element.type:
                 case "R": 
-                    self.G[j, j] = sp.symbols(element.name)
+                    self.G[j, j] = sp.symbols(symbol)
                     self.H[j, j] = -1
                     self.CM_RHS = self.CM_RHS.row_insert(self.CM_RHS.rows, sp.Matrix([[0]]))
 
                 case "L": 
-                    self.G[j, j] = sp.symbols(element.name) * s
+                    self.G[j, j] = sp.symbols(symbol) * s
                     self.H[j, j] = -1
                     self.CM_RHS = self.CM_RHS.row_insert(self.CM_RHS.rows, sp.Matrix([[0]]))
 
                 case "C": 
                     self.G[j, j] = -1
-                    self.H[j, j] = 1 / (sp.symbols(element.name) * s)
+                    self.H[j, j] = 1 / (sp.symbols(symbol) * s)
                     self.CM_RHS = self.CM_RHS.row_insert(self.CM_RHS.rows, sp.Matrix([[0]]))
 
                 case "V": 
                     self.G[j, j] = 0
                     self.H[j, j] = 1
-                    self.CM_RHS = self.CM_RHS.row_insert(self.CM_RHS.rows, sp.Matrix([[sp.symbols(element.name)]]))
+                    self.CM_RHS = self.CM_RHS.row_insert(self.CM_RHS.rows, sp.Matrix([[sp.symbols(symbol)]]))
                     
 
                 case "I": 
                     self.G[j, j] = 1
                     self.H[j, j] = 0
-                    self.CM_RHS = self.CM_RHS.row_insert(self.CM_RHS.rows, sp.Matrix([[sp.symbols(element.name)]]))
+                    self.CM_RHS = self.CM_RHS.row_insert(self.CM_RHS.rows, sp.Matrix([[sp.symbols(symbol)]]))
                     
                 
                 case "H": # CCVS
                     self.G[j, j] = 0
                     self.H[j, j] = -1
                     controlled_Element_index = self.findControlledElement(element, j)
-                    self.G[j, controlled_Element_index] = sp.symbols(element.name)
+                    self.G[j, controlled_Element_index] = sp.symbols(symbol)
                     self.CM_RHS = self.CM_RHS.row_insert(self.CM_RHS.rows, sp.Matrix([[0]]))
 
                     
@@ -145,7 +143,7 @@ class SparseTableau(EquationFormulator):
                     self.H[j, j] = 0
                     self.G[j, j] = -1
                     controlled_Element_index = self.findControlledElement(element, j)
-                    self.G[j, controlled_Element_index] = sp.symbols(element.name)
+                    self.G[j, controlled_Element_index] = sp.symbols(symbol)
                     self.CM_RHS = self.CM_RHS.row_insert(self.CM_RHS.rows, sp.Matrix([[0]]))
                     
 
@@ -153,14 +151,14 @@ class SparseTableau(EquationFormulator):
                     self.G[j, j] = 0
                     self.H[j, j] = -1
                     controlled_Element_index = self.findControlledElement(element, j)
-                    self.H[j, controlled_Element_index] = sp.symbols(element.name)
+                    self.H[j, controlled_Element_index] = sp.symbols(symbol)
                     self.CM_RHS = self.CM_RHS.row_insert(self.CM_RHS.rows, sp.Matrix([[0]]))
 
                 case "G": # VCCS
                     self.G[j, j] = -1
                     self.H[j, j] = 0
                     controlled_Element_index = self.findControlledElement(element, j)
-                    self.H[j, controlled_Element_index] = sp.symbols(element.name)
+                    self.H[j, controlled_Element_index] = sp.symbols(symbol)
                     self.CM_RHS = self.CM_RHS.row_insert(self.CM_RHS.rows, sp.Matrix([[0]]))
     
     def findControlledElement(self, controlElement, control_index):

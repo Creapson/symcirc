@@ -1,5 +1,4 @@
 import re
-from pathlib import Path
 
 import pandas as pd
 
@@ -12,11 +11,12 @@ DATA_RE = re.compile(
 )
 
 
-def parse_csd(path: str | Path) -> pd.DataFrame:
+def parse_csd(path):
     signal_names = []
     rows = []
     current_freq = None
-    reading_names = True
+    reading_names = False
+    reading_header = False
 
     with open(path, "r") as f:
         for line in f:
@@ -25,15 +25,28 @@ def parse_csd(path: str | Path) -> pd.DataFrame:
             if not line:
                 continue
 
+            if line.startswith("#H"):
+                reading_header = True
+                continue
+
             # End of file
             if line.startswith("#;"):
                 break
 
+            if line.startswith("#N"):
+                reading_header = False
+                reading_names = True
+                continue
+
             # Frequency block starts → stop reading names
             if line.startswith("#C"):
                 reading_names = False
+                reading_header = False
                 _, freq, _ = line.split()
                 current_freq = float(freq)
+                continue
+
+            if reading_header:
                 continue
 
             # Parse signal names (before first #C)
@@ -42,31 +55,21 @@ def parse_csd(path: str | Path) -> pd.DataFrame:
                 continue
 
             # Parse data entries
-            for m in DATA_RE.finditer(line):
+            for value_str in line.split():
+                values = value_str.split("/")
+                val_re = values[0]
+                val_im = values[1].split(":")[0]
+                index = values[1].split(":")[1]
+
                 rows.append(
                     {
                         "frequency_hz": current_freq,
-                        "index": int(m.group("index"), 16),
-                        "value": float(m.group("real")) + 1j * float(m.group("imag")),
+                        "index": int(index, 16),
+                        "value": float(val_re) + 1j * float(val_im),
                     }
                 )
 
     # Build DataFrame
     df = pd.DataFrame(rows)
-    print(df)
-    print(signal_names)
 
-    # Map index → signal name
-    name_map = dict(enumerate(signal_names))
-    df["signal"] = df["index"].map(name_map)
-
-    # Safety check
-    if df["signal"].isna().any():
-        missing = df[df["signal"].isna()]["index"].unique()
-        raise ValueError(f"Unmapped indices found: {missing}")
-
-    # Pivot to one column per signal
-    wide_df = df.pivot(index="frequency_hz", columns="signal", values="value")
-
-    return wide_df.sort_index()
-
+    return df, signal_names

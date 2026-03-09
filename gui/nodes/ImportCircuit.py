@@ -50,6 +50,7 @@ class ImportCircuit(Node):
                 height=400,
             ):
                 dpg.add_file_extension(".cir")
+                dpg.add_file_extension(".net")
 
             with self.add_static_attr():
                 dpg.add_button(

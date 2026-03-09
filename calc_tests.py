@@ -62,7 +62,6 @@ H_lambdified = mna.solveNumerical(mna.value_dict, f, idx_out)
 
 print("\n\n\n\n\n\n")
 
-
 # result = mna.solve()
 # print("Symbolic result for V_10:")
 # print(result)
@@ -133,5 +132,3 @@ ax_phase.legend()
 
 plt.tight_layout()
 plt.show()
-
-
