@@ -8,3 +8,4 @@ gui/nodes/__pycache__/*
 gui/windows/__pycache__/*
 netlist/__pycache__/*
 parser/__pycache__/*
+pyrightconfig.json
