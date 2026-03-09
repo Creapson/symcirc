@@ -1,6 +1,7 @@
 .subckt beta_with_r_be c b e
 R_be b ee rpi
 C_be b ee cbe
+C_bx b c cbx
 C_bc b c cbc
 R_ce c e ro
 F1 c e ee e betaac
@@ -10,6 +11,7 @@ F1 c e ee e betaac
 R_be b e rpi
 C_be b e cbe
 C_bc b c cbc
+C_bx b c cbx
 R_ce c e ro
-G1 c e b e betaac
+G1 c e b e gm
 .ends

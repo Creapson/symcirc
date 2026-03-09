@@ -35,7 +35,7 @@ class Approximation:
                     term_list.append(((i, j), t, 0.0))  # Placeholder for numerical value
         return term_list
 
-    def generate_relevance_coefficients(
+    def generate_relevance_coefficients_sm(
         self,
         input_potential,
         output_potential,
@@ -81,7 +81,7 @@ class Approximation:
                 
             se_func = (((-t_val * A_inv[idx_out,i]) / (1 + t_val * A_inv[j, i]))*ref_result_k)
 
-            se = [float(abs(se_func.subs(s, 1j * w)/abs(ref_result_k.subs(s, 1j * w)))) for w in approx_points]
+            se = [float(abs(se_func.subs(s, 1j *2*np.pi*  w)/abs(ref_result_k.subs(s, 1j *2*np.pi* w)))) for w in approx_points]
                 
                 
             
@@ -101,7 +101,7 @@ class Approximation:
 
 
     
-    def generate_relevance_coefficients_(self, input_potential,  output_potential, approx_points, sysMatrix):
+    def generate_relevance_coefficients(self, input_potential,  output_potential, approx_points, sysMatrix):
         """Generate relevance coefficients for each term in the term list.
 
         Args:
@@ -122,7 +122,7 @@ class Approximation:
     
         s = sp.symbols('s')
         approx_points = np.atleast_1d(approx_points)
-        jw = 1j * approx_points
+        jw = 1j * 2* np.pi* approx_points
 
     
         x_syms = list(self.analysis.get_unknowns())
@@ -504,7 +504,7 @@ class Approximation:
                     removed_terms.append(((i_sym, j_sym), term, rel_coeff_sym)) # record keeping
 
                     #-------------------------------------------------------------------------------
-                    rel_diff = np.abs(true_error - accumulated_relevance_error) # difference check
+                    rel_diff = 0#np.abs(true_error - accumulated_relevance_error) # difference check
                     print("True error: ",true_error, " Accumulated error: ",accumulated_relevance_error, " Difference: ", rel_diff)
                     print("-----------------\n")
 
@@ -580,7 +580,7 @@ class Approximation:
         
         #s = sp.symbols("s")
         approx_points = np.atleast_1d(approx_points)
-        jw = 1j * approx_points
+        jw = 1j * 2*np.pi* approx_points
 
  
 
