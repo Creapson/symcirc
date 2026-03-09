@@ -1,0 +1,28 @@
+* C:\Users\kevin\Documents\Uni\4.Semester\Softwareprojekt\Testschaltkreise\simple LC Schwingkreis\simple_lc.sch
+
+* Schematics Version 8.0 - July 1997
+* Wed Feb 11 17:36:50 2026
+
+
+
+** Analysis setup **
+.ac DEC 101 0.1 10meg
+.OP 
+
+
+* From [SCHEMATICS NETLIST] section of msim.ini:
+.lib "D:\MSim_8\lib\OPAMP.LIB"
+.lib "D:\MSim_8\lib\mos.lib"
+.lib "D:\MSim_8\lib\EBIPOLAR.LIB"
+.lib "D:\MSim_8\lib\User\RASH_PCE3_MODEL.LIB"
+.lib "D:\MSim_8\lib\ts.lib"
+.lib "D:\msim_8\lib\nom.lib"
+
+.INC "simple_lc.net"
+.INC "simple_lc.als"
+
+
+.probe
+
+
+.END

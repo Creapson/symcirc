@@ -5,6 +5,7 @@ import Pspice_util as pu
 import numpy as np
 import scipy.linalg as scipy
 from Equation_Formulator import EquationFormulator
+import time
 
 class ModifiedNodalAnalysis(EquationFormulator):
     """Class for modified nodal analysis method.
@@ -415,9 +416,11 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
         A_num_func = sp.lambdify(sp.symbols("s"), A_num, "numpy")
         z_num_func = sp.lambdify(sp.symbols("s"), z_num, "numpy")
+
+        t0 = time.perf_counter_ns()
         
         for k, freq in enumerate(frequencies):
-            s_val = 1j * freq
+            s_val = 1j * 2* np.pi*freq
             A_num_eval = A_num_func(s_val)
             
             z_num_eval = z_num_func(s_val)
@@ -426,16 +429,11 @@ class ModifiedNodalAnalysis(EquationFormulator):
             H[k] = x[idx_out] #/ x[idx_in]
 
 
-        
+        t1 = time.perf_counter_ns()
+        print(f"Time for numerical solution: {(t1 - t0) / 1e6} ms")
             
 
-        print("Solving numerical equation system...")
-        logger.debug("Solving numerical equation system...")
-
-        #self.num_result = sp.solve(A_num * x - z_num, x)
-
-        print("Finished solving numerical equation system!")
-        logger.debug("Finished solving numerical equation system!")
+        
 
         return H#self.num_result
     
