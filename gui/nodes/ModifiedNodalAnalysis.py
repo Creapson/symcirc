@@ -1,6 +1,7 @@
 import dearpygui.dearpygui as dpg
 
 from gui.nodes.Node import Node
+from netlist.Circuit import Circuit
 
 
 class ModifiedNodalAnalysis(Node):
@@ -24,7 +25,7 @@ class ModifiedNodalAnalysis(Node):
         return super().setup(build, node_editor_tag)
 
     def onlink_callback(self):
-        self.circuit = self.get_input_pin_value(self.uuid("circuit_input_pin"))
+        self.circuit : Circuit = self.get_input_pin_value(self.uuid("circuit_input_pin"))
 
         from Modified_Node_Analysis import ModifiedNodalAnalysis
 
@@ -35,6 +36,9 @@ class ModifiedNodalAnalysis(Node):
 
     def update(self):
         self.mna.buildEquationsSystem()
+
+        # get the log_space from the circuit
+        # log_space = self.circuit.params.get("log_space", [])
         num_results = self.mna.solveNumerical(self.mna.value_dict)
 
         if not dpg.does_item_exist(self.uuid("h_out")):

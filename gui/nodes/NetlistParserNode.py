@@ -1,6 +1,7 @@
 import dearpygui.dearpygui as dpg
 
 from gui.nodes.Node import Node
+from parser.NetlistParser import get_circuit_from_file
 
 
 class NetlistParserNode(Node):
@@ -98,11 +99,9 @@ class NetlistParserNode(Node):
 
         from pathlib import Path
 
-        from parser.NetlistParser import NetlistParser
+        from parser.NetlistParser import get_circuit_from_file 
 
-        parser = NetlistParser()
-        parser.set_cir_file(filepath)
-        self.circuit = parser.parse_netlist()
+        self.circuit = get_circuit_from_file(filepath)
 
         # extract name and folder_path from the file_path
         p = Path(filepath)

@@ -12,11 +12,9 @@ class ImportCircuit(Node):
                     message += "\n" + string
             return message
 
-        from parser.NetlistParser import NetlistParser
+        from parser.NetlistParser import get_pre_format_info 
 
-        parser = NetlistParser()
-        parser.set_cir_file(app_data["file_path_name"])
-        feedback = parser.pre_format()
+        feedback = get_pre_format_info(app_data["file_path_name"])
 
         # when a file is selected create the output pin
         if not dpg.does_item_exist(self.uuid("file_path_out")):

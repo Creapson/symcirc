@@ -13,13 +13,14 @@ class Circuit(BaseModel):
 
     name: str = ""
     netlist_file_path: str = ""
+    # params = {}
 
-    inner_connecting_nodes: List[str] = Field(default_factory=list)
+    inner_connecting_nodes: List[str] = []
 
     bipolar_model: str = "beta_with_r_be_G"
     mosfet_model: str = "BSIM"
 
-    nodes: List[str] = Field(default_factory=list)
+    nodes: List[str] = []
 
     elements: List[Element] = Field(default_factory=list)
 
@@ -27,23 +28,6 @@ class Circuit(BaseModel):
     subcircuits: Dict[str, "Circuit"] = Field(default_factory=dict)
 
     separator: str = "."
-
-    # --- COPY METHOD ---
-    def copy(self) -> "Circuit":
-        return Circuit(
-            name=self.name,
-            netlist_file_path=self.netlist_file_path,
-            inner_connecting_nodes=list(self.inner_connecting_nodes),
-            bipolar_model=self.bipolar_model,
-            mosfet_model=self.mosfet_model,
-            nodes=list(self.nodes),
-            elements=[element.copy() for element in self.elements],
-            models={name: model.copy() for name, model in self.models.items()},
-            subcircuits={
-                name: sub_ct.copy() for name, sub_ct in self.subcircuits.items()
-            },
-            separator=self.separator,
-        )
 
     def set_name(self, name: str):
         self.name = name
@@ -66,6 +50,9 @@ class Circuit(BaseModel):
             if element.type == "Q":
                 element.add_param("mosfet_model", self.mosfet_model)
 
+    # def add_param(self, param, value):
+    #     self.params[param] = value
+
     def update_nodes(self):
         for element in self.elements:
             for node in element.connections:
@@ -77,7 +64,7 @@ class Circuit(BaseModel):
     def get_elements(self) -> List[Element]:
         return self.elements
 
-    def get_element(self, element_name: str):
+    def get_element(self, element_name: str) -> Element | None :
         for element in self.elements:
             if element.name == element_name:
                 return element
@@ -109,6 +96,7 @@ class Circuit(BaseModel):
         subct_element_connections: List[str],
         subcircuits: Optional[Dict[str, "Circuit"]] = None,
     ) -> List[Element]:
+
         if subcircuits is None:
             subcircuits = {}
 
@@ -158,7 +146,7 @@ class Circuit(BaseModel):
     def flatten(
         self,
         flatten_models: bool = False,
-        out_file_path: Optional[str] = None,
+        out_file_path: str | None = "",
         subcircuits: Optional[Dict[str, "Circuit"]] = None,
     ):
         if subcircuits is None:
@@ -168,24 +156,19 @@ class Circuit(BaseModel):
         for subct in self.subcircuits.values():
             subct.flatten(subcircuits=self.subcircuits)
 
-        # --------------------------------------------------
-        # Parse model parameters from .out file if required
-        # --------------------------------------------------
+        # Parse model parameters from .out
 
         if flatten_models:
-            from parser.NetlistParser import NetlistParser
+            from parser.NetlistParser import get_element_parameters_from_outfile
 
-            parser = NetlistParser()
-
+            # load small signal parameters from out file
             if out_file_path is None:
-                out_file_path = self.netlist_file_path + self.name + ".out"
+                get_element_parameters_from_outfile(self.netlist_file_path + self.name + ".out", self.elements)
+                print(self.netlist_file_path + self.name + ".out")
+            else:
+                get_element_parameters_from_outfile(out_file_path, self.elements)
 
-            parser.parse_element_params(out_file_path, self.elements)
-
-        # --------------------------------------------------
         # Main flatten loop
-        # --------------------------------------------------
-
         new_elements: List[Element] = []
 
         for element in self.elements:
@@ -219,7 +202,8 @@ class Circuit(BaseModel):
                     mosfet_model,
                 )
 
-                self.add_subcircuit(subct_name, model_subct)
+                if model_subct is not None:
+                    self.add_subcircuit(subct_name, model_subct)
 
                 subct_elements = self.flatten_subcircuit(
                     subct_name,

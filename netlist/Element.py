@@ -1,27 +1,31 @@
-from typing import Dict, List, Optional
-
+from typing import Dict, List
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class Element(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    name: Optional[str] = None
-    symbol: Optional[str] = None
-    connections: List[str] = Field(default_factory=list)
-    type: Optional[str] = None
-    params: Dict[str, str] = Field(default_factory=dict)
+    name: str = ""
+    symbol: str = ""
+    connections: List[str] = []
+    type: str = "None"
+    params: Dict[str, str] = {} 
 
     def set_type(self, newType: str):
         self.type = newType
 
     def get_symbol(self) -> str:
-        if self.symbol is None:
+        if self.symbol == "":
             return self.name
         else:
             return self.symbol
 
-    def add_param(self, paramSymbol: str, value):
+    def get_name_reversed(self) -> str:
+        parts = self.name.split(".")
+        reversed_parts = [parts[-1]] + parts[:-1]
+        return ".".join(reversed_parts)
+
+    def add_param(self, paramSymbol: str, value : str):
         self.params[paramSymbol] = value
 
     def set_connections(self, connections: List[str]):
@@ -46,7 +50,4 @@ class Element(BaseModel):
 
     def to_ai_string(self, indent: int):
         param_string = ", ".join(f'"{k}" -> {v}' for k, v in self.params.items())
-        print("\t" * indent, self.name, self.connections, self.type, param_string)
-
-    def copy(self) -> "Element":
-        return self.model_copy(deep=True)
+        print("\t" * indent, self.name, self.symbol, self.connections, self.type, param_string)

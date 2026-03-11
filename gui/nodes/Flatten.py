@@ -210,6 +210,7 @@ class FlattenNode(Node):
             element.params["mosfet_model"] = mosfet_model
 
         flattend_circuit = self.circuit.copy()
+        print(self.out_file_path)
         flattend_circuit.flatten(True, self.out_file_path)
 
         if not dpg.does_item_exist(self.uuid("flattend_circuit_out_pin")):
