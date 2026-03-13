@@ -1,3 +1,5 @@
+import numpy as np
+
 from netlist.Circuit import Circuit
 from netlist.Element import Element
 from netlist.Model import Model
@@ -102,6 +104,12 @@ class Spice:
                         circuit.add_model(model)
                     continue
 
+                if line.startswith((".AC", ".ac")): 
+                    log_space = self.parse_sweep(index)
+                    circuit.set_sweep(log_space)
+                    index += 1 
+                    continue
+
                 # output currently not parsable lines
                 self.print_parser_error(line)
 
@@ -112,6 +120,46 @@ class Spice:
             index += 1
 
         return circuit 
+
+    def to_spice_num(self, val : str) -> float:
+        factors = {'k': 1e3, 'meg': 1e6, 'g': 1e9, 'm': 1e-3, 'u': 1e-6, 'n': 1e-9}
+        val = val.lower()
+        for suffix, multiplier in factors.items():
+            if val.endswith(suffix):
+                return float(val.replace(suffix, '')) * multiplier
+        return float(val)
+
+    def parse_sweep(self, index : int): 
+
+        line_splits = self.netlist_lines[index].split()
+        sweep_type = line_splits[1]
+
+        num_of_points = int(self.to_spice_num(line_splits[2]))
+
+        match sweep_type:
+            case "LIN": 
+                start = self.to_spice_num(line_splits[3])
+                stop = self.to_spice_num(line_splits[4])
+                return np.logspace(start=start, stop=stop, num=num_of_points)
+
+            case "DEC": 
+                start = self.to_spice_num(line_splits[3])
+                stop = self.to_spice_num(line_splits[4])
+
+                num_decades = np.log10(stop) - np.log10(start)
+                total_pts = int(num_of_points * num_decades) + 1
+                return np.logspace(np.log10(start), np.log10(stop), num=total_pts)
+
+            case "OCT": 
+                start = self.to_spice_num(line_splits[3])
+                stop = self.to_spice_num(line_splits[4])
+                num_octaves = np.log2(stop / start)
+                total_pts = int(num_of_points * num_octaves) + 1
+                return np.logspace(np.log2(start), np.log2(stop), num=total_pts, base=2)
+
+            case "POI": 
+                points_of_interest = [self.to_spice_num(point) for point in line_splits[3:]]
+                return np.array(points_of_interest)
 
     def parse_inc(self, index: int) -> str:
         line_splits = self.netlist_lines[index].split()

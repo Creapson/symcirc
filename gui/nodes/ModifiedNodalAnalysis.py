@@ -38,8 +38,8 @@ class ModifiedNodalAnalysis(Node):
         self.mna.buildEquationsSystem()
 
         # get the log_space from the circuit
-        # log_space = self.circuit.params.get("log_space", [])
-        num_results = self.mna.solveNumerical(self.mna.value_dict)
+        log_space = self.circuit.get_sweep()
+        num_results = self.mna.solveNumerical(self.mna.value_dict, log_space)
 
         if not dpg.does_item_exist(self.uuid("h_out")):
             with self.add_output_attr() as output_pin:

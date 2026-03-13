@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
+import numpy as np
 
 from netlist.Element import Element
 from netlist.Model import Model
@@ -13,6 +14,7 @@ class Circuit(BaseModel):
 
     name: str = ""
     netlist_file_path: str = ""
+    sweep: list[float] = []
     # params = {}
 
     inner_connecting_nodes: List[str] = []
@@ -31,6 +33,12 @@ class Circuit(BaseModel):
 
     def set_name(self, name: str):
         self.name = name
+
+    def set_sweep(self, log_space):
+        self.sweep = log_space
+
+    def get_sweep(self) -> list[float]: 
+        return self.sweep
 
     def set_netlist_path(self, path: str):
         self.netlist_file_path = path
@@ -232,6 +240,7 @@ class Circuit(BaseModel):
         print(prefix + "Name:", self.name)
         print(prefix + "Netlist_File_Path:", self.netlist_file_path)
         print(prefix + "Connections:", self.inner_connecting_nodes)
+        print(prefix + "Sweep" , "Min:", min(self.sweep), " Max:", max(self.sweep))
         print(prefix + "Nodes:", self.nodes)
 
         print(prefix + "Elements in Circuit")
