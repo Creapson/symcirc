@@ -12,19 +12,19 @@ from gui.windows.Window import Window
 
 
 class NodeEditor(Window):
-    def __init__(self):
+    def __init__(self, application):
         self.title = "Node Editor"
 
         self.node_dic = {}
         self.nodes = []
         self.node_editor_tag = None
         self.links = {}
+        self.application = application
 
         super().__init__(title=self.title)
 
     def add_node(self, node_constructor, label, pos=(0, 100)):
-        node = node_constructor(label, pos)
-        node.editor = self
+        node = node_constructor(self, label, pos)
         self.nodes.append(node)
 
         # CREATE DearPyGui items immediately

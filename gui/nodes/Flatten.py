@@ -4,12 +4,12 @@ from gui.nodes.Node import Node
 
 
 class FlattenNode(Node):
-    def __init__(self, label, position=(100, 100)):
+    def __init__(self, node_editor, label, position=(100, 100)):
         self.row_sources = []
         self.table_rows = {}
         self.out_file_path = None
 
-        super().__init__(label, position)
+        super().__init__(node_editor, label, position)
 
     def callback(self, sender, app_data):
         print(sender)

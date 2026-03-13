@@ -5,11 +5,11 @@ from parser.NetlistParser import get_circuit_from_file
 
 
 class NetlistParserNode(Node):
-    def __init__(self, label, position=(100, 100)):
+    def __init__(self, node_editor, label, position=(100, 100)):
         self.row_sources = []
         self.table_rows = {}
 
-        super().__init__(label, position)
+        super().__init__(node_editor, label, position)
 
     def setup(self, node_editor_tag):
         def build():

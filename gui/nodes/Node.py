@@ -2,11 +2,11 @@ import dearpygui.dearpygui as dpg
 
 
 class Node:
-    def __init__(self, label, position=(100, 100)):
+    def __init__(self, node_editor, label : str, position=(100, 100)):
         self.label = label
         self.position = position
         # Add the editor to access the other nodes
-        self.editor = None
+        self.editor = node_editor 
         self.node_id = None
 
         # {pin_id: connected_node}
@@ -20,8 +20,8 @@ class Node:
         # when the inputs change
         self.do_propagation = False
 
-        self.BIPOLAR_MODELS = ["beta_with_r_be", "beta_with_r_be_G"]
-        self.MOSFET_MODELS = ["BSIM"]
+        self.BIPOLAR_MODELS = self.editor.application.bipolar_models
+        self.MOSFET_MODELS = self.editor.application.mosfet_models
 
     def setup(self, build_fn, node_editor_tag):
         with dpg.node(
