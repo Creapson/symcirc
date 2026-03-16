@@ -36,6 +36,7 @@ class Element(BaseModel):
 
     def remap_values(self, param_list: Dict[str, str]):
         # remap the str reference value to a numeric value
+        # example turn "betaac" into 2e^-10
         for key, value in param_list.items():
             if self.type in ("E", "G", "F", "H"):
                 value_str = "value"

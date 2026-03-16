@@ -240,7 +240,8 @@ class Circuit(BaseModel):
         print(prefix + "Name:", self.name)
         print(prefix + "Netlist_File_Path:", self.netlist_file_path)
         print(prefix + "Connections:", self.inner_connecting_nodes)
-        print(prefix + "Sweep" , "Min:", min(self.sweep), " Max:", max(self.sweep))
+        if len(self.sweep) > 0:
+            print(prefix + "Sweep" , "Min:", min(self.sweep), " Max:", max(self.sweep))
         print(prefix + "Nodes:", self.nodes)
 
         print(prefix + "Elements in Circuit")
