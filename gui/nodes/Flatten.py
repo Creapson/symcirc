@@ -1,6 +1,8 @@
 import dearpygui.dearpygui as dpg
 
 from gui.nodes.Node import Node
+from gui.windows.CircuitEditor import CircuitEditor
+from netlist.Circuit import Circuit
 
 
 class FlattenNode(Node):
@@ -8,6 +10,7 @@ class FlattenNode(Node):
         self.row_sources = []
         self.table_rows = {}
         self.out_file_path = None
+        self.flattend_circuit = Circuit()
 
         super().__init__(node_editor, label, position)
 
@@ -209,21 +212,27 @@ class FlattenNode(Node):
             element.params["bipolar_model"] = bipolar_model
             element.params["mosfet_model"] = mosfet_model
 
-        flattend_circuit = self.circuit.copy()
+        self.flattend_circuit = self.circuit.copy()
         print(self.out_file_path)
-        flattend_circuit.flatten(True, self.out_file_path)
+        self.flattend_circuit.flatten(True, self.out_file_path)
 
         if not dpg.does_item_exist(self.uuid("flattend_circuit_out_pin")):
             with self.add_output_attr() as output_pin:
-                dpg.add_text(source=self.uuid("flattend_circuit_out"))
+                with dpg.group(horizontal=True):
+                    dpg.add_text(source=self.uuid("flattend_circuit_out"))
+                    dpg.add_button(label="Edit Circuit", callback=self.open_circuit_edit)
             self.output_pins[self.uuid("flattend_circuit_out_pin")] = output_pin
         self.add_output_pin_value(
-            self.uuid("flattend_circuit_out_pin"), flattend_circuit
+            self.uuid("flattend_circuit_out_pin"), self.flattend_circuit
         )
 
-        flattend_circuit.to_ai_string()
+        self.flattend_circuit.to_ai_string()
 
         # apply it to UI
         dpg.set_value(self.uuid("flattend_circuit_out"), "Circuit with flattend Models")
 
         super().update()
+
+    def open_circuit_edit(self):
+        ct_editor = CircuitEditor(self.flattend_circuit, self.label)
+        ct_editor.setup()

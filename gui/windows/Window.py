@@ -2,13 +2,13 @@ import dearpygui.dearpygui as dpg
 
 
 class Window:
-    def __init__(self, title=None, width=800, height=600, autosize=True, no_resize=False):
-        self.title = title
-        self.id = None
-        self.width = width
-        self.height = height
-        self.autosize = autosize
-        self.no_resize = no_resize
+    def __init__(self, title : str="Not Defined", width:int=800, height:int=600, autosize:bool=True, no_resize:bool=False):
+        self.title : str = title
+        self.id:int = 0
+        self.width:int = width
+        self.height:int = height
+        self.autosize:bool = autosize
+        self.no_resize:bool = no_resize
 
     def setup(self, build_func, show_menu_bar=False):
         with dpg.window(
