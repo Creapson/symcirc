@@ -1,3 +1,4 @@
+import json
 import dearpygui.dearpygui as dpg
 from gui.windows.Window import Window
 from netlist.Circuit import Circuit
@@ -12,15 +13,92 @@ class CircuitEditor(Window):
         super().__init__(title=str(parent_tag + ":CircuitEditor"), autosize=False)
         pass
 
-    def setup(self):
-        def build():
-            self.show_circuit(circuit=self.circuit, tag="")
+    def export_callback(self, sender, app_data):
+        print(app_data)
+        try:
+            file_path:str = app_data.get("file_path_name")
+            if not file_path:
+                print("No file selected")
+                return
 
-            with dpg.group(horizontal=True):
-                dpg.add_button(label="Save", callback=self.on_save)
-                dpg.add_button(label="Close", callback=self.on_close)
+            # Ensure .json extension
+            if not file_path.endswith(".json"):
+                file_path += ".json"
 
-        super().setup(build)
+            # Dump Pydantic object to JSON
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(self.circuit.model_dump_json(indent=4))
+
+            print(f"Saved to {file_path}")
+
+        except Exception as e:
+            print("Error saving file:", e)
+
+    # def import_callback(self, sender, app_data):
+    #     print(app_data)
+    #     try:
+    #         file_path : str = app_data["file_path_name"]
+    #         # Load JSON
+    #         with open(file_path, "r", encoding="utf-8") as f:
+    #             data = json.load(f)
+    #
+    #         self.circuit = Circuit(**data)
+    #
+    #         # Rebuild UI immediately
+    #         if self.id and dpg.does_item_exist(self.id):
+    #             super().rebuild_ui(self.build)
+    #
+    #     except Exception as e:
+    #         print("Error loading file:", e)
+
+    def build(self):
+        if not dpg.does_item_exist(self.uuid("export_file_dialog")):
+            with dpg.file_dialog(
+                directory_selector=False,
+                show=False,
+                callback=self.export_callback,
+                tag=self.uuid("export_file_dialog"),
+                width=700,
+                height=400,
+            ):
+                dpg.add_file_extension(".json")
+
+        # if not dpg.does_item_exist(self.uuid("import_file_dialog")):
+        #     with dpg.file_dialog(
+        #         directory_selector=False,
+        #         show=False,
+        #         callback=self.import_callback,
+        #         tag=self.uuid("import_file_dialog"),
+        #         width=700,
+        #         height=400,
+        #     ):
+        #         dpg.add_file_extension(".json")
+
+        with dpg.menu_bar():
+            with dpg.menu(label="Edit"): 
+
+                # dpg.add_menu_item(
+                #         label="Import", 
+                #         enabled=True, 
+                #         callback=lambda: dpg.show_item(self.uuid("import_file_dialog"))
+                # )
+                                  
+                dpg.add_menu_item(
+                        label="Export", 
+                        enabled=True, 
+                        callback=lambda: dpg.show_item(self.uuid("export_file_dialog"))
+                )
+
+        self.show_circuit(circuit=self.circuit, tag="")
+
+        with dpg.group(horizontal=True):
+            dpg.add_button(label="Save", callback=self.on_save)
+            dpg.add_button(label="Close", callback=self.on_close)
+
+    def setup(self, build_func=None, show_menu_bar=False):
+        if build_func is None:
+            build_func = self.build
+        super().setup(build_func, show_menu_bar)
 
     def on_close(self, sender, app_data=None, user_data=None):
         super().on_close(sender, app_data, user_data)

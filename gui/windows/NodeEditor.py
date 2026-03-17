@@ -100,7 +100,7 @@ class NodeEditor(Window):
                 to_node = self.node_dic[to_node_id]
                 to_node.onlink_callback()
 
-    def setup(self):
+    def setup(self, build_func=None, show_menu_bar=False):
         def build():
             # ---------- MENU BAR ----------
             with dpg.menu_bar():

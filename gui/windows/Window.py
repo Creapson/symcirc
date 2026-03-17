@@ -35,6 +35,17 @@ class Window:
         # clear internal reference
         self.id = None
 
+    def rebuild_ui(self, build_func):
+        print("rebuild called safely")
+        
+        def deferred_rebuild():
+            print("callback called")
+            if dpg.does_item_exist(self.id):
+                dpg.delete_item(self.id)   # safe now
+            self.setup(build_func)
+
+        # Schedule for the next frame
+        dpg.set_frame_callback(1, callback=deferred_rebuild)
 
 """
 class CopyClass(Window):
