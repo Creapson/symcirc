@@ -4,6 +4,7 @@ from sympy.matrices.exceptions import NonInvertibleMatrixError
 import numpy as np
 import time
 import scipy.linalg as scipy
+#import warnings
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 
 
@@ -12,6 +13,7 @@ class Approximation:
 
     def __init__(self, equation_formulator):
         self.analysis = equation_formulator
+        #warnings.filterwarnings("error", category=scipy.LinAlgWarning)
         pass
 
 
@@ -32,7 +34,7 @@ class Approximation:
                     continue
                 terms = list(sp.Add.make_args(expr))
                 for t in terms:
-                    term_list.append(((i, j), t, 0.0))  # Placeholder for numerical value
+                    term_list.append(((i, j), t, [0.0]))  # Placeholder for numerical value
         return term_list
 
     def generate_relevance_coefficients_sm(
@@ -50,52 +52,88 @@ class Approximation:
         
         idx_out = x_syms.index(output_potential)
 
-        se_results = []
 
         s = sp.symbols('s')
 
         
         
-        sysMatrix_num = sysMatrix.subs(self.analysis.value_dict)
+        sysMatrix = sysMatrix.subs(self.analysis.value_dict)
         z_num = self.analysis.z.subs(self.analysis.value_dict)
 
           
+        print("Computing reference solution for sensitivity calculation...") 
 
-        A_inv = sysMatrix_num.inv()
-        x = A_inv * z_num
-        ref_result_k = x[idx_out,0]
+        f_terms = []
+
+        t_all = [t.subs(self.analysis.value_dict) for (_, t, _) in term_list]
+        f_all = sp.lambdify(s, t_all, 'numpy')
+
+        i_idx = np.array([i for ((i, j), _, _) in term_list])
+        j_idx = np.array([j for ((i, j), _, _) in term_list])
         
 
         
-
-            
-            
-
-        for ((i, j), t, _) in term_list:
-                # Term t an dieser Stelle evaluieren
-            t_val = t.subs(self.analysis.value_dict)
-
-                
-
-                
-                
-            se_func = (((-t_val * A_inv[idx_out,i]) / (1 + t_val * A_inv[j, i]))*ref_result_k)
-
-            se = [float(abs(se_func.subs(s, 1j *2*np.pi*  w)/abs(ref_result_k.subs(s, 1j *2*np.pi* w)))) for w in approx_points]
-                
-                
-            
-
-                
-            se_results.append(((i, j), t, se))
         
-        t1 = time.perf_counter_ns()
-        print(f"Sensitivity calculation took {(t1 - t0) / 1e6} ms")
+        
+
+        for ap in approx_points:
+            sysMatrix_num = sysMatrix.subs(s, 1j*2*np.pi*ap)
+            
+            t1 = time.perf_counter_ns()
+            A_inv = sysMatrix_num.inv()
+            t2 = time.perf_counter_ns()
+            print(f"Matrix inversion took {(t2 - t1) / 1e6} ms")
+
+            A_inv_np = np.array(A_inv, dtype=complex)
+
+
+            x = A_inv_np * z_num
+            x_np = np.array(x, dtype=complex).flatten()
+            ref_result_k = x_np[idx_out]
+
+            print("Term list length: ", len(term_list))
+
+            t4 = time.perf_counter_ns()
+
+            t_vals = f_all(1j*2*np.pi*ap)
+            t_vals = np.array(t_vals, dtype=np.complex128)
+
+            A_out_i = A_inv_np[idx_out, i_idx]
+            A_j_i = A_inv_np[j_idx, i_idx]
+            x_j = x_np[j_idx]
+
+            dx_k_all = (-t_vals * A_out_i) / (1 + t_vals * A_j_i) * x_j
+
+            se_all = np.abs(dx_k_all) / abs(ref_result_k)
+
+            for idx, se in enumerate(se_all):
+                term_list[idx][2].append(float(se))
+
+            
+
+            # for idx, ((i, j), t, _) in enumerate(term_list):
+            #     # Term t an dieser Stelle evaluieren
+            #     #t_val = t.subs(self.analysis.value_dict).subs(s, 1j*2*np.pi*ap)
+            #     t_val = t_vals[idx]
+
+            #     dx_k = (((-t_val * A_inv[idx_out,i]) / (1 + t_val * A_inv[j, i]))*x[j])
+
+            #     se = float(abs(dx_k) / abs(ref_result_k))
+
+            #     term_list[idx][2].append(se)
+            
+            t5 = time.perf_counter_ns()
+            print(f"Sensitivity evaluation for one frequency point took {(t5 - t4) / 1e6} ms")
+                
+
+        
+        t3 = time.perf_counter_ns()
+        print(f"Sensitivity calculation took {(t3 - t0) / 1e6} ms")
        
         
         
 
-        return se_results
+        return term_list
 
 
 
@@ -113,6 +151,7 @@ class Approximation:
         Returns:
             list: updated term list with relevance coefficients
         """
+        t0 = time.perf_counter_ns()
         
 
         term_list = self.generate_term_list(sysMatrix)
@@ -166,13 +205,12 @@ class Approximation:
 
         for idx, ((i, j), term, _) in enumerate(term_list):
 
-            t0 = time.perf_counter_ns()
+            
             
 
             term_num = sp.lambdify(s, term.subs(self.analysis.value_dict), "numpy")
 
-            t1 = time.perf_counter_ns()
-            print(f"Term lambdification took {(t1 - t0) / 1e6} ms")
+           
 
             abs_H_mod = np.empty(n_freq)
 
@@ -190,7 +228,7 @@ class Approximation:
 
                     H_mod = x_mod[idx_out] / x_mod[idx_in]
                     abs_H_mod[k] = np.abs(H_mod)
-                    print("H_mod: ", abs_H_mod[k])
+                    
 
                 except Exception:
                     term_list[idx] = ((i, j), term, float("inf"))
@@ -203,8 +241,8 @@ class Approximation:
             relative_error = np.abs((abs_H_ref - abs_H_mod) / abs_H_ref)
             term_list[idx] = ((i, j), term, relative_error) 
 
-        for ((i, j), t, rel) in term_list:
-            print(f"Term at position ({i}, {j}): {t}, Relevance Coefficient: {rel}")
+        t1 = time.perf_counter_ns()
+        print(f"Relevance coefficient generation took {(t1 - t0) / 1e6} ms")
 
         
         return term_list
@@ -248,19 +286,25 @@ class Approximation:
                                                          output_potential, 
                                                          approx_points, 
                                                          self.analysis.A)
+      
+
+        
+        
         term_list_sym = [entry for entry in term_list_sym if not np.isnan(entry[2]).any()]
+        
 
         
         # Sort term list by relevance coefficient --------------------------------------------------
+        
 
         term_list_sym = self.sort_term_list(term_list_sym, sorting_method, column)
         
         
         term_list_sym.sort(key=lambda x: x[2].real)
 
-        print("Sorted term list:")
-        for ((i, j), t, rel) in term_list_sym:
-            print(f"Term at position ({i}, {j}): {t}, Relevance Coefficient: {rel}")
+        # print("Sorted term list:")
+        # for ((i, j), t, rel) in term_list_sym:
+        #     print(f"Term at position ({i}, {j}): {t}, Relevance Coefficient: {rel}")
         
 
         # ------------------------------------------------------------------------------------------
@@ -281,7 +325,7 @@ class Approximation:
         
 
         # Compute reference transfer function
-        H_ref = self.compute_transfer_function_numeric(
+        H_ref, _ = self.compute_transfer_function_numeric(
             A0,
             A1,
             z_num_func,
@@ -297,6 +341,7 @@ class Approximation:
         accumulated_relevance_error = 0.0
         true_error = 0.0
         removed_terms = []   
+
 
         match elimination_method:
             case "block":
@@ -427,6 +472,8 @@ class Approximation:
             case "tbt":
                
                 while term_list:
+
+                  
                     
                     #get next, least relevant, term
             
@@ -436,7 +483,7 @@ class Approximation:
                     (i_sym, j_sym), term, rel_coeff_sym = term_list_sym.pop(0) # get least relevant symbolic term for record keeping
                    
 
-                    print(f"Trying to remove term {term} at position ({i}, {j}) with relevance coefficient {rel_coeff}")
+                    #print(f"Trying to remove term {term} at position ({i}, {j}) with relevance coefficient {rel_coeff}")
 
                     #-------------------------------------------------------------------------------
                     # create trial matrices
@@ -451,9 +498,9 @@ class Approximation:
                     #-------------------------------------------------------------------------------
                     # compute trial transfer function
 
-                    try:
+                    
                         
-                        H_trial = self.compute_transfer_function_numeric(
+                    H_trial, is_singular = self.compute_transfer_function_numeric(
                                 A0_trial,
                                 A1_trial,
                                 z_num_func,
@@ -461,11 +508,11 @@ class Approximation:
                                 idx_in,
                                 idx_out
                             )
-                        print("Computed trial transfer function.")
-                        print(H_trial)
+                        # print("Computed trial transfer function.")
+                    #print(H_trial)
                         
 
-                    except NonInvertibleMatrixError:
+                    if is_singular:
                         continue
                     
 
@@ -485,7 +532,7 @@ class Approximation:
                     )
                     accumulated_relevance_error += rel_coeff
 
-                    print("True error: ",true_error, " Accumulated error: ",accumulated_relevance_error)
+                    #print("True error: ",true_error, " Accumulated error: ",accumulated_relevance_error)
                     
                     
                     #check if true error is acceptable
@@ -505,8 +552,8 @@ class Approximation:
 
                     #-------------------------------------------------------------------------------
                     rel_diff = 0#np.abs(true_error - accumulated_relevance_error) # difference check
-                    print("True error: ",true_error, " Accumulated error: ",accumulated_relevance_error, " Difference: ", rel_diff)
-                    print("-----------------\n")
+                    # print("True error: ",true_error, " Accumulated error: ",accumulated_relevance_error, " Difference: ", rel_diff)
+                    # print("-----------------\n")
 
                     #-------------------------------------------------------------------------------
                     # calculate new relevance coefficients if necessary
@@ -540,7 +587,7 @@ class Approximation:
 
                 
 
-            
+         
         
         
         return self.calc_End_Result(removed_terms, input_potential, output_potential)
@@ -553,11 +600,16 @@ class Approximation:
 
         x = self.analysis.get_unknowns()
 
-        solutions = sp.solve(A_sym * x - self.analysis.z, x, dict=True)
+        print("Calculating final symbolic result...")
+        t0 = time.perf_counter_ns()
 
-        
+        #solutions = sp.solve(A_sym * x - self.analysis.z, x, dict=True)
+        solutions = sp.solve_linear_system(A_sym.row_join(self.analysis.z), *x)
 
-        result_approx = solutions[0]
+        t1 = time.perf_counter_ns()
+        print(f"Final symbolic solution took {(t1 - t0) / 1e6} ms")
+
+        result_approx = solutions#[0]
 
         result = result_approx[output_potential] / result_approx[input_potential]
 
@@ -587,7 +639,7 @@ class Approximation:
         H = np.empty(len(jw))
         n = A0.shape[0]
 
-        
+        is_singular = False
 
         for k, w in enumerate(jw):
             #A_num = np.array(A_func(w), dtype=complex)
@@ -595,18 +647,28 @@ class Approximation:
 
             A = A0 + w * A1
 
+            # try:
+
+            #     lu, piv = scipy.lu_factor(A)
+
+            # except RuntimeWarning:
+            #     is_singular = True
+            #     return None, is_singular
+            
             lu, piv = scipy.lu_factor(A)
 
             x = scipy.lu_solve((lu, piv), z_num)
             
-
+            
             
 
             
 
-            H[k] = x[output_potential] #/ x[input_potential]
+            
 
-        return H
+            H[k] = x[output_potential] / x[input_potential]
+
+        return H, is_singular
 
     def has_phase_sign_jump(self, H_ref, H_trial, threshold=np.pi):
         phi_ref   = np.unwrap(np.angle(H_ref))

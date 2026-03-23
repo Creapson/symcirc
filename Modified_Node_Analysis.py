@@ -408,6 +408,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
             sol(array): array with numerical solutions
 
         """
+        t0 = time.perf_counter_ns()
         #x = self.get_unknowns()
         H = np.zeros(len(frequencies), dtype=complex)
 
@@ -417,20 +418,23 @@ class ModifiedNodalAnalysis(EquationFormulator):
         A_num_func = sp.lambdify(sp.symbols("s"), A_num, "numpy")
         z_num_func = sp.lambdify(sp.symbols("s"), z_num, "numpy")
 
-        t0 = time.perf_counter_ns()
+        t1 = time.perf_counter_ns()
         
-        for k, freq in enumerate(frequencies):
+        def solve_freq(freq):#for k, freq in enumerate(frequencies):
             s_val = 1j * 2* np.pi*freq
             A_num_eval = A_num_func(s_val)
             
             z_num_eval = z_num_func(s_val)
             x = scipy.solve(A_num_eval, z_num_eval)
 
-            H[k] = x[idx_out] #/ x[idx_in]
+            return x[idx_out]
+            #H[k] = x[idx_out] #/ x[idx_in]
 
+        H = np.array([solve_freq(freq) for freq in frequencies])
 
-        t1 = time.perf_counter_ns()
-        print(f"Time for numerical solution: {(t1 - t0) / 1e6} ms")
+        t2 = time.perf_counter_ns()
+        print(f"Time for setup: {(t1 - t0) / 1e6} ms\n")
+        print(f"Time for numerical solution: {(t2 - t1) / 1e6} ms")
             
 
         
