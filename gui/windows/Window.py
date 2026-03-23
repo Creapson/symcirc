@@ -2,13 +2,13 @@ import dearpygui.dearpygui as dpg
 
 
 class Window:
-    def __init__(self, title=None, width=800, height=600, autosize=True, no_resize=False):
-        self.title = title
-        self.id = None
-        self.width = width
-        self.height = height
-        self.autosize = autosize
-        self.no_resize = no_resize
+    def __init__(self, title : str="Not Defined", width:int=800, height:int=600, autosize:bool=True, no_resize:bool=False):
+        self.title : str = title
+        self.id:int = 0
+        self.width:int = width
+        self.height:int = height
+        self.autosize:bool = autosize
+        self.no_resize:bool = no_resize
 
     def setup(self, build_func, show_menu_bar=False):
         with dpg.window(
@@ -35,6 +35,17 @@ class Window:
         # clear internal reference
         self.id = None
 
+    def rebuild_ui(self, build_func):
+        print("rebuild called safely")
+        
+        def deferred_rebuild():
+            print("callback called")
+            if dpg.does_item_exist(self.id):
+                dpg.delete_item(self.id)   # safe now
+            self.setup(build_func)
+
+        # Schedule for the next frame
+        dpg.set_frame_callback(1, callback=deferred_rebuild)
 
 """
 class CopyClass(Window):

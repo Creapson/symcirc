@@ -3,7 +3,7 @@ import time as t
 
 from netlist.Circuit import Circuit
 from Modified_Node_Analysis import ModifiedNodalAnalysis
-from parser.NetlistParser import NetlistParser
+from parser.NetlistParser import get_circuit_from_file
 from Approximate import Approximation 
 import time as t
 
@@ -13,10 +13,7 @@ import matplotlib.pyplot as plt
 
 circuit = Circuit()
 
-parser = NetlistParser()
-
-parser.set_cir_file("test_circuits/labor10.cir")
-circuit = parser.parse_netlist()
+circuit = get_circuit_from_file("test_circuits/labor10.cir")
 circuit.to_ai_string()
 print("\n\n\nThe now flattend subcircuits")
 circuit.flatten()

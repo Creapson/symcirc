@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
+import numpy as np
 
 from netlist.Element import Element
 from netlist.Model import Model
@@ -14,6 +15,7 @@ class Circuit(BaseModel):
     name: str = ""
     netlist_file_path: str = ""
 
+    params: Dict[str, str] = Field(default_factory=dict)
     inner_connecting_nodes: List[str] = Field(default_factory=list)
 
     bipolar_model: str = "beta_with_r_be_G"
@@ -28,25 +30,46 @@ class Circuit(BaseModel):
 
     separator: str = "."
 
-    # --- COPY METHOD ---
-    def copy(self) -> "Circuit":
-        return Circuit(
-            name=self.name,
-            netlist_file_path=self.netlist_file_path,
-            inner_connecting_nodes=list(self.inner_connecting_nodes),
-            bipolar_model=self.bipolar_model,
-            mosfet_model=self.mosfet_model,
-            nodes=list(self.nodes),
-            elements=[element.copy() for element in self.elements],
-            models={name: model.copy() for name, model in self.models.items()},
-            subcircuits={
-                name: sub_ct.copy() for name, sub_ct in self.subcircuits.items()
-            },
-            separator=self.separator,
-        )
-
     def set_name(self, name: str):
         self.name = name
+
+    def add_param(self, param:str, value:str):
+        self.params[param] = value;
+
+    def get_sweep(self):
+        sweep:str = self.params.get("sweep", "None")
+        sweep_split = sweep.split()
+
+        if len(sweep_split) == 1:
+            return
+
+        sweep_type = sweep_split[1]
+        num_of_points = int(sweep_split[2])
+
+        match sweep_type:
+            case "LIN": 
+                start = int(sweep_split[3])
+                stop = int(sweep_split[4])
+                return np.logspace(start=start, stop=stop, num=num_of_points)
+
+            case "DEC": 
+                start = int(sweep_split[3])
+                stop = int(sweep_split[4])
+
+                num_decades = np.log10(stop) - np.log10(start)
+                total_pts = int(num_of_points * num_decades) + 1
+                return np.logspace(np.log10(start), np.log10(stop), num=total_pts)
+
+            case "OCT": 
+                start = int(sweep_split[3])
+                stop = int(sweep_split[4])
+                num_octaves = np.log2(stop / start)
+                total_pts = int(num_of_points * num_octaves) + 1
+                return np.logspace(np.log2(start), np.log2(stop), num=total_pts, base=2)
+
+            case "POI": 
+                points_of_interest = [float(point) for point in sweep_split[3:]]
+                return np.array(points_of_interest)
 
     def set_netlist_path(self, path: str):
         self.netlist_file_path = path
@@ -66,6 +89,9 @@ class Circuit(BaseModel):
             if element.type == "Q":
                 element.add_param("mosfet_model", self.mosfet_model)
 
+    # def add_param(self, param, value):
+    #     self.params[param] = value
+
     def update_nodes(self):
         for element in self.elements:
             for node in element.connections:
@@ -77,7 +103,7 @@ class Circuit(BaseModel):
     def get_elements(self) -> List[Element]:
         return self.elements
 
-    def get_element(self, element_name: str):
+    def get_element(self, element_name: str) -> Element | None :
         for element in self.elements:
             if element.name == element_name:
                 return element
@@ -109,6 +135,7 @@ class Circuit(BaseModel):
         subct_element_connections: List[str],
         subcircuits: Optional[Dict[str, "Circuit"]] = None,
     ) -> List[Element]:
+
         if subcircuits is None:
             subcircuits = {}
 
@@ -140,7 +167,7 @@ class Circuit(BaseModel):
 
         for element in subct.elements:
             new_ele = element.copy()
-            new_ele.name = f"{element_name}{self.separator}{new_ele.name}"
+            new_ele.name = f"{new_ele.name}{self.separator}{element_name}"
             new_ele.connections = new_node_ids(element.connections)
 
             if new_ele.type == "Q":
@@ -158,7 +185,7 @@ class Circuit(BaseModel):
     def flatten(
         self,
         flatten_models: bool = False,
-        out_file_path: Optional[str] = None,
+        out_file_path: str | None = "",
         subcircuits: Optional[Dict[str, "Circuit"]] = None,
     ):
         if subcircuits is None:
@@ -168,24 +195,19 @@ class Circuit(BaseModel):
         for subct in self.subcircuits.values():
             subct.flatten(subcircuits=self.subcircuits)
 
-        # --------------------------------------------------
-        # Parse model parameters from .out file if required
-        # --------------------------------------------------
+        # Parse model parameters from .out
 
         if flatten_models:
-            from parser.NetlistParser import NetlistParser
+            from parser.NetlistParser import get_element_parameters_from_outfile
 
-            parser = NetlistParser()
-
+            # load small signal parameters from out file
             if out_file_path is None:
-                out_file_path = self.netlist_file_path + self.name + ".out"
+                get_element_parameters_from_outfile(self.netlist_file_path + self.name + ".out", self.elements)
+                print(self.netlist_file_path + self.name + ".out")
+            else:
+                get_element_parameters_from_outfile(out_file_path, self.elements)
 
-            parser.parse_element_params(out_file_path, self.elements)
-
-        # --------------------------------------------------
         # Main flatten loop
-        # --------------------------------------------------
-
         new_elements: List[Element] = []
 
         for element in self.elements:
@@ -219,7 +241,8 @@ class Circuit(BaseModel):
                     mosfet_model,
                 )
 
-                self.add_subcircuit(subct_name, model_subct)
+                if model_subct is not None:
+                    self.add_subcircuit(subct_name, model_subct)
 
                 subct_elements = self.flatten_subcircuit(
                     subct_name,
@@ -248,6 +271,7 @@ class Circuit(BaseModel):
         print(prefix + "Name:", self.name)
         print(prefix + "Netlist_File_Path:", self.netlist_file_path)
         print(prefix + "Connections:", self.inner_connecting_nodes)
+        print(prefix + "Params", self.params)
         print(prefix + "Nodes:", self.nodes)
 
         print(prefix + "Elements in Circuit")

@@ -1,17 +1,17 @@
-from typing import Dict, Optional
+from __future__ import annotations
+from typing import Dict, TYPE_CHECKING
+from pydantic import BaseModel, ConfigDict
 
-from pydantic import BaseModel, ConfigDict, Field
+if TYPE_CHECKING:
+    from netlist.Circuit import Circuit
 
 
 class Model(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    name: Optional[str] = None
+    name: str = ""
     filename: str = ""
-    params: Dict[str, str] = Field(default_factory=dict)
-
-    def copy(self) -> "Model":
-        return self.model_copy(deep=True)
+    params: Dict[str, str] = {} 
 
     def add_param(self, paramSymbol: str, value):
         self.params[paramSymbol] = value
@@ -21,7 +21,7 @@ class Model(BaseModel):
         element_params: Dict[str, str],
         bipolar_model: str,
         mosfet_model: str,
-    ):
+    ) -> Circuit | None:
         # Merge model params and element params
         param_list = {k.lower(): v for k, v in (self.params | element_params).items()}
 

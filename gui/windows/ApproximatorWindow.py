@@ -85,7 +85,7 @@ class ApproximatorWindow(Window):
             parent=self.uuid("y_axis_phase"),
         )
 
-    def setup(self):
+    def setup(self, build_func=None, show_menu_bar=False):
         def build():
             # add selection for the transfer-function
             nodes = list(self.mna.node_map.keys())

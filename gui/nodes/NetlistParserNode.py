@@ -1,14 +1,18 @@
 import dearpygui.dearpygui as dpg
 
+from gui.windows.CircuitEditor import CircuitEditor
+
 from gui.nodes.Node import Node
+from netlist import Circuit
+from parser.NetlistParser import get_circuit_from_file
 
 
 class NetlistParserNode(Node):
-    def __init__(self, label, position=(100, 100)):
+    def __init__(self, node_editor, label, position=(100, 100)):
         self.row_sources = []
         self.table_rows = {}
 
-        super().__init__(label, position)
+        super().__init__(node_editor, label, position)
 
     def setup(self, node_editor_tag):
         def build():
@@ -98,11 +102,9 @@ class NetlistParserNode(Node):
 
         from pathlib import Path
 
-        from parser.NetlistParser import NetlistParser
+        from parser.NetlistParser import get_circuit_from_file 
 
-        parser = NetlistParser()
-        parser.set_cir_file(filepath)
-        self.circuit = parser.parse_netlist()
+        self.circuit = get_circuit_from_file(filepath)
 
         # extract name and folder_path from the file_path
         p = Path(filepath)
@@ -202,7 +204,9 @@ class NetlistParserNode(Node):
         # create a output pin for the flattend circuit
         if not dpg.does_item_exist(self.uuid("flattend_circuit")):
             with self.add_output_attr() as output_pin:
-                dpg.add_text("Flattend Circuit", tag=self.uuid("flattend_circuit"))
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Flattend Circuit", tag=self.uuid("flattend_circuit"))
+                    dpg.add_button(label="Edit Circuit", callback=self.open_circuit_edit)
             self.output_pins[self.uuid("flattend_circuit")] = output_pin
         self.add_output_pin_value(self.uuid("flattend_circuit"), flattend_circuit)
 
@@ -212,3 +216,7 @@ class NetlistParserNode(Node):
         dpg.set_value(self.uuid("circuit_parser"), "Circuit with flattend Subcircuits")
 
         super().update()
+
+    def open_circuit_edit(self):
+        ct_editor = CircuitEditor(self.circuit, self.label)
+        ct_editor.setup()

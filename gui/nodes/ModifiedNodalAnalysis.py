@@ -1,13 +1,14 @@
 import dearpygui.dearpygui as dpg
 
 from gui.nodes.Node import Node
+from netlist.Circuit import Circuit
 
 
 class ModifiedNodalAnalysis(Node):
-    def __init__(self, label, position=(100, 100)):
+    def __init__(self, node_editor, label, position=(100, 100)):
         self.nma = None
 
-        super().__init__(label, position)
+        super().__init__(node_editor, label, position)
 
     def setup(self, node_editor_tag):
         def build():
@@ -24,7 +25,7 @@ class ModifiedNodalAnalysis(Node):
         return super().setup(build, node_editor_tag)
 
     def onlink_callback(self):
-        self.circuit = self.get_input_pin_value(self.uuid("circuit_input_pin"))
+        self.circuit : Circuit = self.get_input_pin_value(self.uuid("circuit_input_pin"))
 
         from Modified_Node_Analysis import ModifiedNodalAnalysis
 
@@ -35,7 +36,10 @@ class ModifiedNodalAnalysis(Node):
 
     def update(self):
         self.mna.buildEquationsSystem()
-        num_results = self.mna.solveNumerical(self.mna.value_dict)
+
+        # get the log_space from the circuit
+        log_space = self.circuit.get_sweep()
+        num_results = self.mna.solveNumerical(self.mna.value_dict, log_space)
 
         if not dpg.does_item_exist(self.uuid("h_out")):
             with self.add_output_attr() as output_pin:
