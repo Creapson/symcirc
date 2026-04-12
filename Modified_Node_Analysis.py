@@ -163,7 +163,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
         if node_out2 != 0 and node_ctrl2 != 0:
             self.A[node_out2 - 1, node_ctrl2 - 1] += gm
 
-    def add_cccs(self, node_out1, node_out2, node_ctrl1, node_ctrl2, beta):  # noqa: C901, PLR0912
+    def add_cccs(self, node_out1, node_out2, node_ctrl1, node_ctrl2, beta, name):  # noqa: C901, PLR0912
         """Add current controlled current source.
 
         Args:
@@ -174,7 +174,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
             beta (float): gain factor
 
         """
-        self.expand_matrix(beta)
+        self.expand_matrix(name)
         idx = self.A.rows - 1
 
         if node_out1 != 0:
@@ -308,6 +308,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
         
         for element in self.ct.elements:
             symbol = element.get_symbol()
+            print(symbol)
             match element.type:
                 case "R": 
                     self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]],  # noqa: E701
@@ -348,7 +349,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
                 case "F": 
                     self.add_cccs(self.node_map[element.connections[0]], self.node_map[element.connections[1]],
-                        self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(symbol))
+                        self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(symbol), element.name)
                     self.value_dict.update({sp.symbols(symbol): pu.pspice_to_float(element.params["value"])})
 
                 case "E": 
@@ -375,29 +376,23 @@ class ModifiedNodalAnalysis(EquationFormulator):
         """
         x = self.get_unknowns()
 
-        logger.debug(self.A)
-        logger.debug(x)
-        logger.debug(self.z)
+    
 
         print("Solving equation system...")
-        logger.debug("Solving equation system...")
 
-        self.sym_result = sp.solve(self.A * x - self.z, x)
-        #result = self.A.LUsolve(self.z)
+        #self.sym_result = sp.solve(self.A * x - self.z, x)
+        #self.sym_result = sp.solve_linear_system(self.A.row_join(self.z), *x)
+        result = self.A.LUsolve(self.z)
 
-        #result_dict = dict(zip(x, result))
+        self.sym_result = dict(zip(x, result))
 
         print("Finished solving equation system!")
-        logger.debug("Finished solving equation system!")
-
-        #logger.debug(result_dict)
-        
 
         return self.sym_result
     
 
 
-    def solveNumerical(self, value_dict, frequencies, idx_out):
+    def solveNumerical(self, value_dict, frequencies, idx_out): 
 
         """Solve the equation system numerically based on the value dictionary.
 

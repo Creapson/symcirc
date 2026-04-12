@@ -4,7 +4,8 @@ from sympy.matrices.exceptions import NonInvertibleMatrixError
 import numpy as np
 import time
 import scipy.linalg as scipy
-#import warnings
+import warnings
+import copy
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 
 
@@ -13,7 +14,7 @@ class Approximation:
 
     def __init__(self, equation_formulator):
         self.analysis = equation_formulator
-        #warnings.filterwarnings("error", category=scipy.LinAlgWarning)
+        warnings.filterwarnings("error", category=scipy.LinAlgWarning)
         pass
 
 
@@ -256,7 +257,8 @@ class Approximation:
         elimination_method,
         rel_error_threshold,
         sorting_method,
-        column=0
+        column=0,
+        
     ):
         #Initialize
         approx_points = [a for a, _ in reference_points]
@@ -448,13 +450,12 @@ class Approximation:
                             # calculate true error
                             
                             
-                            true_error = np.max(
-                                np.abs(abs_H_ref - abs_H_trial) / abs_H_ref
-                            )
+                            true_error = np.abs(abs_H_ref - abs_H_trial) / abs_H_ref
+                            
                             
                             
                             #check if true error is acceptable
-                            if true_error > max_error: #TODO: max_error per frequency point
+                            if any(error > max_error for error in true_error): #TODO: max_error per frequency point
                                 break
 
 
@@ -593,27 +594,19 @@ class Approximation:
         return self.calc_End_Result(removed_terms, input_potential, output_potential)
 
         
-    def calc_End_Result(self, rem_terms, input_potential, output_potential):
+    def calc_End_Result(self, rem_terms, input_potential, output_potential): 
 
-        A_sym = self.get_reduced_matrix(rem_terms)
+        """Generate new MNA object with reduced system matrix
 
+        Returns:
+            ModifiedNodalAnalysis: new MNA object with reduced system matrix
+        """
+        analysis_reduced = copy.copy(self.analysis)
 
-        x = self.analysis.get_unknowns()
+        analysis_reduced.A = self.get_reduced_matrix(rem_terms)
 
-        print("Calculating final symbolic result...")
-        t0 = time.perf_counter_ns()
-
-        #solutions = sp.solve(A_sym * x - self.analysis.z, x, dict=True)
-        solutions = sp.solve_linear_system(A_sym.row_join(self.analysis.z), *x)
-
-        t1 = time.perf_counter_ns()
-        print(f"Final symbolic solution took {(t1 - t0) / 1e6} ms")
-
-        result_approx = solutions#[0]
-
-        result = result_approx[output_potential] / result_approx[input_potential]
-
-        return result
+        
+        return analysis_reduced
     
     def get_reduced_matrix(self, rem_terms):
        
@@ -654,12 +647,20 @@ class Approximation:
             # except RuntimeWarning:
             #     is_singular = True
             #     return None, is_singular
-            
-            lu, piv = scipy.lu_factor(A)
 
-            x = scipy.lu_solve((lu, piv), z_num)
+            try:
             
+                lu, piv = scipy.lu_factor(A)
+
+                x = scipy.lu_solve((lu, piv), z_num)
             
+            except scipy.LinAlgWarning:
+                is_singular = True
+                H[k] = np.nan
+                continue
+                
+            
+            print(x[output_potential])
             
 
             
@@ -802,6 +803,8 @@ class Approximation:
         match method:
             case "max":
                 for (i, j), term, relative_error in term_list:
+                    relative_error = np.atleast_1d(relative_error)
+
                     max_error = max(relative_error)
                     new_list.append(((i, j), term, max_error))
             case "avg":
