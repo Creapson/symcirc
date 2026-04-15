@@ -1,5 +1,8 @@
 import dearpygui.dearpygui as dpg
 
+from gui.data.NodeEditor import NodeEditor
+
+
 from gui.nodes.Approximator import ApproximatorNode
 from gui.nodes.BodePlot import BodePlot
 from gui.nodes.Flatten import FlattenNode
@@ -11,94 +14,27 @@ from gui.nodes.TransferFunctionNode import TransferFunctionNode
 from gui.windows.Window import Window
 
 
-class NodeEditor(Window):
+class NodeEditorWindow(Window):
     def __init__(self, application):
         self.title = "Node Editor"
-
-        self.node_dic = {}
-        self.nodes = []
         self.node_editor_tag = None
-        self.links = {}
         self.application = application
+        self.node_editor = NodeEditor(application=self.application)
 
         super().__init__(title=self.title)
 
     def add_node(self, node_constructor, label, pos=(0, 100)):
-        node = node_constructor(self, label, pos)
-        self.nodes.append(node)
+        node = self.node_editor.add_node(node_editor_tag=self.node_editor_tag, 
+                                  node_constructor=node_constructor, 
+                                  label=label, 
+                                  pos=pos)
 
-        # CREATE DearPyGui items immediately
-        node_id = node.setup(node_editor_tag=self.node_editor_tag)
-        self.node_dic[node_id] = node
-
-        # debug
-        print(self.node_dic)
-        print("node rendered:", node_id)
-
-        return node
-
-    # callback runs when user attempts to connect attributes
     def onlink_callback(self, sender, app_data):
-        from_pin, to_pin = app_data
-        to_node_id = dpg.get_item_parent(to_pin)
-        to_node = self.node_dic[to_node_id]
+        self.node_editor.onlink_callback(sender=sender, app_data=app_data)
 
-        # you can not connect multiple outputs to one input
-        # check if the input pin already has a connection
-        if to_pin not in to_node.connections:
-            to_node.add_connection(to_pin, from_pin)
-            try:
-                to_node.onlink_callback()  # may raise
-            except Exception as e:
-                to_node.connections = {}
-                print(f"Link rejected: {e}")
-                return
-
-            link_id = dpg.add_node_link(from_pin, to_pin, parent=sender)
-            # store link metadata
-            self.links[link_id] = (from_pin, to_pin)
-
-            print("Added Connections: ", app_data)
-
-    # callback runs when user attempts to disconnect attributes
+    # callback runs when user attempts to disconnect pins
     def delink_callback(self, sender, app_data):
-        link_id = app_data
-
-        if link_id not in self.links:
-            return
-
-        from_pin, to_pin = self.links[link_id]
-
-        from_node_id = dpg.get_item_parent(from_pin)
-        to_node_id = dpg.get_item_parent(to_pin)
-
-        from_node = self.node_dic[from_node_id]
-        to_node = self.node_dic[to_node_id]
-
-        # remove logical connections
-        from_node.connections.pop(from_pin, None)
-        to_node.connections.pop(to_pin, None)
-
-        to_node.delink_callback()
-
-        # remove stored link
-        del self.links[link_id]
-
-        # remove visual link
-        dpg.delete_item(link_id)
-
-        print("Removed connection:", from_pin, "->", to_pin)
-
-    # when the output changes run onlink_callback on
-    # all connected nodes to update the value
-    def propagate(self, output_pin_id):
-        for link_id, (from_pin, to_pin) in self.links.items():
-            if from_pin == output_pin_id:
-                # get the node which should be
-                # updated
-                to_node_id = dpg.get_item_parent(to_pin)
-                to_node = self.node_dic[to_node_id]
-                to_node.onlink_callback()
+        self.node_editor.delink_callback(sender=sender, app_data=app_data)
 
     def setup(self, build_func=None, show_menu_bar=False):
         def build():
@@ -107,6 +43,7 @@ class NodeEditor(Window):
                 with dpg.menu(label="File"):
                     dpg.add_menu_item(label="New", enabled=False)
                     dpg.add_menu_item(label="Open", enabled=False)
+                    dpg.add_menu_item(label="Save", enabled=True, callback=lambda: print(self.node_editor.model_dump_json(indent=4)))
                     dpg.add_separator()
                     dpg.add_menu_item(label="Exit", enabled=False)
 
@@ -192,16 +129,11 @@ class NodeEditor(Window):
             # ---------- NODE EDITOR ----------
             self.node_editor_tag = self.uuid("node_editor")
 
-            with dpg.node_editor(
+            dpg.add_node_editor(
                 tag=self.node_editor_tag,
                 callback=self.onlink_callback,
                 delink_callback=self.delink_callback,
                 minimap=True,
-                minimap_location=dpg.mvNodeMiniMap_Location_BottomRight,
-            ):
-                for node in self.nodes:
-                    node_id = node.setup()
-                    self.node_dic[node_id] = node
-                print(self.node_dic)
+                minimap_location=dpg.mvNodeMiniMap_Location_BottomRight)
 
         return super().setup(build, show_menu_bar=True)

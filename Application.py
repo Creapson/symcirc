@@ -1,6 +1,6 @@
 import dearpygui.dearpygui as dpg
 
-from gui.windows.NodeEditor import NodeEditor
+from gui.windows.NodeEditorWindow import NodeEditorWindow
 
 
 class Application:
@@ -18,7 +18,7 @@ class Application:
 
         # Viewport
         dpg.create_viewport(title="OOP Node Editor Example", width=1200, height=800)
-        editor = NodeEditor(self)
+        editor = NodeEditorWindow(application=self)
         # Add nodes
         editor.setup()
         dpg.setup_dearpygui()
