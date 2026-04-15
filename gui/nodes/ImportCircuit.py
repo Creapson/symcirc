@@ -31,32 +31,30 @@ class ImportCircuit(Node):
             f"Loaded file with following Feedback:\n{format_feedback(feedback)}",
         )
 
-    def setup(self, node_editor_tag):
-        def build():
-            with dpg.value_registry():
-                dpg.add_string_value(
-                    default_value="No file currently selected!",
-                    tag=f"{self.node_id}_file_path_string",
-                )
+    def build(self):
+        with dpg.value_registry():
+            dpg.add_string_value(
+                default_value="No file currently selected!",
+                tag=f"{self.node_id}_file_path_string",
+            )
 
-            with dpg.file_dialog(
-                directory_selector=False,
-                show=False,
-                callback=self.callback,
-                tag=f"{self.node_id}_file_dialog_id",
-                width=700,
-                height=400,
-            ):
-                dpg.add_file_extension(".cir")
-                dpg.add_file_extension(".net")
+        with dpg.file_dialog(
+            directory_selector=False,
+            show=False,
+            callback=self.callback,
+            tag=f"{self.node_id}_file_dialog_id",
+            width=700,
+            height=400,
+        ):
+            dpg.add_file_extension(".cir")
+            dpg.add_file_extension(".net")
 
-            with self.add_static_attr():
-                dpg.add_button(
-                    label="Open File Dialog",
-                    callback=lambda: dpg.show_item(f"{self.node_id}_file_dialog_id"),
-                )
-                self.data["file_path_widget_id"] = dpg.add_text(
-                    source=f"{self.node_id}_file_path_string"
-                )
-
-        return super().setup(build, node_editor_tag)
+        with self.add_static_attr():
+            dpg.add_button(
+                label="Open File Dialog",
+                callback=lambda: dpg.show_item(f"{self.node_id}_file_dialog_id"),
+            )
+            self.data["file_path_widget_id"] = dpg.add_text(
+                source=f"{self.node_id}_file_path_string"
+            )
+        super().build()

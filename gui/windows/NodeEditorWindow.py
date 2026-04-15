@@ -131,11 +131,13 @@ class NodeEditorWindow(Window):
             # ---------- NODE EDITOR ----------
             self.node_editor_tag = self.uuid("node_editor")
 
-            dpg.add_node_editor(
+            with dpg.node_editor(
                 tag=self.node_editor_tag,
                 callback=self.onlink_callback,
                 delink_callback=self.delink_callback,
                 minimap=True,
-                minimap_location=dpg.mvNodeMiniMap_Location_BottomRight)
+                minimap_location=dpg.mvNodeMiniMap_Location_BottomRight):
+                for id, node in self.node_editor.node_dic.items():
+                    node.setup()
 
         return super().setup(build, show_menu_bar=True)

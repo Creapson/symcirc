@@ -185,7 +185,7 @@ class Circuit(BaseModel):
     def flatten(
         self,
         flatten_models: bool = False,
-        out_file_path: str | None = "",
+        out_file_path: str = "",
         subcircuits: Optional[Dict[str, "Circuit"]] = None,
     ):
         if subcircuits is None:
@@ -201,7 +201,7 @@ class Circuit(BaseModel):
             from parser.NetlistParser import get_element_parameters_from_outfile
 
             # load small signal parameters from out file
-            if out_file_path is None:
+            if out_file_path == "":
                 get_element_parameters_from_outfile(self.netlist_file_path + self.name + ".out", self.elements)
                 print(self.netlist_file_path + self.name + ".out")
             else:

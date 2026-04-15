@@ -1,4 +1,7 @@
 import dearpygui.dearpygui as dpg
+from typing import List, Dict
+
+from pydantic import Field
 
 from gui.nodes.Node import Node
 from gui.windows.CircuitEditor import CircuitEditor
@@ -6,116 +9,111 @@ from netlist.Circuit import Circuit
 
 
 class FlattenNode(Node):
-    def __init__(self, node_editor, label, position=(100, 100)):
-        self.row_sources = []
-        self.table_rows = {}
-        self.out_file_path = None
-        self.flattend_circuit = Circuit()
-
-        super().__init__(node_editor, label, position)
+    row_sources : List[int] = Field(default_factory=list, exclude=True)
+    table_rows : Dict[str, int] = Field(default_factory=dict, exclude=True)
+    out_file_path : str = Field(default="")
+    flattend_circuit : Circuit = Field(default=Circuit(), exclude=True)
 
     def callback(self, sender, app_data):
         print(sender)
         print(app_data)
-        self.out_file_path = app_data["file_path_name"]
-        dpg.set_value(self.uuid("out_file_path"), f"Selected {self.out_file_path}")
+        self.data["out_file_path"] = app_data["file_path_name"]
+        dpg.set_value(self.uuid("out_file_path"), f"Selected {self.data["out_file_path"]}")
 
-    def setup(self, node_editor_tag):
-        def build():
-            with dpg.value_registry():
-                dpg.add_string_value(
-                    default_value="Circuit is not flattend yet!",
-                    tag=self.uuid("flattend_circuit_out"),
-                )
-                dpg.add_string_value(
-                    default_value="No .out file currently selected!",
-                    tag=self.uuid("out_file_path"),
+    def build(self):
+        with dpg.value_registry():
+            dpg.add_string_value(
+                default_value="Circuit is not flattend yet!",
+                tag=self.uuid("flattend_circuit_out"),
+            )
+            dpg.add_string_value(
+                default_value="No .out file currently selected!",
+                tag=self.uuid("out_file_path"),
+            )
+
+        with self.add_input_attr() as input_pin:
+            dpg.add_text(
+                default_value="Connect Circuit here! [circuit]",
+                tag=self.uuid("file_path_pin"),
+            )
+        self.input_pins[self.uuid("file_path_pin")] = input_pin
+
+        with self.add_static_attr():
+            with dpg.file_dialog(
+                directory_selector=False,
+                show=False,
+                callback=self.callback,
+                tag=self.uuid("file_dialog_id"),
+                width=700,
+                height=400,
+            ):
+                dpg.add_file_extension(".out")
+
+            dpg.add_button(
+                label="Select .out File",
+                callback=lambda: dpg.show_item(self.uuid("file_dialog_id")),
+            )
+            dpg.add_text(source=self.uuid("out_file_path"))
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Filter by element name:")
+                dpg.add_input_text(
+                    width=200,
+                    hint="type to filter...",
+                    callback=self.filter_table_callback,
+                    tag=self.uuid("subckt_filter"),
                 )
 
-            with self.add_input_attr() as input_pin:
-                dpg.add_text(
-                    default_value="Connect Circuit here! [circuit]",
-                    tag=self.uuid("file_path_pin"),
-                )
-            self.input_pins[self.uuid("file_path_pin")] = input_pin
+            # group for selecting small signal model
+            with dpg.group(horizontal=True):
+                dpg.add_text("Bipolar Model")
+                dpg.add_text("Mosfet Model")
+                dpg.add_text("Apply Selection")
 
-            with self.add_static_attr():
-                with dpg.file_dialog(
-                    directory_selector=False,
-                    show=False,
-                    callback=self.callback,
-                    tag=self.uuid("file_dialog_id"),
-                    width=700,
-                    height=400,
-                ):
-                    dpg.add_file_extension(".out")
+            with dpg.group(horizontal=True):
+                dpg.add_combo(
+                    self.editor.application.bipolar_models,
+                    tag=self.uuid("bipolar_model_filter_selection"),
+                    width=100,
+                )
+                dpg.add_combo(
+                    self.editor.application.mosfet_models,
+                    tag=self.uuid("mosfet_model_filter_selection"),
+                    width=100,
+                )
 
                 dpg.add_button(
-                    label="Select .out File",
-                    callback=lambda: dpg.show_item(self.uuid("file_dialog_id")),
+                    label="Apply Changes",
+                    callback=self.filtered_model_selection_callback,
                 )
-                dpg.add_text(source=self.uuid("out_file_path"))
 
-                with dpg.group(horizontal=True):
-                    dpg.add_text("Filter by element name:")
-                    dpg.add_input_text(
-                        width=200,
-                        hint="type to filter...",
-                        callback=self.filter_table_callback,
-                        tag=self.uuid("subckt_filter"),
-                    )
+            # create table to edit all subcircuits
+            dpg.add_text("Select small signal models for every element")
+            with dpg.table(
+                header_row=True,
+                policy=dpg.mvTable_SizingFixedFit,
+                resizable=True,
+                no_host_extendX=True,
+                borders_innerV=True,
+                borders_outerV=True,
+                borders_outerH=True,
+                tag=self.uuid("element_table"),
+            ):
+                # create the header of the table
+                dpg.add_table_column(label="name")
+                dpg.add_table_column(label="bpiolar_model")
+                dpg.add_table_column(label="mosfet_model")
 
-                # group for selecting small signal model
-                with dpg.group(horizontal=True):
-                    dpg.add_text("Bipolar Model")
-                    dpg.add_text("Mosfet Model")
-                    dpg.add_text("Apply Selection")
+            dpg.add_text("When nothing is selected the default value will be used!")
 
-                with dpg.group(horizontal=True):
-                    dpg.add_combo(
-                        self.BIPOLAR_MODELS,
-                        tag=self.uuid("bipolar_model_filter_selection"),
-                        width=100,
-                    )
-                    dpg.add_combo(
-                        self.MOSFET_MODELS,
-                        tag=self.uuid("mosfet_model_filter_selection"),
-                        width=100,
-                    )
-
-                    dpg.add_button(
-                        label="Apply Changes",
-                        callback=self.filtered_model_selection_callback,
-                    )
-
-                # create table to edit all subcircuits
-                dpg.add_text("Select small signal models for every element")
-                with dpg.table(
-                    header_row=True,
-                    policy=dpg.mvTable_SizingFixedFit,
-                    resizable=True,
-                    no_host_extendX=True,
-                    borders_innerV=True,
-                    borders_outerV=True,
-                    borders_outerH=True,
-                    tag=self.uuid("element_table"),
-                ):
-                    # create the header of the table
-                    dpg.add_table_column(label="name")
-                    dpg.add_table_column(label="bpiolar_model")
-                    dpg.add_table_column(label="mosfet_model")
-
-                dpg.add_text("When nothing is selected the default value will be used!")
-
-                # temperary update button
-                dpg.add_button(label="Flatten Elements", callback=self.update)
-
-        return super().setup(build, node_editor_tag)
+            # temperary update button
+            dpg.add_button(label="Flatten Elements", callback=self.update)
+        super().build()
 
     def onlink_callback(self):
-        self.circuit = self.get_input_pin_value(self.uuid("file_path_pin"))
+        self.data["circuit"] = self.get_input_pin_value(self.uuid("file_path_pin"))
 
-        self.circuit.to_ai_string()
+        self.data["circuit"].to_ai_string()
 
         # clear the table before populating it
         self.delete_table()
@@ -138,23 +136,23 @@ class FlattenNode(Node):
 
             dpg.add_text(name, parent=row)
             dpg.add_combo(
-                items=self.BIPOLAR_MODELS,
+                items=self.editor.application.bipolar_models,
                 source=self.uuid(f"{name}_bipolar_model"),
                 parent=row,
                 width=-1,
             )
             dpg.add_combo(
-                items=self.MOSFET_MODELS,
+                items=self.editor.application.mosfet_models,
                 source=self.uuid(f"{name}_mosfet_model"),
                 parent=row,
                 width=-1,
             )
 
         # populate the table with all elements
-        self.element_list = self.circuit.get_elements()
-        print(self.element_list)
+        self.data["element_list"] = self.data.get("circuit", Circuit()).get_elements()
+        print(self.data["element_list"])
         self.delete_table()
-        for item in self.element_list:
+        for item in self.data.get("element_list", []):
             if item.type == "Q":
                 (
                     add_element_row(
@@ -206,15 +204,15 @@ class FlattenNode(Node):
 
     def update(self):
         # apply the changed small signal models to all elements
-        for element in self.element_list:
+        for element in self.data.get("element_list", []):
             bipolar_model = dpg.get_value(self.uuid(f"{element.name}_bipolar_model"))
             mosfet_model = dpg.get_value(self.uuid(f"{element.name}_mosfet_model"))
             element.params["bipolar_model"] = bipolar_model
             element.params["mosfet_model"] = mosfet_model
 
-        self.flattend_circuit = self.circuit.copy()
-        print(self.out_file_path)
-        self.flattend_circuit.flatten(True, self.out_file_path)
+        self.flattend_circuit = self.data["circuit"].copy()
+        print(self.data.get("out_file_path", ""))
+        self.flattend_circuit.flatten(True, self.data.get("out_file_path", ""))
 
         if not dpg.does_item_exist(self.uuid("flattend_circuit_out_pin")):
             with self.add_output_attr() as output_pin:

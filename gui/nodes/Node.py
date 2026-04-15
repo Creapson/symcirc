@@ -19,20 +19,21 @@ class Node(BaseModel):
     input_pins: Dict[Any, Any] = Field(default_factory=dict, exclude=True)
     do_propagation: bool = Field(default=False, exclude=True)
 
-    def setup(self, build_fn, node_editor_tag):
+    def setup(self, node_editor_tag):
         with dpg.node(
-            label=self.label, pos=self.position, parent=node_editor_tag
+            label=self.label, 
+            pos=self.position, 
+            parent=node_editor_tag
         ) as self.node_id:
-            build_fn()
+            self.build()
 
-            with self.add_static_attr():
-                dpg.add_button(label="Debug Log", callback=self.debug_print)
-            print("Output Pins: ", self.output_pins)
-
-        print(f"node_id of node {self.label} with id: {self.node_id}")
         dpg.set_item_pos(self.node_id, self.position)
-
         return self.node_id
+
+    def build(self):
+        with self.add_static_attr():
+            dpg.add_button(label="Debug Log", callback=self.debug_print)
+        pass
 
     def delete_output_pins(self):
         for pin_tag, attr_id in list(self.output_pins.items()):
