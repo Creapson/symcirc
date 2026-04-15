@@ -27,7 +27,7 @@ class ImportCircuit(Node):
         )
 
         dpg.set_value(
-            self.file_path_widget_id,
+            self.data.get("file_path_widget_id", 0),
             f"Loaded file with following Feedback:\n{format_feedback(feedback)}",
         )
 
@@ -55,7 +55,7 @@ class ImportCircuit(Node):
                     label="Open File Dialog",
                     callback=lambda: dpg.show_item(f"{self.node_id}_file_dialog_id"),
                 )
-                self.file_path_widget_id = dpg.add_text(
+                self.data["file_path_widget_id"] = dpg.add_text(
                     source=f"{self.node_id}_file_path_string"
                 )
 

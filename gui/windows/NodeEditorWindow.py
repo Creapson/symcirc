@@ -24,10 +24,12 @@ class NodeEditorWindow(Window):
         super().__init__(title=self.title)
 
     def add_node(self, node_constructor, label, pos=(0, 100)):
-        node = self.node_editor.add_node(node_editor_tag=self.node_editor_tag, 
-                                  node_constructor=node_constructor, 
-                                  label=label, 
-                                  pos=pos)
+        self.node_editor.add_node(
+                node_editor_tag=self.node_editor_tag, 
+                node_constructor=node_constructor, 
+                label=label, 
+                pos=pos
+                )
 
     def onlink_callback(self, sender, app_data):
         self.node_editor.onlink_callback(sender=sender, app_data=app_data)

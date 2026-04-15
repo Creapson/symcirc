@@ -1,24 +1,26 @@
 
 import dearpygui.dearpygui as dpg
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union, Protocol, Callable, Tuple
+
+from gui.nodes.Node import Node
 
 class NodeEditor(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     title: str = "Node Editor"
-    node_dic: Dict[Any, Any] = Field(default_factory=dict)
-    nodes: List[Any] = Field(default_factory=list)
-    links: Dict[Any, Any] = Field(default_factory=dict)
-    application: Any
+    node_dic: Dict[int, Node] = Field(default_factory=dict)
+    links: Dict[int, Tuple[int, int]] = Field(default_factory=dict)
+    application: Any = Field(default=None, exclude=True)
 
-    def add_node(self, node_editor_tag, node_constructor, label, pos=(0, 100)):
-        node = node_constructor(self, label, pos)
-        self.nodes.append(node)
+    def add_node(self, node_editor_tag, node_constructor, label, pos):
+        node = node_constructor(editor=self, label=label, position=pos)
 
         # CREATE DearPyGui items immediately
         node_id = node.setup(node_editor_tag=node_editor_tag)
         self.node_dic[node_id] = node
+
+        return node
 
     # callback runs when user attempts to connect pins
     def onlink_callback(self, sender, app_data):

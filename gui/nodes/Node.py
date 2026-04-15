@@ -1,27 +1,23 @@
 import dearpygui.dearpygui as dpg
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Any, Dict, List, Optional, Union, Tuple
 
+class Node(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-class Node:
-    def __init__(self, node_editor, label : str, position=(100, 100)):
-        self.label = label
-        self.position = position
-        # Add the editor to access the other nodes
-        self.editor = node_editor 
-        self.node_id = None
-
-        # {pin_id: connected_node}
-        self.connections = {}
-        # {pin_id: variable}
-        self.output_values = {}
-        self.output_pins = {}
-        self.input_pins = {}
-
-        # enable if self.update() should be called
-        # when the inputs change
-        self.do_propagation = False
-
-        self.BIPOLAR_MODELS = self.editor.application.bipolar_models
-        self.MOSFET_MODELS = self.editor.application.mosfet_models
+    # persistent Data (this gets saved)
+    label: str
+    position: Tuple[float, float] = (0, 0)
+    data: Dict[str, Any] = Field(default_factory=dict)
+    
+    # non persistent data
+    node_id: Union[int, str] = Field(default=None, exclude=True)
+    editor: Any = Field(exclude=True)
+    connections: Dict[Any, Any] = Field(default_factory=dict, exclude=True)
+    output_values: Dict[Any, Any] = Field(default_factory=dict, exclude=True)
+    output_pins: Dict[Any, Any] = Field(default_factory=dict, exclude=True)
+    input_pins: Dict[Any, Any] = Field(default_factory=dict, exclude=True)
+    do_propagation: bool = Field(default=False, exclude=True)
 
     def setup(self, build_fn, node_editor_tag):
         with dpg.node(
