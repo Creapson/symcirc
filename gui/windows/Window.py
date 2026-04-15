@@ -4,7 +4,7 @@ import dearpygui.dearpygui as dpg
 class Window:
     def __init__(self, title : str="Not Defined", width:int=800, height:int=600, autosize:bool=True, no_resize:bool=False):
         self.title : str = title
-        self.id:int = 0
+        self.id:str = ""
         self.width:int = width
         self.height:int = height
         self.autosize:bool = autosize
@@ -21,8 +21,8 @@ class Window:
             build_func()
         pass
 
-    def uuid(self, tag):
-        return f"{self.id}_{tag}"
+    def uuid(self, tag: str):
+        return f"{self.id}_" + tag
     
     def update(self):
         pass
@@ -33,7 +33,7 @@ class Window:
             dpg.delete_item(sender)
 
         # clear internal reference
-        self.id = None
+        self.id = ""
 
     def rebuild_ui(self, build_func):
         print("rebuild called safely")

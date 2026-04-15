@@ -42,7 +42,7 @@ class ImportCircuit(Node):
             directory_selector=False,
             show=False,
             callback=self.callback,
-            tag=f"{self.node_id}_file_dialog_id",
+            tag=self.uuid("file_dialog_id"),
             width=700,
             height=400,
         ):
@@ -52,7 +52,7 @@ class ImportCircuit(Node):
         with self.add_static_attr():
             dpg.add_button(
                 label="Open File Dialog",
-                callback=lambda: dpg.show_item(f"{self.node_id}_file_dialog_id"),
+                callback=lambda: dpg.show_item(self.uuid("file_dialog_id")),
             )
             self.data["file_path_widget_id"] = dpg.add_text(
                 source=f"{self.node_id}_file_path_string"
