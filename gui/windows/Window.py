@@ -21,7 +21,7 @@ class Window:
             build_func()
         pass
 
-    def uuid(self, tag: str):
+    def uuid(self, tag: str) -> str:
         return f"{self.id}_" + tag
     
     def update(self):

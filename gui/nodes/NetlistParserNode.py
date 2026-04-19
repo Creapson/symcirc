@@ -130,12 +130,12 @@ class NetlistParserNode(Node):
 
             dpg.add_text(subct_name, parent=row)
             dpg.add_combo(
-                items=self.BIPOLAR_MODELS,
+                items=self.editor.application.bipolar_models,
                 source=self.uuid(f"{subct_name}_bipolar_model"),
                 parent=row,
             )
             dpg.add_combo(
-                items=self.MOSFET_MODELS,
+                items=self.editor.application.mosfet_models,
                 source=self.uuid(f"{subct_name}_mosfet_model"),
                 parent=row,
             )

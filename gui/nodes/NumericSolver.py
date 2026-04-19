@@ -4,44 +4,49 @@ from gui.nodes.Node import Node
 
 
 class NumericSolver(Node):
-    def setup(self, node_editor_tag):
-        def build():
-            with dpg.value_registry():
-                dpg.add_int_value(default_value=2, tag=self.uuid("start_log_int"))
-                dpg.add_int_value(default_value=8, tag=self.uuid("end_log_int"))
-                dpg.add_int_value(default_value=10000, tag=self.uuid("points_in_log"))
+    def build(self):
+        with dpg.value_registry():
+            dpg.add_int_value(default_value=2, tag=self.uuid("start_log_int"))
+            dpg.add_int_value(default_value=8, tag=self.uuid("end_log_int"))
+            dpg.add_int_value(default_value=10000, tag=self.uuid("points_in_log"))
 
-            with self.add_input_attr() as input_pin:
-                dpg.add_text(
-                    default_value="Connect H here",
-                    tag=self.uuid("h_input_pin"),
+        with self.add_input_attr() as input_pin:
+            dpg.add_text(
+                default_value="Connect H here",
+                tag=self.uuid("h_input_pin"),
+            )
+        self.input_pins[self.uuid("h_input_pin")] = input_pin
+
+        with self.add_static_attr():
+            dpg.add_text("Configure the log-Space")
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Start Frequenzy in 10^x")
+                dpg.add_input_int(
+                    label="input int", 
+                    source=self.uuid("start_log_int"),
+                    width=100
                 )
-            self.input_pins[self.uuid("h_input_pin")] = input_pin
 
-            with self.add_static_attr():
-                dpg.add_text("Configure the log-Space")
+            with dpg.group(horizontal=True):
+                dpg.add_text("End Frequenzy in 10^x")
+                dpg.add_input_int(
+                    label="input int", 
+                    source=self.uuid("end_log_int"),
+                    width=100
+                )
 
-                with dpg.group(horizontal=True):
-                    dpg.add_text("Start Frequenzy in 10^x")
-                    dpg.add_input_int(
-                        label="input int", source=self.uuid("start_log_int")
-                    )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Number of Points between start and end")
+                dpg.add_input_int(
+                    label="input int", 
+                    source=self.uuid("points_in_log"),
+                    width=100
+                )
 
-                with dpg.group(horizontal=True):
-                    dpg.add_text("End Frequenzy in 10^x")
-                    dpg.add_input_int(
-                        label="input int", source=self.uuid("end_log_int")
-                    )
+            dpg.add_button(label="Calculate Numeric Values", callback=self.update)
 
-                with dpg.group(horizontal=True):
-                    dpg.add_text("Number of Points between start and end")
-                    dpg.add_input_int(
-                        label="input int", source=self.uuid("points_in_log")
-                    )
-
-                dpg.add_button(label="Calculate Numeric Values", callback=self.update)
-
-        return super().setup(build, node_editor_tag)
+        super().build()
 
     def onlink_callback(self):
         self.h = self.get_input_pin_value(self.uuid("h_input_pin"))

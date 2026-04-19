@@ -2,37 +2,36 @@ import dearpygui.dearpygui as dpg
 
 from gui.nodes.Node import Node
 
-
 class TransferFunctionNode(Node):
-    def setup(self, node_editor_tag):
-        def build():
-            with self.add_input_attr() as magn_pin:
-                dpg.add_text(
-                    default_value="Connect Circuit here",
-                    tag=self.uuid("num_results_input_pin"),
-                )
-            self.input_pins[self.uuid("num_results_input_pin")] = magn_pin
+    def build(self):
+        with self.add_input_attr() as magn_pin:
+            dpg.add_text(
+                default_value="Connect Circuit here",
+                tag=self.uuid("num_results_input_pin"),
+            )
+        self.input_pins[self.uuid("num_results_input_pin")] = magn_pin
 
-            with self.add_static_attr():
-                # add selection for the transfer-function
-                with dpg.group(horizontal=True):
-                    dpg.add_text("From Node:")
-                    dpg.add_combo(items=[], tag=self.uuid("from_node"))
+        with self.add_static_attr():
+            # add selection for the transfer-function
+            with dpg.group(horizontal=True):
+                dpg.add_text("From Node:")
+                dpg.add_combo(items=[], tag=self.uuid("from_node"), width=100)
 
-                with dpg.group(horizontal=True):
-                    dpg.add_text("To Node:")
-                    dpg.add_combo(items=[], tag=self.uuid("to_node"))
+            with dpg.group(horizontal=True):
+                dpg.add_text("To Node:")
+                dpg.add_combo(items=[], tag=self.uuid("to_node"), width=100)
 
-                dpg.add_button(label="Calculate Numeric Values", callback=self.update)
+            dpg.add_button(label="Calculate Numeric Values", callback=self.update)
 
-        return super().setup(build, node_editor_tag)
+        super().build()
+
 
     def onlink_callback(self):
-        self.num_results, self.mna = self.get_input_pin_value(
+        self.data["mna"] = self.get_input_pin_value(
             self.uuid("num_results_input_pin")
         )
 
-        nodes = list(self.mna.node_map.keys())
+        nodes = list(self.data["mna"].node_map.keys())
         dpg.configure_item(self.uuid("from_node"), items=nodes)
         dpg.configure_item(self.uuid("to_node"), items=nodes)
         super().onlink_callback()
@@ -44,14 +43,11 @@ class TransferFunctionNode(Node):
         from_node = dpg.get_value(self.uuid("from_node"))
         to_node = dpg.get_value(self.uuid("to_node"))
 
-        H = (
-            self.num_results[sp.symbols(f"V_{to_node}")]
-            / self.num_results[sp.symbols(f"V_{from_node}")]
-        )
+        H = self.data["mna"].solveNumerical(self.data["mna"].value_dict, to_node, from_node)
 
         if not dpg.does_item_exist(self.uuid("h_out")):
             with self.add_output_attr() as output_pin:
                 dpg.add_text("H", tag=self.uuid("h_out"))
             self.output_pins[self.uuid("h_out")] = output_pin
-        self.add_output_pin_value(self.uuid("h_out"), H)
+        self.add_output_pin_value(self.uuid("h_out"), (sweep, H))
         super().update()

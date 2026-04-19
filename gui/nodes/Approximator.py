@@ -5,23 +5,17 @@ from gui.windows.ApproximatorWindow import ApproximatorWindow
 
 
 class ApproximatorNode(Node):
-    def __init__(self, node_editor, label, position=(100, 100)):
-        self.h = None
+    def build(self):
+        with self.add_input_attr() as input_pin:
+            dpg.add_text("Connect h here", source=self.uuid("h_input"))
+        self.input_pins[self.uuid("h_input")] = input_pin
 
-        super().__init__(node_editor, label, position)
+        with self.add_static_attr():
+            dpg.add_button(
+                label="Configure/Settings", callback=self.open_settings_window
+            )
 
-    def setup(self, node_editor_tag):
-        def build():
-            with self.add_input_attr() as input_pin:
-                dpg.add_text("Connect h here", source=self.uuid("h_input"))
-            self.input_pins[self.uuid("h_input")] = input_pin
-
-            with self.add_static_attr():
-                dpg.add_button(
-                    label="Configure/Settings", callback=self.open_settings_window
-                )
-
-        return super().setup(build, node_editor_tag)
+        super().build()
 
     def open_settings_window(self):
         if self.h is not None:
