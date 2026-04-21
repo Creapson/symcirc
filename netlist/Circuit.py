@@ -44,7 +44,7 @@ class Circuit(BaseModel):
             return
 
         sweep_type = sweep_split[1]
-        num_of_points = int(sweep_split[2])
+        num_of_points = int(float(sweep_split[2]))
 
         match sweep_type:
             case "LIN": 
