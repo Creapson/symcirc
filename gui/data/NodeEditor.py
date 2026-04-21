@@ -35,6 +35,10 @@ class NodeEditor(BaseModel):
     links: Dict[int, Tuple[int, int]] = Field(default_factory=dict)
     application: Any = Field(default=None, exclude=True)
 
+    def save(self):
+        for _, node in self.node_dic.items():
+            node.update_pos()
+
     def add_node(self, node_editor_tag, node_constructor, label, pos):
         node = node_constructor(editor=self, label=label, position=pos)
 

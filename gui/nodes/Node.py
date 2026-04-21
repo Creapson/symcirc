@@ -1,6 +1,6 @@
 import dearpygui.dearpygui as dpg
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Any, Dict, Annotated, Union, Tuple, Literal
+from typing import Any, Dict, Annotated, Union, Tuple, Literal, List
 from enum import IntEnum
 
 class NodeType(IntEnum):
@@ -20,12 +20,12 @@ class Node(BaseModel):
 
     # persistent Data (this gets saved)
     label: str
-    position: Tuple[float, float] = (0, 0)
+    position: List[int] = [0, 0]
     data: Dict[str, Any] = Field(default_factory=dict)
     node_type: Literal[NodeType.BASE] = NodeType.BASE    
 
     # non persistent data
-    node_id: Union[int, str] = Field(default=None, exclude=True)
+    node_id: Union[int, str] | None = Field(default=None, exclude=True)
     editor: Any = Field(default=None, exclude=True)
     connections: Dict[Any, Any] = Field(default_factory=dict, exclude=True)
     output_values: Dict[Any, Any] = Field(default_factory=dict, exclude=True)
@@ -116,6 +116,9 @@ class Node(BaseModel):
         # when update is called all settings should be set
         self.do_propagation = True
 
+    def update_pos(self):
+        self.position = dpg.get_item_pos(self.node_id)
+
     def debug_print(self):
         print(f"\n\nDebug Output from Node: {self.label}")
         print("Label: ", self.label)
@@ -125,23 +128,3 @@ class Node(BaseModel):
         print("Input Pins", self.input_pins)
         print("output Values: ", self.output_values)
         print("output pins: ", self.output_pins)
-
-
-"""
-import dearpygui.dearpygui as dpg
-
-from gui.nodes.Node import Node
-
-class Copy(Node):
-    def setup(self, node_editor_tag):
-        def build():
-            pass
-
-        return super().setup(build, node_editor_tag)
-
-    def onlink_callback(self):
-        super().onlink_callback()
-
-    def update(self):
-        super().update()
-"""

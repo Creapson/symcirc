@@ -42,6 +42,8 @@ class NodeEditorWindow(Window):
             if not file_path.endswith(".json"):
                 file_path += ".json"
 
+            # save / update chaging variables like the position
+            self.node_editor.save()
             # Dump Pydantic object to JSON
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(self.node_editor.model_dump_json(indent=4))
