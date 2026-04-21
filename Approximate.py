@@ -15,7 +15,12 @@ class Approximation:
     def __init__(self, equation_formulator):
         self.analysis = equation_formulator
         warnings.filterwarnings("error", category=scipy.LinAlgWarning)
-        pass
+        
+    def get_Elimination_Methods(self):
+        return ["term-by-term"]
+    
+    def get_Sorting_Methods(self):
+        return ["max", "avg", "column"]
 
 
     def generate_term_list(self, matrix):
@@ -470,7 +475,7 @@ class Approximation:
 
                        
             
-            case "tbt":
+            case "term-by-term":
                
                 while term_list:
 

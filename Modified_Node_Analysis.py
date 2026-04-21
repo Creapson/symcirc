@@ -392,7 +392,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
     
 
 
-    def solveNumerical(self, value_dict, frequencies, idx_out): 
+    def solveNumerical(self, value_dict, frequencies, idx_out, idx_in): 
 
         """Solve the equation system numerically based on the value dictionary.
 
@@ -422,8 +422,8 @@ class ModifiedNodalAnalysis(EquationFormulator):
             z_num_eval = z_num_func(s_val)
             x = scipy.solve(A_num_eval, z_num_eval)
 
-            return x[idx_out]
-            #H[k] = x[idx_out] #/ x[idx_in]
+            return x[idx_out] / x[idx_in]
+            
 
         H = np.array([solve_freq(freq) for freq in frequencies])
 
