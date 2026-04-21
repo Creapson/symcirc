@@ -205,6 +205,11 @@ class NodeEditorWindow(Window):
         return super().setup(build, show_menu_bar=True)
 
     def setup_node_editor(self):
+        # Draw the node
         for _, node in self.node_editor.node_dic.items():
             node.editor = self
             node.setup(self.node_editor_tag)
+
+        # create the links
+        # for _,(from_pin, to_pin) in self.node_editor.links.items():
+        #     self.node_editor.add_link(from_pin, to_pin)

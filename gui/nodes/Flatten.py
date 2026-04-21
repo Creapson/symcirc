@@ -222,21 +222,13 @@ class FlattenNode(Node):
         print(self.data.get("out_file_path", ""))
         self.data["flattend_circuit"].flatten(True, self.data.get("out_file_path", ""))
 
-        if not dpg.does_item_exist(self.uuid("flattend_circuit_out_pin")):
-            with self.add_output_attr() as output_pin:
-                with dpg.group(horizontal=True):
-                    dpg.add_text(source=self.uuid("flattend_circuit_out"))
-                    dpg.add_button(label="Edit Circuit", callback=self.open_circuit_edit)
-            self.output_pins[self.uuid("flattend_circuit_out_pin")] = output_pin
+        self.add_output_pin("flattend_circuit_out_pin", "Circuit with flattend Models", self.open_circuit_edit, "Edit Circuit")
+
         self.add_output_pin_value(
             self.uuid("flattend_circuit_out_pin"), self.data["flattend_circuit"]
         )
 
         self.data["flattend_circuit"].to_ai_string()
-
-        # apply it to UI
-        dpg.set_value(self.uuid("flattend_circuit_out"), "Circuit with flattend Models")
-
         super().update()
 
     def open_circuit_edit(self):

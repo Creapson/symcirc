@@ -77,11 +77,7 @@ class NumericSolver(Node):
         print(magnitude_db)
         print(phase_deg)
 
-        # freq_log
-        if not dpg.does_item_exist(self.uuid("line_out")):
-            with self.add_output_attr() as output_pin:
-                dpg.add_text("Numeric Values for BodePlots", tag=self.uuid("line_out"))
-            self.output_pins[self.uuid("line_out")] = output_pin
+        self.add_output_pin(tag="line_out", text="Numeric Values for BodePlots")
         self.add_output_pin_value(
             self.uuid("line_out"), (freq_log, magnitude_db, phase_deg)
         )

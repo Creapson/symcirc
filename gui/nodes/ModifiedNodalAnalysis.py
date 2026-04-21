@@ -39,10 +39,8 @@ class ModifiedNodalAnalysis(Node):
 
         self.data["mna"].buildEquationsSystem()
 
-        if not dpg.does_item_exist(self.uuid("h_out")):
-            with self.add_output_attr() as output_pin:
-                dpg.add_text("H", tag=self.uuid("h_out"))
-            self.output_pins[self.uuid("h_out")] = output_pin
+
+        self.add_output_pin(tag="h_out", text="H")
         self.add_output_pin_value(self.uuid("h_out"), self.data["mna"])
 
         super().update()

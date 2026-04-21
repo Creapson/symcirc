@@ -20,10 +20,7 @@ class ImportCircuit(Node):
         feedback = get_pre_format_info(app_data["file_path_name"])
 
         # when a file is selected create the output pin
-        if not dpg.does_item_exist(self.uuid("file_path_out")):
-            with self.add_output_attr() as output_pin:
-                dpg.add_text("Selected file", tag=self.uuid("file_path_out"))
-            self.output_pins[self.uuid("file_path_out")] = output_pin
+        self.add_output_pin(tag="file_path_out", text="Selected file")
 
         self.add_output_pin_value(
             self.uuid("file_path_out"), app_data["file_path_name"]
