@@ -222,7 +222,7 @@ class FlattenNode(Node):
         print(self.data.get("out_file_path", ""))
         self.data["flattend_circuit"].flatten(True, self.data.get("out_file_path", ""))
 
-        self.add_output_pin("flattend_circuit_out_pin", "Circuit with flattend Models", self.open_circuit_edit, "Edit Circuit")
+        self.add_output_pin(tag="flattend_circuit_out_pin", text="Circuit with flattend Models", button_callback=self.open_circuit_edit, button_text="Edit Circuit")
 
         self.add_output_pin_value(
             self.uuid("flattend_circuit_out_pin"), self.data["flattend_circuit"]

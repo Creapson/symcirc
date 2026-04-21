@@ -202,7 +202,12 @@ class NetlistParserNode(Node):
         flattend_circuit.flatten()
 
         # create a output pin for the flattend circuit
-        self.add_output_pin("flattend_circuit", "Flattend Circuit", self.open_circuit_edit, "Edit Circuit")
+        self.add_output_pin(
+                tag="flattend_circuit", 
+                text="Flattend Circuit", 
+                button_callback=self.open_circuit_edit, 
+                button_text="Edit Circuit"
+                            )
         self.add_output_pin_value(self.uuid("flattend_circuit"), flattend_circuit)
 
         flattend_circuit.to_ai_string()

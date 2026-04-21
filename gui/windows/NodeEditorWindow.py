@@ -211,5 +211,5 @@ class NodeEditorWindow(Window):
             node.setup(self.node_editor_tag)
 
         # create the links
-        # for _,(from_pin, to_pin) in self.node_editor.links.items():
-        #     self.node_editor.add_link(from_pin, to_pin)
+        for _,(from_pin, to_pin) in self.node_editor.links.items():
+            self.node_editor.add_link(from_pin, to_pin)

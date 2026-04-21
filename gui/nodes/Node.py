@@ -57,7 +57,14 @@ class Node(BaseModel):
     def build(self):
         with self.add_static_attr():
             dpg.add_button(label="Debug Log", callback=self.debug_print)
-        pass
+
+        # when laoding a pipeline from file
+        # create all missing output_pins
+        tmp_dic = self.output_pins
+        self.output_pins = {}
+        for text_tag, pin_id in tmp_dic.items():
+            self.add_output_pin(pin_id=pin_id, tag=text_tag)
+
 
     def delete_output_pins(self):
         for pin_tag, attr_id in list(self.output_pins.items()):
@@ -81,9 +88,14 @@ class Node(BaseModel):
             parent=self.node_id, attribute_type=dpg.mvNode_Attr_Static
         )
 
-    def add_output_attr(self):
+    def add_output_attr(self, tag=0):
+        if tag == 0 :
+            tag = dpg.generate_uuid()
+
         return dpg.node_attribute(
-            parent=self.node_id, attribute_type=dpg.mvNode_Attr_Output
+            parent=self.node_id, 
+            attribute_type=dpg.mvNode_Attr_Output,
+            tag=tag,
         )
 
     def add_output_pin_value(self, output_pin_tag, value):
@@ -94,14 +106,17 @@ class Node(BaseModel):
         print("Output Values", self.output_values)
 
 
-    def add_output_pin(self, tag, text="", button_callback=None, button_text=""):
+    def add_output_pin(self, pin_id=0,tag="", text="", button_callback=None, button_text=""):
+        output_pin = 0
         if not dpg.does_item_exist(self.uuid(tag)):
-            with self.add_output_attr() as output_pin:
+            with self.add_output_attr(pin_id) as output_pin:
                 with dpg.group(horizontal=True):
                     dpg.add_text(text, tag=self.uuid(tag))
-                    if not button_callback:
+                    if button_callback is not None:
                         dpg.add_button(label=button_text, callback=button_callback)
             self.output_pins[self.uuid(tag)] = output_pin
+
+        return output_pin
 
     def add_connection(self, pin_id, connected_node):
         self.connections[pin_id] = connected_node
