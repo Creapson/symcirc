@@ -1,15 +1,17 @@
 import dearpygui.dearpygui as dpg
 from pydantic import Field
-from typing import List, Dict
+from typing import List, Dict, Literal
 
 from gui.windows.CircuitEditor import CircuitEditor
 
-from gui.nodes.Node import Node
+from gui.nodes.Node import Node, NodeType
 from netlist import Circuit
 from parser.NetlistParser import get_circuit_from_file
 
 
 class NetlistParserNode(Node):
+    node_type: Literal[NodeType.NETLIST_PARSER] = NodeType.NETLIST_PARSER
+
     row_sources : List[int] = Field(default_factory=list, exclude=True)
     table_rows : Dict[str, int] = Field(default_factory=dict, exclude=True)
 

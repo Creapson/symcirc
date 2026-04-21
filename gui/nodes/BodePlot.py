@@ -1,10 +1,12 @@
 import dearpygui.dearpygui as dpg
 import numpy as np
 
-from gui.nodes.Node import Node
+from gui.nodes.Node import Node, NodeType
+from typing import Literal
 
 
 class BodePlot(Node):
+    node_type: Literal[NodeType.BODE_PLOT] = NodeType.BODE_PLOT
     def build(self):
         # create pins for all nessary inputs
         with self.add_input_attr() as input_pin:

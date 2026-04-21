@@ -1,9 +1,12 @@
 import dearpygui.dearpygui as dpg
 
-from gui.nodes.Node import Node
+from gui.nodes.Node import Node, NodeType
+from typing import Literal
 
 
 class NumericSolver(Node):
+    node_type: Literal[NodeType.NUMERIC_SOLVER] = NodeType.NUMERIC_SOLVER
+
     def build(self):
         with dpg.value_registry():
             dpg.add_int_value(default_value=2, tag=self.uuid("start_log_int"))

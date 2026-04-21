@@ -4,7 +4,7 @@ import json
 from gui.data.NodeEditor import NodeEditor
 
 
-from gui.nodes.Approximator import ApproximatorNode
+from gui.nodes.ApproximatorNode import ApproximatorNode
 from gui.nodes.BodePlot import BodePlot
 from gui.nodes.Flatten import FlattenNode
 from gui.nodes.ImportCircuit import ImportCircuit
@@ -54,17 +54,17 @@ class NodeEditorWindow(Window):
 
     def load_node_editor(self, sender, app_data):
         try:
-            file_path : str = app_data["file_path_name"]
-            # Load JSON
-            f = open(file_path, "r", encoding="utf-8")
-
-            self.node_editor = NodeEditor.model_validate_json(f)
-
+            file_path: str = app_data["file_path_name"]
+            
+            with open(file_path, "r", encoding="utf-8") as f:
+                json_string = f.read()
+            
+            self.node_editor = NodeEditor.model_validate_json(json_string)
+            self.node_editor.application = self
             self.setup_node_editor()
 
         except Exception as e:
-            print("Error loading file:", e)
-        pass
+            print(f"Error loading file: {e}")
 
     def onlink_callback(self, sender, app_data):
         self.node_editor.onlink_callback(sender=sender, app_data=app_data)
@@ -204,4 +204,5 @@ class NodeEditorWindow(Window):
 
     def setup_node_editor(self):
         for _, node in self.node_editor.node_dic.items():
+            node.editor = self
             node.setup(self.node_editor_tag)

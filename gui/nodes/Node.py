@@ -1,6 +1,19 @@
 import dearpygui.dearpygui as dpg
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Any, Dict, List, Optional, Union, Tuple
+from typing import Any, Dict, Annotated, Union, Tuple, Literal
+from enum import IntEnum
+
+class NodeType(IntEnum):
+    BASE = 0
+    APPROXIMATOR = 1
+    BODE_PLOT = 2
+    FLATTEN = 3
+    IMPORT_CIRCUIT = 4
+    MNA = 5
+    NETLIST_PARSER = 6
+    NUMERIC_SOLVER= 7
+    TRANSFER_FUNCTION = 8
+
 
 class Node(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -9,10 +22,11 @@ class Node(BaseModel):
     label: str
     position: Tuple[float, float] = (0, 0)
     data: Dict[str, Any] = Field(default_factory=dict)
-    
+    node_type: Literal[NodeType.BASE] = NodeType.BASE    
+
     # non persistent data
     node_id: Union[int, str] = Field(default=None, exclude=True)
-    editor: Any = Field(exclude=True)
+    editor: Any = Field(default=None, exclude=True)
     connections: Dict[Any, Any] = Field(default_factory=dict, exclude=True)
     output_values: Dict[Any, Any] = Field(default_factory=dict, exclude=True)
     output_pins: Dict[Any, Any] = Field(default_factory=dict, exclude=True)

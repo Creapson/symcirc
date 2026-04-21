@@ -1,22 +1,43 @@
-
 import dearpygui.dearpygui as dpg
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Any, Dict, List, Optional, Union, Protocol, Callable, Tuple
+from typing import Any, Dict, Union, Tuple, Annotated
 
 from gui.nodes.Node import Node
+
+from gui.nodes.ApproximatorNode import ApproximatorNode
+from gui.nodes.BodePlot import BodePlot
+from gui.nodes.Flatten import FlattenNode
+from gui.nodes.ImportCircuit import ImportCircuit
+from gui.nodes.ModifiedNodalAnalysis import ModifiedNodalAnalysis
+from gui.nodes.NetlistParserNode import NetlistParserNode
+from gui.nodes.NumericSolver import NumericSolver
+from gui.nodes.TransferFunctionNode import TransferFunctionNode
+
+AnyNode = Annotated[
+    Union[Node,
+          ApproximatorNode,
+          BodePlot,
+          FlattenNode,
+          ImportCircuit,
+          ModifiedNodalAnalysis,
+          NetlistParserNode,
+          NumericSolver,
+          TransferFunctionNode
+          ], 
+    Field(discriminator='node_type')
+]
 
 class NodeEditor(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     title: str = "Node Editor"
-    node_dic: Dict[int, Node] = Field(default_factory=dict)
+    node_dic: Dict[int, AnyNode] = Field(default_factory=dict)
     links: Dict[int, Tuple[int, int]] = Field(default_factory=dict)
     application: Any = Field(default=None, exclude=True)
 
     def add_node(self, node_editor_tag, node_constructor, label, pos):
         node = node_constructor(editor=self, label=label, position=pos)
 
-        # CREATE DearPyGui items immediately
         node_id = node.setup(node_editor_tag=node_editor_tag)
         self.node_dic[node_id] = node
 

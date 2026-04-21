@@ -1,9 +1,12 @@
 import dearpygui.dearpygui as dpg
 
-from gui.nodes.Node import Node
+from gui.nodes.Node import Node, NodeType
+from typing import Literal
 
 
 class ImportCircuit(Node):
+    node_type: Literal[NodeType.IMPORT_CIRCUIT] = NodeType.IMPORT_CIRCUIT
+
     def callback(self, sender, app_data):
         def format_feedback(feedback):
             message = ""

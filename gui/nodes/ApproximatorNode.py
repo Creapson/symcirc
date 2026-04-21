@@ -1,10 +1,14 @@
 import dearpygui.dearpygui as dpg
 
-from gui.nodes.Node import Node
+from gui.nodes.Node import Node, NodeType
 from gui.windows.ApproximatorWindow import ApproximatorWindow
+
+from typing import Literal
 
 
 class ApproximatorNode(Node):
+    node_type: Literal[NodeType.APPROXIMATOR] = NodeType.APPROXIMATOR
+
     def build(self):
         with self.add_input_attr() as input_pin:
             dpg.add_text("Connect h here", source=self.uuid("h_input"))

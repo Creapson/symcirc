@@ -1,8 +1,11 @@
 import dearpygui.dearpygui as dpg
 
-from gui.nodes.Node import Node
+from gui.nodes.Node import Node, NodeType
+from typing import Literal
 
 class TransferFunctionNode(Node):
+    node_type: Literal[NodeType.TRANSFER_FUNCTION] = NodeType.TRANSFER_FUNCTION
+
     def build(self):
         with self.add_input_attr() as magn_pin:
             dpg.add_text(

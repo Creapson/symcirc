@@ -1,10 +1,12 @@
 import dearpygui.dearpygui as dpg
 
-from gui.nodes.Node import Node
+from gui.nodes.Node import Node, NodeType
 from netlist.Circuit import Circuit
+from typing import Literal
 
 
 class ModifiedNodalAnalysis(Node):
+    node_type: Literal[NodeType.MNA] = NodeType.MNA
 
     def build(self):
         with self.add_input_attr() as magn_pin:

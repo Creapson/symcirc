@@ -1,17 +1,25 @@
 import dearpygui.dearpygui as dpg
-from typing import List, Dict
+from typing import List, Dict, Literal
 
 from pydantic import Field
 
-from gui.nodes.Node import Node
+from gui.nodes.Node import Node, NodeType
 from gui.windows.CircuitEditor import CircuitEditor
 from netlist.Circuit import Circuit
+from netlist.Element import Element
 
 
 class FlattenNode(Node):
+    node_type: Literal[NodeType.FLATTEN] = NodeType.FLATTEN
+
     row_sources : List[int] = Field(default_factory=list, exclude=True)
     table_rows : Dict[str, int] = Field(default_factory=dict, exclude=True)
     out_file_path : str = Field(default="")
+
+    circuit : Circuit = Circuit()
+    element_list: List[Element] = []
+
+
     flattend_circuit : Circuit = Field(default=Circuit(), exclude=True)
 
     def callback(self, sender, app_data):
@@ -111,9 +119,9 @@ class FlattenNode(Node):
         super().build()
 
     def onlink_callback(self):
-        self.data["circuit"] = self.get_input_pin_value(self.uuid("file_path_pin"))
+        self.circuit = self.get_input_pin_value(self.uuid("file_path_pin"))
 
-        self.data["circuit"].to_ai_string()
+        self.circuit.to_ai_string()
 
         # clear the table before populating it
         self.delete_table()
@@ -149,10 +157,10 @@ class FlattenNode(Node):
             )
 
         # populate the table with all elements
-        self.data["element_list"] = self.data.get("circuit", Circuit()).get_elements()
-        print(self.data["element_list"])
+        self.element_list = self.data.get("circuit", Circuit()).get_elements()
+        print(self.element_list)
         self.delete_table()
-        for item in self.data.get("element_list", []):
+        for item in self.element_list:
             if item.type == "Q":
                 (
                     add_element_row(
@@ -204,15 +212,15 @@ class FlattenNode(Node):
 
     def update(self):
         # apply the changed small signal models to all elements
-        for element in self.data.get("element_list", []):
+        for element in self.element_list:
             bipolar_model = dpg.get_value(self.uuid(f"{element.name}_bipolar_model"))
             mosfet_model = dpg.get_value(self.uuid(f"{element.name}_mosfet_model"))
             element.params["bipolar_model"] = bipolar_model
             element.params["mosfet_model"] = mosfet_model
 
-        self.flattend_circuit = self.data["circuit"].copy()
+        self.data["flattend_circuit"] = self.circuit.copy()
         print(self.data.get("out_file_path", ""))
-        self.flattend_circuit.flatten(True, self.data.get("out_file_path", ""))
+        self.data["flattend_circuit"].flatten(True, self.data.get("out_file_path", ""))
 
         if not dpg.does_item_exist(self.uuid("flattend_circuit_out_pin")):
             with self.add_output_attr() as output_pin:
@@ -221,10 +229,10 @@ class FlattenNode(Node):
                     dpg.add_button(label="Edit Circuit", callback=self.open_circuit_edit)
             self.output_pins[self.uuid("flattend_circuit_out_pin")] = output_pin
         self.add_output_pin_value(
-            self.uuid("flattend_circuit_out_pin"), self.flattend_circuit
+            self.uuid("flattend_circuit_out_pin"), self.data["flattend_circuit"]
         )
 
-        self.flattend_circuit.to_ai_string()
+        self.data["flattend_circuit"].to_ai_string()
 
         # apply it to UI
         dpg.set_value(self.uuid("flattend_circuit_out"), "Circuit with flattend Models")
@@ -232,5 +240,5 @@ class FlattenNode(Node):
         super().update()
 
     def open_circuit_edit(self):
-        ct_editor = CircuitEditor(self.flattend_circuit, self.label)
+        ct_editor = CircuitEditor(self.data["flattend_circuit"], self.label)
         ct_editor.setup()
