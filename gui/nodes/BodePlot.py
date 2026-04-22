@@ -9,12 +9,7 @@ class BodePlot(Node):
     node_type: Literal[NodeType.BODE_PLOT] = NodeType.BODE_PLOT
     def build(self):
         # create pins for all nessary inputs
-        with self.add_input_attr() as input_pin:
-            dpg.add_text(
-                default_value="Connect freq_log here!",
-                tag=self.uuid("line_pin"),
-            )
-        self.input_pins[self.uuid("line_pin")] = input_pin
+        self.add_input_pin("line_pin", "Connect freq_log here!")
 
         with dpg.file_dialog(
             directory_selector=False,

@@ -35,23 +35,21 @@ class Node(BaseModel):
 
     def setup(self, node_editor_tag):
         # when loading the model the id is already set
+        print(node_editor_tag)
+
         if self.node_id == 0:
-            with dpg.node(
-                label=self.label, 
-                pos=self.position, 
-                parent=node_editor_tag,
-                tag=self.node_id
-            ) as self.node_id:
-                self.build()
-        else:
-            with dpg.node(
-                label=self.label, 
-                pos=self.position, 
-                parent=node_editor_tag
-            ) as self.node_id:
-                self.build()
+            self.node_id = dpg.generate_uuid()
+
+        with dpg.node(
+            label=self.label, 
+            pos=self.position, 
+            parent=node_editor_tag,
+            tag=self.node_id
+        ):
+            self.build()
 
         dpg.set_item_pos(self.node_id, self.position)
+
         return self.node_id
 
     def build(self):
@@ -106,17 +104,29 @@ class Node(BaseModel):
         print("Output Values", self.output_values)
 
 
-    def add_output_pin(self, pin_id=0,tag="", text="", button_callback=None, button_text=""):
+    def add_output_pin(self, tag="", text="", button_callback=None, button_text=""):
         output_pin = 0
         if not dpg.does_item_exist(self.uuid(tag)):
-            with self.add_output_attr(pin_id) as output_pin:
+            with self.add_output_attr() as output_pin:
                 with dpg.group(horizontal=True):
                     dpg.add_text(text, tag=self.uuid(tag))
                     if button_callback is not None:
                         dpg.add_button(label=button_text, callback=button_callback)
-            self.output_pins[self.uuid(tag)] = output_pin
+            self.output_pins[tag] = output_pin
 
         return output_pin
+
+    def add_input_pin(self, tag="", text=""):
+        input_pin = 0
+        if not dpg.does_item_exist(self.uuid(tag)):
+            with self.add_input_attr() as input_pin:
+                dpg.add_text(
+                    default_value=text,
+                    tag=self.uuid(tag),
+                )
+            self.input_pins[tag] = input_pin
+
+        return input_pin
 
     def add_connection(self, pin_id, connected_node):
         self.connections[pin_id] = connected_node

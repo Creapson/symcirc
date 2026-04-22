@@ -23,38 +23,34 @@ class ImportCircuit(Node):
         self.add_output_pin(tag="file_path_out", text="Selected file")
 
         self.add_output_pin_value(
-            self.uuid("file_path_out"), app_data["file_path_name"]
+            "file_path_out", app_data["file_path_name"]
         )
 
         dpg.set_value(
-            self.data.get("file_path_widget_id", 0),
+            self.uuid("file_path_string"),
             f"Loaded file with following Feedback:\n{format_feedback(feedback)}",
         )
 
     def build(self):
-        with dpg.value_registry():
-            dpg.add_string_value(
-                default_value="No file currently selected!",
-                tag=f"{self.node_id}_file_path_string",
-            )
-
-        with dpg.file_dialog(
-            directory_selector=False,
-            show=False,
-            callback=self.callback,
-            tag=self.uuid("file_dialog_id"),
-            width=700,
-            height=400,
-        ):
-            dpg.add_file_extension(".cir")
-            dpg.add_file_extension(".net")
+        if not dpg.does_item_exist(self.uuid("file_dialog_id")):
+            with dpg.file_dialog(
+                directory_selector=False,
+                show=False,
+                callback=self.callback,
+                tag=self.uuid("file_dialog_id"),
+                width=700,
+                height=400,
+            ):
+                dpg.add_file_extension(".cir", parent=self.uuid("file_dialog_id"))
+                dpg.add_file_extension(".net", parent=self.uuid("file_dialog_id"))
 
         with self.add_static_attr():
             dpg.add_button(
                 label="Open File Dialog",
                 callback=lambda: dpg.show_item(self.uuid("file_dialog_id")),
             )
-            self.data["file_path_widget_id"] = dpg.add_text(
-                source=f"{self.node_id}_file_path_string"
+            dpg.add_text(
+                    label="No file currently selected",
+                    tag=self.uuid("file_path_string")
             )
         super().build()

@@ -9,12 +9,7 @@ class ModifiedNodalAnalysis(Node):
     node_type: Literal[NodeType.MNA] = NodeType.MNA
 
     def build(self):
-        with self.add_input_attr() as magn_pin:
-            dpg.add_text(
-                default_value="Connect Circuit here",
-                tag=self.uuid("circuit_input_pin"),
-            )
-        self.input_pins[self.uuid("circuit_input_pin")] = magn_pin
+        self.add_input_pin("circuit_input_pin", "Connect Circuit here")
 
         with self.add_static_attr():
             dpg.add_button(label="Calculate Numeric Values", callback=self.update)

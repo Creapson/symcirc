@@ -29,12 +29,7 @@ class NetlistParserNode(Node):
                 default_value="BSIM", tag=self.uuid("mosfet_model")
             )
 
-        with self.add_input_attr() as input_pin:
-            dpg.add_text(
-                default_value="Connect ImportNode here! [filepath]",
-                tag=self.uuid("file_path_pin"),
-            )
-        self.input_pins[self.uuid("file_path_pin")] = input_pin
+        self.add_input_pin("file_path_pin", "Connect ImportNode fere! [filepath]")
 
         with self.add_static_attr():
             with dpg.group(horizontal=True):
@@ -98,7 +93,7 @@ class NetlistParserNode(Node):
         super().build()
 
     def onlink_callback(self):
-        filepath = self.get_input_pin_value(self.uuid("file_path_pin"))
+        filepath = self.get_input_pin_value("file_path_pin")
 
         from pathlib import Path
 

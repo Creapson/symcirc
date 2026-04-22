@@ -10,9 +10,7 @@ class ApproximatorNode(Node):
     node_type: Literal[NodeType.APPROXIMATOR] = NodeType.APPROXIMATOR
 
     def build(self):
-        with self.add_input_attr() as input_pin:
-            dpg.add_text("Connect h here", source=self.uuid("h_input"))
-        self.input_pins[self.uuid("h_input")] = input_pin
+        self.add_input_pin("h_input", "Connect h here")
 
         with self.add_static_attr():
             dpg.add_button(

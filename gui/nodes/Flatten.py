@@ -39,12 +39,7 @@ class FlattenNode(Node):
                 tag=self.uuid("out_file_path"),
             )
 
-        with self.add_input_attr() as input_pin:
-            dpg.add_text(
-                default_value="Connect Circuit here! [circuit]",
-                tag=self.uuid("file_path_pin"),
-            )
-        self.input_pins[self.uuid("file_path_pin")] = input_pin
+        self.add_input_pin("file_path_pin", "Connect Circuit here! [circuit]")
 
         with self.add_static_attr():
             with dpg.file_dialog(

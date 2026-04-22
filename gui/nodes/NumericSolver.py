@@ -13,12 +13,7 @@ class NumericSolver(Node):
             dpg.add_int_value(default_value=8, tag=self.uuid("end_log_int"))
             dpg.add_int_value(default_value=10000, tag=self.uuid("points_in_log"))
 
-        with self.add_input_attr() as input_pin:
-            dpg.add_text(
-                default_value="Connect H here",
-                tag=self.uuid("h_input_pin"),
-            )
-        self.input_pins[self.uuid("h_input_pin")] = input_pin
+        self.add_input_pin("h_input_pin", "Connect H here")
 
         with self.add_static_attr():
             dpg.add_text("Configure the log-Space")

@@ -7,12 +7,7 @@ class TransferFunctionNode(Node):
     node_type: Literal[NodeType.TRANSFER_FUNCTION] = NodeType.TRANSFER_FUNCTION
 
     def build(self):
-        with self.add_input_attr() as magn_pin:
-            dpg.add_text(
-                default_value="Connect Circuit here",
-                tag=self.uuid("num_results_input_pin"),
-            )
-        self.input_pins[self.uuid("num_results_input_pin")] = magn_pin
+        self.add_input_pin("num_results_input_pin", "Connect Circuit here")
 
         with self.add_static_attr():
             # add selection for the transfer-function
