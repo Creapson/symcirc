@@ -28,7 +28,7 @@ class TransferFunctionNode(Node):
         return super().setup(build, node_editor_tag)
 
     def onlink_callback(self):
-        self.num_results, self.mna = self.get_input_pin_value(
+        self.sweep, self.mna = self.get_input_pin_value(
             self.uuid("num_results_input_pin")
         )
 
@@ -44,14 +44,11 @@ class TransferFunctionNode(Node):
         from_node = dpg.get_value(self.uuid("from_node"))
         to_node = dpg.get_value(self.uuid("to_node"))
 
-        H = (
-            self.num_results[sp.symbols(f"V_{to_node}")]
-            / self.num_results[sp.symbols(f"V_{from_node}")]
-        )
+        H = self.mna.solveNumerical(self.mna.value_dict, self.sweep, to_node, from_node)
 
         if not dpg.does_item_exist(self.uuid("h_out")):
             with self.add_output_attr() as output_pin:
                 dpg.add_text("H", tag=self.uuid("h_out"))
             self.output_pins[self.uuid("h_out")] = output_pin
-        self.add_output_pin_value(self.uuid("h_out"), H)
+        self.add_output_pin_value(self.uuid("h_out"), (self.sweep, H))
         super().update()

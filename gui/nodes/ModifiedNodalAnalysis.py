@@ -39,12 +39,12 @@ class ModifiedNodalAnalysis(Node):
 
         # get the log_space from the circuit
         log_space = self.circuit.get_sweep()
-        num_results = self.mna.solveNumerical(self.mna.value_dict, log_space)
+        print(log_space)
 
         if not dpg.does_item_exist(self.uuid("h_out")):
             with self.add_output_attr() as output_pin:
                 dpg.add_text("H", tag=self.uuid("h_out"))
             self.output_pins[self.uuid("h_out")] = output_pin
-        self.add_output_pin_value(self.uuid("h_out"), (num_results, self.mna))
+        self.add_output_pin_value(self.uuid("h_out"), (log_space, self.mna))
 
         super().update()

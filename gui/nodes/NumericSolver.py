@@ -44,7 +44,7 @@ class NumericSolver(Node):
         return super().setup(build, node_editor_tag)
 
     def onlink_callback(self):
-        self.h = self.get_input_pin_value(self.uuid("h_input_pin"))
+        self.sweep, self.h = self.get_input_pin_value(self.uuid("h_input_pin"))
 
         super().onlink_callback()
 
@@ -52,18 +52,10 @@ class NumericSolver(Node):
         import numpy as np
         import sympy as sp
 
-        s = sp.symbols("s")
-        # --- 2. SymPy → numerische Funktion umwandeln ---
-        H_lambdified = sp.lambdify(s, self.h, "numpy")
-        # --- 3. Frequenzachse definieren ---
-        w = np.logspace(-2, 8, 10000)  # Kreisfrequenz
-        jw = 1j * w
-        H_eval = H_lambdified(jw)
-
         # create solved arrays for later plotting
-        freq_log = np.log10(w)
-        magnitude_db = 20 * np.log10(np.abs(H_eval))
-        phase_deg = np.angle(H_eval, deg=True)
+        freq_log = self.h
+        magnitude_db = abs(self.h)
+        phase_deg = np.angle(self.h, deg=True)
 
         print(freq_log)
         print(magnitude_db)

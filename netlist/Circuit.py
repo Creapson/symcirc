@@ -41,34 +41,34 @@ class Circuit(BaseModel):
         sweep_split = sweep.split()
 
         if len(sweep_split) == 1:
-            return
+            return [0, 0]
 
-        sweep_type = sweep_split[1]
-        num_of_points = int(float(sweep_split[2]))
+        sweep_type = sweep_split[0]
+        num_of_points = int(float(sweep_split[1]))
 
         match sweep_type:
             case "LIN": 
-                start = int(sweep_split[3])
-                stop = int(sweep_split[4])
+                start = int(sweep_split[2])
+                stop = int(sweep_split[3])
                 return np.logspace(start=start, stop=stop, num=num_of_points)
 
             case "DEC": 
-                start = int(sweep_split[3])
-                stop = int(sweep_split[4])
+                start = int(float(sweep_split[2]))
+                stop = int(float(sweep_split[3]))
 
                 num_decades = np.log10(stop) - np.log10(start)
                 total_pts = int(num_of_points * num_decades) + 1
                 return np.logspace(np.log10(start), np.log10(stop), num=total_pts)
 
             case "OCT": 
-                start = int(sweep_split[3])
-                stop = int(sweep_split[4])
+                start = int(sweep_split[2])
+                stop = int(sweep_split[3])
                 num_octaves = np.log2(stop / start)
                 total_pts = int(num_of_points * num_octaves) + 1
                 return np.logspace(np.log2(start), np.log2(stop), num=total_pts, base=2)
 
             case "POI": 
-                points_of_interest = [float(point) for point in sweep_split[3:]]
+                points_of_interest = [float(point) for point in sweep_split[2:]]
                 return np.array(points_of_interest)
 
     def set_netlist_path(self, path: str):
