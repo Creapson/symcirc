@@ -388,13 +388,13 @@ class ModifiedNodalAnalysis(EquationFormulator):
     
 
 
-    def solveNumerical(self, frequencies, unknown_variable:str, input_modification:list): 
+    def solveNumerical(self, frequencies:list, unknown_variable:str, input_modification:list = []): 
 
         """Solve the equation system numerically based on the value dictionary.
 
         Args:
             value_dict (dict): dictionary with numerical values for symbols
-            frequencies (array): array with frequencies for which to solve the system
+            frequencies (list): list with frequencies for which to solve the system
             unknown_variable (str): variable for which to solve the system
             input_modification (list): list with modified input values 
 
@@ -412,7 +412,14 @@ class ModifiedNodalAnalysis(EquationFormulator):
         
         idx_out = self.unknowns.index(unknown_variable_symbol)
 
-        z_mod = self.modify_Input(input_modification)
+        if len(input_modification) == len(self.z):
+            z_mod = self.modify_Input(input_modification)
+        
+        else:
+            z_mod = self.z
+            raise Warning("Input modification list is empty or has wrong length. Using unmodified input vector.")
+
+        
 
         A_num = self.toNumerical(self.A, self.value_dict)
         z_num = self.toNumerical(z_mod, self.value_dict)
@@ -426,7 +433,15 @@ class ModifiedNodalAnalysis(EquationFormulator):
             A_num_eval = A_num_func(jw)
             
             z_num_eval = z_num_func(jw)
-            x = scipy.solve(A_num_eval, z_num_eval)
+
+            try:
+                x = scipy.solve(A_num_eval, z_num_eval)
+            
+            except scipy.LinAlgError:
+                return np.nan
+                
+                
+
 
             return x[idx_out]
             
@@ -443,11 +458,8 @@ class ModifiedNodalAnalysis(EquationFormulator):
             inputs(array): array with input variables
 
         """
-        inputs = []
-        for element in self.ct.elements:
-            if element.type in ["V", "I"]:
-                inputs.append(element.name)
-        
+        inputs = [str(sym) for sym in self.z]
+
         return inputs
     
     def modify_Input(self, new_value:list):
