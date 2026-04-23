@@ -260,7 +260,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
 
     def get_equation_system(self):
-        """_summary_.
+        """Returns equation system.
 
         Returns:
             A(matrix): Matrix table of the equation system.
@@ -293,15 +293,12 @@ class ModifiedNodalAnalysis(EquationFormulator):
         """
         result = [str(sym) for sym in self.get_unknowns()]
 
-        print("Unknowns: ", result)
         return  result
      
     def buildEquationsSystem(self):  # noqa: C901
         """Build the equation system based on the circuit description.
 
         """
-        print("Building equation system...")
-        logger.debug("Building equation system...")
 
         s = sp.symbols('s')
          
@@ -376,12 +373,8 @@ class ModifiedNodalAnalysis(EquationFormulator):
         """
         x = self.get_unknowns()
 
-    
-
         print("Solving equation system...")
 
-        #self.sym_result = sp.solve(self.A * x - self.z, x)
-        #self.sym_result = sp.solve_linear_system(self.A.row_join(self.z), *x)
         result = self.A.LUsolve(self.z)
 
         self.sym_result = dict(zip(x, result))
@@ -398,13 +391,14 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
         Args:
             value_dict (dict): dictionary with numerical values for symbols
+            frequencies (array): array with frequencies for which to solve the system
+            idx_out (int): index of the output variable in the unknowns vector
 
         Returns:
-            sol(array): array with numerical solutions
+            H(array): array with numerical solutions
 
         """
-        t0 = time.perf_counter_ns()
-        #x = self.get_unknowns()
+
         H = np.zeros(len(frequencies), dtype=complex)
 
         A_num = self.toNumerical(self.A, value_dict)
@@ -413,26 +407,19 @@ class ModifiedNodalAnalysis(EquationFormulator):
         A_num_func = sp.lambdify(sp.symbols("s"), A_num, "numpy")
         z_num_func = sp.lambdify(sp.symbols("s"), z_num, "numpy")
 
-        t1 = time.perf_counter_ns()
         
-        def solve_freq(freq):#for k, freq in enumerate(frequencies):
-            s_val = 1j * 2* np.pi*freq
-            A_num_eval = A_num_func(s_val)
+        def solve_freq(freq):
+            jw = 1j * 2* np.pi*freq
+            A_num_eval = A_num_func(jw)
             
-            z_num_eval = z_num_func(s_val)
+            z_num_eval = z_num_func(jw)
             x = scipy.solve(A_num_eval, z_num_eval)
 
-            return x[idx_out] / x[idx_in]
+            return x[idx_out]
             
 
         H = np.array([solve_freq(freq) for freq in frequencies])
 
-        t2 = time.perf_counter_ns()
-        print(f"Time for setup: {(t1 - t0) / 1e6} ms\n")
-        print(f"Time for numerical solution: {(t2 - t1) / 1e6} ms")
-            
 
-        
-
-        return H#self.num_result
+        return H
     
