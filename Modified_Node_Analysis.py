@@ -6,6 +6,7 @@ import numpy as np
 import scipy.linalg as scipy
 from Equation_Formulator import EquationFormulator
 import time
+import warnings
 
 class ModifiedNodalAnalysis(EquationFormulator):
     """Class for modified nodal analysis method.
@@ -362,7 +363,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
             
             
 
-    def solve(self, unknown_variable:str, input_modification:list):
+    def solve(self, unknown_variable:str, input_modification:list=[]):
         """Return the solution of the equation system.
 
         Args:
@@ -377,14 +378,20 @@ class ModifiedNodalAnalysis(EquationFormulator):
         if unknown_variable_symbol not in self.unknowns:
             raise ValueError("Unknown variable not in the system")
         
-        z_mod = self.modify_Input(input_modification)
+        if len(input_modification) == len(self.z):
+            z_mod = self.modify_Input(input_modification)
+        
+        else:
+            z_mod = self.z
+            warnings.warn("Input modification list is empty or has wrong length. Using unmodified input vector.")
 
         result = self.A.LUsolve(z_mod)
 
-        var_idx = self.unknowns.index(unknown_variable_symbol)
+        x_syms = list(self.get_unknowns())
+        idx_out = x_syms.index(unknown_variable_symbol)
 
 
-        return result[var_idx]
+        return result[idx_out]
     
 
 
@@ -410,14 +417,15 @@ class ModifiedNodalAnalysis(EquationFormulator):
         if unknown_variable_symbol not in self.unknowns:
             raise ValueError("Unknown variable not in the system")
         
-        idx_out = self.unknowns.index(unknown_variable_symbol)
+        x_syms = list(self.get_unknowns())
+        idx_out = x_syms.index(unknown_variable_symbol)
 
         if len(input_modification) == len(self.z):
             z_mod = self.modify_Input(input_modification)
         
         else:
             z_mod = self.z
-            raise Warning("Input modification list is empty or has wrong length. Using unmodified input vector.")
+            warnings.warn("Input modification list is empty or has wrong length. Using unmodified input vector.")
 
         
 

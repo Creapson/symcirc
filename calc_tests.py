@@ -37,17 +37,17 @@ idx_in = x_syms.index(sp.symbols("V_1"))
 idx_out = x_syms.index(sp.symbols("V_10"))
 f = np.logspace(0, 7, 800)
 
-H_lambdified = mna.solveNumerical(mna.value_dict, f, idx_out, idx_in)
+H_lambdified = mna.solveNumerical(f, "V_10")
 
 
 print("\n\n\n\n\n\n")
 
-result = mna.solve()
+#result = mna.solve("V_10")
 # print("Symbolic result for V_10:")
 # print(result)
-H = result[sp.symbols("V_10")] / result[sp.symbols("V_1")]
+
 print("Original transfer function:")
-#print(H)
+#print(result)
 
 # H_numerical = H.subs(mna.value_dict)
 
@@ -64,7 +64,7 @@ approx = ap.approximate(sp.symbols('V_1'), sp.symbols('V_10'), ((1e5,0.05),), "t
 t1 = t.perf_counter_ns()
 print(f"Time for approximation: {(t1 - t0) / 1e6} ms")
 
-approx_H_lambdified = approx.solveNumerical(mna.value_dict, f, idx_out, idx_in)
+approx_H_lambdified = approx.solveNumerical(f, "V_10")
 
 
 
