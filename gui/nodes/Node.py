@@ -174,7 +174,8 @@ class Node(BaseModel):
 
     def update(self):
         # when update is called all settings should be set
-        self.do_propagation = True
+        if (self.node_type != NodeType.NETLIST_PARSER):
+            self.do_propagation = True
 
     def save(self):
         self.position = dpg.get_item_pos(self.node_id)
