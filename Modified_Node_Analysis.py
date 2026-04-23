@@ -6,6 +6,7 @@ import numpy as np
 import scipy.linalg as scipy
 from Equation_Formulator import EquationFormulator
 import time
+import warnings
 
 class ModifiedNodalAnalysis(EquationFormulator):
     """Class for modified nodal analysis method.
@@ -59,13 +60,11 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
         for name, idx in self.node_map.items():
             if (name == "ground") | (name == "0") | (name == "GND") | (name == "gnd"):
-                # Masseknoten bekommt kein Symbol (None bleibt stehen)
+                
                 continue
             self.unknowns[idx] = sp.Symbol(f"V_{name}")
 
-        # Falls Masseknoten (oder andere fehlende Indizes) vorhanden sind:
-        # setze Dummy-Symbole NICHT -> SymPy soll nur echte Variablen enthalten
-        # hier entfernen wir leere Einträge
+       
         self.unknowns = [s for s in self.unknowns if s is not None]
         self.unknowns = sp.Matrix(self.unknowns)
         
@@ -364,35 +363,47 @@ class ModifiedNodalAnalysis(EquationFormulator):
             
             
 
-    def solve(self):
+    def solve(self, unknown_variable:str, input_modification:list=[]):
         """Return the solution of the equation system.
+
+        Args:
+            unknown_variable (str): variable for which to solve the system
         
         Returns:
             sol(array): array with symbolic solutuions
 
         """
-        x = self.get_unknowns()
+        unknown_variable_symbol = sp.symbols(unknown_variable)
 
-        print("Solving equation system...")
+        if unknown_variable_symbol not in self.unknowns:
+            raise ValueError("Unknown variable not in the system")
+        
+        if len(input_modification) == len(self.z):
+            z_mod = self.modify_Input(input_modification)
+        
+        else:
+            z_mod = self.z
+            warnings.warn("Input modification list is empty or has wrong length. Using unmodified input vector.")
 
-        result = self.A.LUsolve(self.z)
+        result = self.A.LUsolve(z_mod)
 
-        self.sym_result = dict(zip(x, result))
+        x_syms = list(self.get_unknowns())
+        idx_out = x_syms.index(unknown_variable_symbol)
 
-        print("Finished solving equation system!")
 
-        return self.sym_result
+        return result[idx_out]
     
 
 
-    def solveNumerical(self, value_dict, frequencies, idx_out, idx_in): 
+    def solveNumerical(self, frequencies:list, unknown_variable:str, input_modification:list = []): 
 
         """Solve the equation system numerically based on the value dictionary.
 
         Args:
             value_dict (dict): dictionary with numerical values for symbols
-            frequencies (array): array with frequencies for which to solve the system
-            idx_out (int): index of the output variable in the unknowns vector
+            frequencies (list): list with frequencies for which to solve the system
+            unknown_variable (str): variable for which to solve the system
+            input_modification (list): list with modified input values 
 
         Returns:
             H(array): array with numerical solutions
@@ -401,8 +412,25 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
         H = np.zeros(len(frequencies), dtype=complex)
 
-        A_num = self.toNumerical(self.A, value_dict)
-        z_num = self.toNumerical(self.z, value_dict)
+        unknown_variable_symbol = sp.symbols(unknown_variable)
+
+        if unknown_variable_symbol not in self.unknowns:
+            raise ValueError("Unknown variable not in the system")
+        
+        x_syms = list(self.get_unknowns())
+        idx_out = x_syms.index(unknown_variable_symbol)
+
+        if len(input_modification) == len(self.z):
+            z_mod = self.modify_Input(input_modification)
+        
+        else:
+            z_mod = self.z
+            warnings.warn("Input modification list is empty or has wrong length. Using unmodified input vector.")
+
+        
+
+        A_num = self.toNumerical(self.A, self.value_dict)
+        z_num = self.toNumerical(z_mod, self.value_dict)
 
         A_num_func = sp.lambdify(sp.symbols("s"), A_num, "numpy")
         z_num_func = sp.lambdify(sp.symbols("s"), z_num, "numpy")
@@ -413,7 +441,15 @@ class ModifiedNodalAnalysis(EquationFormulator):
             A_num_eval = A_num_func(jw)
             
             z_num_eval = z_num_func(jw)
-            x = scipy.solve(A_num_eval, z_num_eval)
+
+            try:
+                x = scipy.solve(A_num_eval, z_num_eval)
+            
+            except scipy.LinAlgError:
+                return np.nan
+                
+                
+
 
             return x[idx_out]
             
@@ -423,3 +459,30 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
         return H
     
+    def get_System_Inputs(self):
+        """Get the input variables of the system.
+
+        Returns:
+            inputs(array): array with input variables
+
+        """
+        inputs = [str(sym) for sym in self.z]
+
+        return inputs
+    
+    def modify_Input(self, new_value:list):
+        """Modify the value of an input variable.
+
+        Args:
+            input_name (list): name of the input variable to modify
+            new_value: new value for the input variable
+
+        """
+        
+        z_modified = self.z.copy()
+        
+        for idx, element in enumerate(z_modified):
+            element = element * new_value[idx]
+                
+        
+        return z_modified
