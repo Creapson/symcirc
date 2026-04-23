@@ -10,7 +10,7 @@ class Window:
         self.autosize:bool = autosize
         self.no_resize:bool = no_resize
 
-    def setup(self, build_func, show_menu_bar=False):
+    def setup(self, show_menu_bar=False):
         with dpg.window(
             tag=self.title,
             on_close=self.on_close,
@@ -18,7 +18,10 @@ class Window:
             autosize=self.autosize,
             no_resize=self.no_resize
         ) as self.id:
-            build_func()
+            self.build()
+        pass
+
+    def build(self):
         pass
 
     def uuid(self, tag: str) -> str:
@@ -34,33 +37,3 @@ class Window:
 
         # clear internal reference
         self.id = ""
-
-    def rebuild_ui(self, build_func):
-        print("rebuild called safely")
-        
-        def deferred_rebuild():
-            print("callback called")
-            if dpg.does_item_exist(self.id):
-                dpg.delete_item(self.id)   # safe now
-            self.setup(build_func)
-
-        # Schedule for the next frame
-        dpg.set_frame_callback(1, callback=deferred_rebuild)
-
-"""
-class CopyClass(Window):
-
-    def __init__(self):
-        self.title = "Copy Node"
-
-        super().__init__(title=self.title)
-
-    def setup(self):
-        def build():
-            pass
-
-        super().setup(build)
-
-    def on_close(self, sender, app_data, user_data):
-        super().on_close(sender=sender, app_data=app_datam user_data=user_data)
-"""

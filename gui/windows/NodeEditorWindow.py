@@ -75,135 +75,134 @@ class NodeEditorWindow(Window):
     def delink_callback(self, sender, app_data):
         self.node_editor.delink_callback(sender=sender, app_data=app_data)
 
-    def setup(self, build_func=None, show_menu_bar=False):
-        def build():
-            # ---------- MENU BAR ----------
-            with dpg.file_dialog(
-                directory_selector=False,
-                show=False,
-                callback=self.save_node_editor,
-                tag=self.uuid("file_save_dialog"),
-                width=700,
-                height=400,
-            ):
-                dpg.add_file_extension(".json")
+    def build(self):
+        # ---------- MENU BAR ----------
+        with dpg.file_dialog(
+            directory_selector=False,
+            show=False,
+            callback=self.save_node_editor,
+            tag=self.uuid("file_save_dialog"),
+            width=700,
+            height=400,
+        ):
+            dpg.add_file_extension(".json")
 
-            with dpg.file_dialog(
-                directory_selector=False,
-                show=False,
-                callback=self.load_node_editor,
-                tag=self.uuid("file_load_dialog"),
-                width=700,
-                height=400,
-            ):
-                dpg.add_file_extension(".json")
-            
-            with dpg.menu_bar():
-                with dpg.menu(label="File"):
-                    dpg.add_menu_item(label="New", enabled=False)
+        with dpg.file_dialog(
+            directory_selector=False,
+            show=False,
+            callback=self.load_node_editor,
+            tag=self.uuid("file_load_dialog"),
+            width=700,
+            height=400,
+        ):
+            dpg.add_file_extension(".json")
+        
+        with dpg.menu_bar():
+            with dpg.menu(label="File"):
+                dpg.add_menu_item(label="New", enabled=False)
+                dpg.add_menu_item(
+                        label="Open", 
+                        enabled=True, 
+                        callback=lambda: dpg.show_item(self.uuid("file_load_dialog"))
+                        )
+                dpg.add_menu_item(
+                        label="Save", 
+                        enabled=True, 
+                        callback=lambda: dpg.show_item(self.uuid("file_save_dialog"))
+                        )
+                dpg.add_separator()
+                dpg.add_menu_item(label="Exit", enabled=False)
+
+            with dpg.menu(label="Edit"):
+                dpg.add_menu_item(label="Undo", enabled=False)
+                dpg.add_menu_item(label="Redo", enabled=False)
+                # sub menu (dropdown with all node types
+                with dpg.menu(label="Add Node"):
                     dpg.add_menu_item(
-                            label="Open", 
-                            enabled=True, 
-                            callback=lambda: dpg.show_item(self.uuid("file_load_dialog"))
-                            )
-                    dpg.add_menu_item(
-                            label="Save", 
-                            enabled=True, 
-                            callback=lambda: dpg.show_item(self.uuid("file_save_dialog"))
-                            )
-                    dpg.add_separator()
-                    dpg.add_menu_item(label="Exit", enabled=False)
-
-                with dpg.menu(label="Edit"):
-                    dpg.add_menu_item(label="Undo", enabled=False)
-                    dpg.add_menu_item(label="Redo", enabled=False)
-                    # sub menu (dropdown with all node types
-                    with dpg.menu(label="Add Node"):
-                        dpg.add_menu_item(
-                            label="ImportCircuit",
-                            callback=lambda: self.add_node(
-                                ImportCircuit, "Circuit import Node", (000, 100)
-                            ),
-                        )
-                        dpg.add_menu_item(
-                            label="NetlistParserNode",
-                            callback=lambda: self.add_node(
-                                NetlistParserNode, "Netlist Parser Node", (600, 100)
-                            ),
-                        )
-                        dpg.add_menu_item(
-                            label="ModifiedNodalAnalysis",
-                            callback=lambda: self.add_node(
-                                ModifiedNodalAnalysis,
-                                "ModifiedNodalAnalysis Node",
-                                (000, 300),
-                            ),
-                        )
-                        dpg.add_menu_item(
-                            label="TransferFunction Node",
-                            callback=lambda: self.add_node(
-                                TransferFunctionNode,
-                                "TransferFunction Node",
-                                (000, 300),
-                            ),
-                        )
-                        dpg.add_menu_item(
-                            label="BodeBlot",
-                            callback=lambda: self.add_node(
-                                BodePlot, "BodePlot Node", (300, 300)
-                            ),
-                        )
-                        dpg.add_menu_item(
-                            label="Flatten",
-                            callback=lambda: self.add_node(
-                                FlattenNode, "Flatten Node", (600, 300)
-                            ),
-                        )
-
-                        dpg.add_menu_item(
-                            label="NumericSolver",
-                            callback=lambda: self.add_node(
-                                NumericSolver, "NumericSolver", (600, 300)
-                            ),
-                        )
-
-                        dpg.add_menu_item(
-                            label="Approximator",
-                            callback=lambda: self.add_node(
-                                ApproximatorNode, "Approimate", (600, 300)
-                            ),
-                        )
-
-                with dpg.menu(label="Settings"):
-                    dpg.add_menu_item(
-                        label="Style Editor", callback=lambda: dpg.show_style_editor()
+                        label="ImportCircuit",
+                        callback=lambda: self.add_node(
+                            ImportCircuit, "Circuit import Node", (000, 100)
+                        ),
                     )
                     dpg.add_menu_item(
-                        label="Font Manager", callback=lambda: dpg.show_font_manager()
+                        label="NetlistParserNode",
+                        callback=lambda: self.add_node(
+                            NetlistParserNode, "Netlist Parser Node", (600, 100)
+                        ),
                     )
-
-                with dpg.menu(label="Debug"):
-                    dpg.add_menu_item(label="Debug", callback=lambda: dpg.show_debug())
-
                     dpg.add_menu_item(
-                        label="Item Registry", callback=lambda: dpg.show_item_registry()
+                        label="ModifiedNodalAnalysis",
+                        callback=lambda: self.add_node(
+                            ModifiedNodalAnalysis,
+                            "ModifiedNodalAnalysis Node",
+                            (000, 300),
+                        ),
+                    )
+                    dpg.add_menu_item(
+                        label="TransferFunction Node",
+                        callback=lambda: self.add_node(
+                            TransferFunctionNode,
+                            "TransferFunction Node",
+                            (000, 300),
+                        ),
+                    )
+                    dpg.add_menu_item(
+                        label="BodeBlot",
+                        callback=lambda: self.add_node(
+                            BodePlot, "BodePlot Node", (300, 300)
+                        ),
+                    )
+                    dpg.add_menu_item(
+                        label="Flatten",
+                        callback=lambda: self.add_node(
+                            FlattenNode, "Flatten Node", (600, 300)
+                        ),
                     )
 
                     dpg.add_menu_item(
-                        label="Metrics", callback=lambda: dpg.show_metrics()
+                        label="NumericSolver",
+                        callback=lambda: self.add_node(
+                            NumericSolver, "NumericSolver", (600, 300)
+                        ),
                     )
 
-            # ---------- NODE EDITOR ----------
-            dpg.add_node_editor(
-                tag=self.node_editor_tag,
-                callback=self.onlink_callback,
-                delink_callback=self.delink_callback,
-                minimap=True,
-                minimap_location=dpg.mvNodeMiniMap_Location_BottomRight)
+                    dpg.add_menu_item(
+                        label="Approximator",
+                        callback=lambda: self.add_node(
+                            ApproximatorNode, "Approimate", (600, 300)
+                        ),
+                    )
 
-            self.setup_node_editor()
+            with dpg.menu(label="Settings"):
+                dpg.add_menu_item(
+                    label="Style Editor", callback=lambda: dpg.show_style_editor()
+                )
+                dpg.add_menu_item(
+                    label="Font Manager", callback=lambda: dpg.show_font_manager()
+                )
 
-        return super().setup(build, show_menu_bar=True)
+            with dpg.menu(label="Debug"):
+                dpg.add_menu_item(label="Debug", callback=lambda: dpg.show_debug())
+
+                dpg.add_menu_item(
+                    label="Item Registry", callback=lambda: dpg.show_item_registry()
+                )
+
+                dpg.add_menu_item(
+                    label="Metrics", callback=lambda: dpg.show_metrics()
+                )
+
+        # ---------- NODE EDITOR ----------
+        dpg.add_node_editor(
+            tag=self.node_editor_tag,
+            callback=self.onlink_callback,
+            delink_callback=self.delink_callback,
+            minimap=True,
+            minimap_location=dpg.mvNodeMiniMap_Location_BottomRight)
+
+        self.setup_node_editor()
+
+        super().build()
 
     def setup_node_editor(self):
         old_dic = self.node_editor.node_dic.copy()
