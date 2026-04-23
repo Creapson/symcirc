@@ -48,7 +48,7 @@ class NodeEditor(BaseModel):
         return node
 
     def add_link(self, from_pin, to_pin):
-        dpg.add_node_link(from_pin, to_pin, parent=self.application)
+        return dpg.add_node_link(from_pin, to_pin, parent=self.application)
 
     # callback runs when user attempts to connect pins
     def onlink_callback(self, sender, app_data):

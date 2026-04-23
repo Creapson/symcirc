@@ -16,7 +16,7 @@ class FlattenNode(Node):
     table_rows : Dict[str, int] = Field(default_factory=dict, exclude=True)
     out_file_path : str = Field(default="")
 
-    circuit : Circuit = Circuit()
+    circuit : Circuit = Field(default=Circuit(), exclude=True)
     element_list: List[Element] = []
 
 

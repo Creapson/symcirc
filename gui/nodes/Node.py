@@ -33,12 +33,12 @@ class Node(BaseModel):
     input_pins: Dict[Any, Any] = Field(default_factory=dict)
     do_propagation: bool = Field(default=False)
 
-    def setup(self, node_editor_tag):
-        # when loading the model the id is already set
-        print(node_editor_tag)
+    id_transition_table: Dict[int, int] = Field(default_factory=dict, exclude=True)
 
-        if self.node_id == 0:
-            self.node_id = dpg.generate_uuid()
+    def setup(self, node_editor_tag):
+        old_id = self.node_id
+        self.node_id = dpg.generate_uuid()
+        print(self.node_id)
 
         with dpg.node(
             label=self.label, 
@@ -47,6 +47,8 @@ class Node(BaseModel):
             tag=self.node_id
         ):
             self.build()
+
+        self.id_transition_table[old_id] = self.node_id
 
         dpg.set_item_pos(self.node_id, self.position)
 
@@ -61,7 +63,7 @@ class Node(BaseModel):
         tmp_dic = self.output_pins
         self.output_pins = {}
         for text_tag, pin_id in tmp_dic.items():
-            self.add_output_pin(pin_id=pin_id, tag=text_tag)
+            self.add_output_pin(tag=text_tag, text=pin_id)
 
 
     def delete_output_pins(self):
@@ -112,6 +114,8 @@ class Node(BaseModel):
                     dpg.add_text(text, tag=self.uuid(tag))
                     if button_callback is not None:
                         dpg.add_button(label=button_text, callback=button_callback)
+            if tag in self.output_pins:
+                self.id_transition_table[self.output_pins[tag]] = output_pin
             self.output_pins[tag] = output_pin
 
         return output_pin
@@ -124,6 +128,10 @@ class Node(BaseModel):
                     default_value=text,
                     tag=self.uuid(tag),
                 )
+
+            if tag in self.input_pins:
+                self.id_transition_table[self.input_pins[tag]] = input_pin
+
             self.input_pins[tag] = input_pin
 
         return input_pin
@@ -173,3 +181,4 @@ class Node(BaseModel):
         print("Input Pins", self.input_pins)
         print("output Values: ", self.output_values)
         print("output pins: ", self.output_pins)
+        print("id_transition_table", self.id_transition_table)

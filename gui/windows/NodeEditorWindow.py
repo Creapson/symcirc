@@ -200,16 +200,34 @@ class NodeEditorWindow(Window):
                 delink_callback=self.delink_callback,
                 minimap=True,
                 minimap_location=dpg.mvNodeMiniMap_Location_BottomRight)
+
             self.setup_node_editor()
 
         return super().setup(build, show_menu_bar=True)
 
     def setup_node_editor(self):
+        old_dic = self.node_editor.node_dic
+        self.node_editor.node_dic = {}
         # Draw the node
-        for _, node in self.node_editor.node_dic.items():
+        for _, node in old_dic.items():
             node.editor = self
-            node.setup(self.node_editor_tag)
+            new_id = node.setup(self.node_editor_tag)
+            self.node_editor.node_dic[new_id] = node
 
-        # create the links
-        for _,(from_pin, to_pin) in self.node_editor.links.items():
+        ### CREATE THE LINKS ###
+
+        # create big transition table
+        trans_dic = {}
+        for _,node in self.node_editor.node_dic.items():
+            trans_dic.update(node.id_transition_table)
+        print(trans_dic)
+
+        old_link_dic = self.node_editor.links
+        self.node_editor.links = {}
+        for _,(from_pin, to_pin) in old_link_dic.items():
+            # update pin ids if nessesary
+            if from_pin in trans_dic: 
+                from_pin = trans_dic[from_pin]
+            if to_pin in trans_dic:
+                to_pin = trans_dic[to_pin]
             self.node_editor.add_link(from_pin, to_pin)
