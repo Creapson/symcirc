@@ -77,13 +77,17 @@ class Circuit(BaseModel):
     def set_separator(self, separator: str):
         self.separator = separator
 
-    def set_bipolar_model(self, new_model: str):
+    def set_bipolar_model(self, new_model: str = ""):
+        if new_model == "":
+            return
         self.bipolar_model = new_model
         for element in self.elements:
             if element.type == "Q":
                 element.add_param("bipolar_model", self.bipolar_model)
 
-    def set_mosfet_model(self, new_model: str):
+    def set_mosfet_model(self, new_model: str = ""):
+        if new_model == "":
+            return
         self.mosfet_model = new_model
         for element in self.elements:
             if element.type == "Q":
@@ -185,7 +189,7 @@ class Circuit(BaseModel):
     def flatten(
         self,
         flatten_models: bool = False,
-        out_file_path: str | None = "",
+        out_file_path: str = "",
         subcircuits: Optional[Dict[str, "Circuit"]] = None,
     ):
         if subcircuits is None:
@@ -201,7 +205,7 @@ class Circuit(BaseModel):
             from parser.NetlistParser import get_element_parameters_from_outfile
 
             # load small signal parameters from out file
-            if out_file_path is None:
+            if out_file_path == "":
                 get_element_parameters_from_outfile(self.netlist_file_path + self.name + ".out", self.elements)
                 print(self.netlist_file_path + self.name + ".out")
             else:

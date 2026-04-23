@@ -1,9 +1,12 @@
 import dearpygui.dearpygui as dpg
 
-from gui.nodes.Node import Node
+from gui.nodes.Node import Node, NodeType
+from typing import Literal
 
 
 class ImportCircuit(Node):
+    node_type: Literal[NodeType.IMPORT_CIRCUIT] = NodeType.IMPORT_CIRCUIT
+
     def callback(self, sender, app_data):
         def format_feedback(feedback):
             message = ""
@@ -17,46 +20,37 @@ class ImportCircuit(Node):
         feedback = get_pre_format_info(app_data["file_path_name"])
 
         # when a file is selected create the output pin
-        if not dpg.does_item_exist(self.uuid("file_path_out")):
-            with self.add_output_attr() as output_pin:
-                dpg.add_text("Selected file", tag=self.uuid("file_path_out"))
-            self.output_pins[self.uuid("file_path_out")] = output_pin
+        self.add_output_pin(tag="file_path_out", text="Selected file")
 
         self.add_output_pin_value(
-            self.uuid("file_path_out"), app_data["file_path_name"]
+            "file_path_out", app_data["file_path_name"]
         )
 
         dpg.set_value(
-            self.file_path_widget_id,
+            self.uuid("file_path_string"),
             f"Loaded file with following Feedback:\n{format_feedback(feedback)}",
         )
 
-    def setup(self, node_editor_tag):
-        def build():
-            with dpg.value_registry():
-                dpg.add_string_value(
-                    default_value="No file currently selected!",
-                    tag=f"{self.node_id}_file_path_string",
-                )
-
+    def build(self):
+        if not dpg.does_item_exist(self.uuid("file_dialog_id")):
             with dpg.file_dialog(
                 directory_selector=False,
                 show=False,
                 callback=self.callback,
-                tag=f"{self.node_id}_file_dialog_id",
+                tag=self.uuid("file_dialog_id"),
                 width=700,
                 height=400,
             ):
-                dpg.add_file_extension(".cir")
-                dpg.add_file_extension(".net")
+                dpg.add_file_extension(".cir", parent=self.uuid("file_dialog_id"))
+                dpg.add_file_extension(".net", parent=self.uuid("file_dialog_id"))
 
-            with self.add_static_attr():
-                dpg.add_button(
-                    label="Open File Dialog",
-                    callback=lambda: dpg.show_item(f"{self.node_id}_file_dialog_id"),
-                )
-                self.file_path_widget_id = dpg.add_text(
-                    source=f"{self.node_id}_file_path_string"
-                )
-
-        return super().setup(build, node_editor_tag)
+        with self.add_static_attr():
+            dpg.add_button(
+                label="Open File Dialog",
+                callback=lambda: dpg.show_item(self.uuid("file_dialog_id")),
+            )
+            dpg.add_text(
+                    label="No file currently selected",
+                    tag=self.uuid("file_path_string")
+            )
+        super().build()
