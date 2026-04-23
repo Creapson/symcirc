@@ -50,7 +50,7 @@ class Circuit(BaseModel):
             case "LIN": 
                 start = int(sweep_split[2])
                 stop = int(sweep_split[3])
-                return np.logspace(start=start, stop=stop, num=num_of_points)
+                return np.linspace(start=start, stop=stop, num=num_of_points)
 
             case "DEC": 
                 start = int(float(sweep_split[2]))

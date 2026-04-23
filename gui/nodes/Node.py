@@ -34,6 +34,7 @@ class Node(BaseModel):
     do_propagation: bool = Field(default=False)
 
     id_transition_table: Dict[int, int] = Field(default_factory=dict, exclude=True)
+    non_persistent_output_values: Dict[str, Any] = Field(default_factory=dict, exclude=True)
 
     def setup(self, node_editor_tag):
         old_id = self.node_id
@@ -98,13 +99,16 @@ class Node(BaseModel):
             tag=tag,
         )
 
-    def add_output_pin_value(self, output_pin_tag, value):
+    def add_output_pin_value(self, output_pin_tag, value, is_persistence:bool=True):
         output_pin = self.output_pins.get(output_pin_tag, None)
-        self.output_values[output_pin] = value
+        if is_persistence:
+            self.output_values[output_pin] = value
+        else:
+            self.non_persistent_output_values[output_pin] = value
+
 
         self.editor.propagate(output_pin)
         print("Output Values", self.output_values)
-
 
     def add_output_pin(self, tag="", text="", button_callback=None, button_text=""):
         output_pin = 0
@@ -162,7 +166,8 @@ class Node(BaseModel):
             # and get the object from there
             from_node_id = dpg.get_item_parent(from_pin)
             from_node = self.editor.node_dic[from_node_id]
-            return from_node.output_values.get(from_pin, None)
+            output_values = from_node.output_values | from_node.non_persistent_output_values
+            return output_values.get(from_pin, None)
 
         else:
             return None
@@ -182,5 +187,6 @@ class Node(BaseModel):
         print("Connections: ", self.connections)
         print("Input Pins", self.input_pins)
         print("output Values: ", self.output_values)
+        print("non_P output Values: ", self.non_persistent_output_values)
         print("output pins: ", self.output_pins)
         print("id_transition_table", self.id_transition_table)
