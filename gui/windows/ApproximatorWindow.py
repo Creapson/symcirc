@@ -85,38 +85,37 @@ class ApproximatorWindow(Window):
             parent=self.uuid("y_axis_phase"),
         )
 
-    def setup(self, build_func=None, show_menu_bar=False):
-        def build():
-            # add selection for the transfer-function
-            nodes = list(self.mna.node_map.keys())
-            with dpg.group(horizontal=True):
-                dpg.add_text("From Node:")
-                dpg.add_combo(items=nodes, tag=self.uuid("from_node"))
+    def build(self):
+        # add selection for the transfer-function
+        nodes = list(self.mna.node_map.keys())
+        with dpg.group(horizontal=True):
+            dpg.add_text("From Node:")
+            dpg.add_combo(items=nodes, tag=self.uuid("from_node"))
 
-            with dpg.group(horizontal=True):
-                dpg.add_text("To Node:")
-                dpg.add_combo(items=nodes, tag=self.uuid("to_node"))
+        with dpg.group(horizontal=True):
+            dpg.add_text("To Node:")
+            dpg.add_combo(items=nodes, tag=self.uuid("to_node"))
 
-            dpg.add_button(label="Confirm TransferFunction", callback=self.tf_selected)
+        dpg.add_button(label="Confirm TransferFunction", callback=self.tf_selected)
 
-            self.setup_bode_plot()
+        self.setup_bode_plot()
 
-            # create table
-            with dpg.table(
-                tag=self.uuid("approx_points_table"),
-                header_row=True,
-            ):
-                dpg.add_table_column(label="Frequency")
-                dpg.add_table_column(label="Error")
-            pass
+        # create table
+        with dpg.table(
+            tag=self.uuid("approx_points_table"),
+            header_row=True,
+        ):
+            dpg.add_table_column(label="Frequency")
+            dpg.add_table_column(label="Error")
+        pass
 
-            dpg.add_text(
-                default_value="Not Calculated yet!", tag=self.uuid("approx_func_txt")
-            )
+        dpg.add_text(
+            default_value="Not Calculated yet!", tag=self.uuid("approx_func_txt")
+        )
 
-            dpg.add_button(label="Calculate Approx", callback=self.update)
+        dpg.add_button(label="Calculate Approx", callback=self.update)
 
-        super().setup(build)
+        super().build()
 
     def tf_selected(self, sender, app_data):
         import sympy as sp

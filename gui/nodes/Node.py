@@ -1,42 +1,70 @@
 import dearpygui.dearpygui as dpg
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Any, Dict, Annotated, Union, Tuple, Literal, List
+from enum import IntEnum
+
+class NodeType(IntEnum):
+    BASE = 0
+    APPROXIMATOR = 1
+    BODE_PLOT = 2
+    FLATTEN = 3
+    IMPORT_CIRCUIT = 4
+    MNA = 5
+    NETLIST_PARSER = 6
+    NUMERIC_SOLVER= 7
+    TRANSFER_FUNCTION = 8
 
 
-class Node:
-    def __init__(self, node_editor, label : str, position=(100, 100)):
-        self.label = label
-        self.position = position
-        # Add the editor to access the other nodes
-        self.editor = node_editor 
-        self.node_id = None
+class Node(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-        # {pin_id: connected_node}
-        self.connections = {}
-        # {pin_id: variable}
-        self.output_values = {}
-        self.output_pins = {}
-        self.input_pins = {}
+    # persistent Data (this gets saved)
+    label: str
+    position: List[int] = [0, 0]
+    data: Dict[str, Any] = Field(default_factory=dict)
+    node_type: Literal[NodeType.BASE] = NodeType.BASE    
 
-        # enable if self.update() should be called
-        # when the inputs change
-        self.do_propagation = False
+    # non persistent data
+    node_id: Union[int, str] = Field(default=0)
+    editor: Any = Field(default=None, exclude=True)
+    connections: Dict[int, int] = Field(default_factory=dict)
+    output_values: Dict[int, Any] = Field(default_factory=dict)
+    output_pins: Dict[str, int] = Field(default_factory=dict)
+    input_pins: Dict[str, int] = Field(default_factory=dict)
+    do_propagation: bool = Field(default=False)
 
-        self.BIPOLAR_MODELS = self.editor.application.bipolar_models
-        self.MOSFET_MODELS = self.editor.application.mosfet_models
+    id_transition_table: Dict[int, int] = Field(default_factory=dict, exclude=True)
 
-    def setup(self, build_fn, node_editor_tag):
+    def setup(self, node_editor_tag):
+        old_id = self.node_id
+        self.node_id = dpg.generate_uuid()
+        print(self.node_id)
+
         with dpg.node(
-            label=self.label, pos=self.position, parent=node_editor_tag
-        ) as self.node_id:
-            build_fn()
+            label=self.label, 
+            pos=self.position, 
+            parent=node_editor_tag,
+            tag=self.node_id
+        ):
+            self.build()
 
-            with self.add_static_attr():
-                dpg.add_button(label="Debug Log", callback=self.debug_print)
-            print("Output Pins: ", self.output_pins)
+        self.id_transition_table[old_id] = self.node_id
 
-        print(f"node_id of node {self.label} with id: {self.node_id}")
         dpg.set_item_pos(self.node_id, self.position)
 
         return self.node_id
+
+    def build(self):
+        with self.add_static_attr():
+            dpg.add_button(label="Debug Log", callback=self.debug_print)
+
+        # when laoding a pipeline from file
+        # create all missing output_pins
+        tmp_dic = self.output_pins
+        # self.output_pins = {}
+        for text_tag, pin_id in tmp_dic.items():
+            self.add_output_pin(tag=text_tag, text=pin_id)
+
 
     def delete_output_pins(self):
         for pin_tag, attr_id in list(self.output_pins.items()):
@@ -60,9 +88,14 @@ class Node:
             parent=self.node_id, attribute_type=dpg.mvNode_Attr_Static
         )
 
-    def add_output_attr(self):
+    def add_output_attr(self, tag=0):
+        if tag == 0 :
+            tag = dpg.generate_uuid()
+
         return dpg.node_attribute(
-            parent=self.node_id, attribute_type=dpg.mvNode_Attr_Output
+            parent=self.node_id, 
+            attribute_type=dpg.mvNode_Attr_Output,
+            tag=tag,
         )
 
     def add_output_pin_value(self, output_pin_tag, value):
@@ -71,6 +104,39 @@ class Node:
 
         self.editor.propagate(output_pin)
         print("Output Values", self.output_values)
+
+
+    def add_output_pin(self, tag="", text="", button_callback=None, button_text=""):
+        output_pin = 0
+        if not dpg.does_item_exist(self.uuid(tag)):
+            with self.add_output_attr() as output_pin:
+                with dpg.group(horizontal=True):
+                    dpg.add_text(text, tag=self.uuid(tag))
+                    if button_callback is not None:
+                        dpg.add_button(label=button_text, callback=button_callback)
+            if tag in self.output_pins:
+                self.id_transition_table[self.output_pins[tag]] = output_pin
+            self.output_pins[tag] = output_pin
+
+        print("added output pin", output_pin)
+        return output_pin
+
+    def add_input_pin(self, tag="", text=""):
+        input_pin = 0
+        if not dpg.does_item_exist(self.uuid(tag)):
+            with self.add_input_attr() as input_pin:
+                dpg.add_text(
+                    default_value=text,
+                    tag=self.uuid(tag),
+                )
+
+            if tag in self.input_pins:
+                self.id_transition_table[self.input_pins[tag]] = input_pin
+
+            self.input_pins[tag] = input_pin
+
+        print("added input pin", input_pin)
+        return input_pin
 
     def add_connection(self, pin_id, connected_node):
         self.connections[pin_id] = connected_node
@@ -84,7 +150,7 @@ class Node:
     def delink_callback(self):
         pass
 
-    def get_input_pin_value(self, input_pin_tag):
+    def get_input_pin_value(self, input_pin_tag : str) -> Any:
         if input_pin_tag in self.input_pins:
             input_pin = self.input_pins.get(input_pin_tag, None)
             from_pin = self.connections.get(input_pin, None)
@@ -105,6 +171,9 @@ class Node:
         # when update is called all settings should be set
         self.do_propagation = True
 
+    def save(self):
+        self.position = dpg.get_item_pos(self.node_id)
+
     def debug_print(self):
         print(f"\n\nDebug Output from Node: {self.label}")
         print("Label: ", self.label)
@@ -114,23 +183,4 @@ class Node:
         print("Input Pins", self.input_pins)
         print("output Values: ", self.output_values)
         print("output pins: ", self.output_pins)
-
-
-"""
-import dearpygui.dearpygui as dpg
-
-from gui.nodes.Node import Node
-
-class Copy(Node):
-    def setup(self, node_editor_tag):
-        def build():
-            pass
-
-        return super().setup(build, node_editor_tag)
-
-    def onlink_callback(self):
-        super().onlink_callback()
-
-    def update(self):
-        super().update()
-"""
+        print("id_transition_table", self.id_transition_table)

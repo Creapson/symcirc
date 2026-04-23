@@ -34,23 +34,6 @@ class CircuitEditor(Window):
         except Exception as e:
             print("Error saving file:", e)
 
-    # def import_callback(self, sender, app_data):
-    #     print(app_data)
-    #     try:
-    #         file_path : str = app_data["file_path_name"]
-    #         # Load JSON
-    #         with open(file_path, "r", encoding="utf-8") as f:
-    #             data = json.load(f)
-    #
-    #         self.circuit = Circuit(**data)
-    #
-    #         # Rebuild UI immediately
-    #         if self.id and dpg.does_item_exist(self.id):
-    #             super().rebuild_ui(self.build)
-    #
-    #     except Exception as e:
-    #         print("Error loading file:", e)
-
     def build(self):
         if not dpg.does_item_exist(self.uuid("export_file_dialog")):
             with dpg.file_dialog(
@@ -63,26 +46,8 @@ class CircuitEditor(Window):
             ):
                 dpg.add_file_extension(".json")
 
-        # if not dpg.does_item_exist(self.uuid("import_file_dialog")):
-        #     with dpg.file_dialog(
-        #         directory_selector=False,
-        #         show=False,
-        #         callback=self.import_callback,
-        #         tag=self.uuid("import_file_dialog"),
-        #         width=700,
-        #         height=400,
-        #     ):
-        #         dpg.add_file_extension(".json")
-
         with dpg.menu_bar():
-            with dpg.menu(label="Edit"): 
-
-                # dpg.add_menu_item(
-                #         label="Import", 
-                #         enabled=True, 
-                #         callback=lambda: dpg.show_item(self.uuid("import_file_dialog"))
-                # )
-                                  
+            with dpg.menu(label="Edit"):
                 dpg.add_menu_item(
                         label="Export", 
                         enabled=True, 
@@ -94,11 +59,6 @@ class CircuitEditor(Window):
         with dpg.group(horizontal=True):
             dpg.add_button(label="Save", callback=self.on_save)
             dpg.add_button(label="Close", callback=self.on_close)
-
-    def setup(self, build_func=None, show_menu_bar=False):
-        if build_func is None:
-            build_func = self.build
-        super().setup(build_func, show_menu_bar)
 
     def on_close(self, sender, app_data=None, user_data=None):
         super().on_close(sender, app_data, user_data)

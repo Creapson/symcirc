@@ -1,50 +1,44 @@
 import dearpygui.dearpygui as dpg
+from pydantic import Field
+from typing import Literal
 
-from gui.nodes.Node import Node
+
+from gui.nodes.Node import Node, NodeType
 from netlist.Circuit import Circuit
+from Modified_Node_Analysis import ModifiedNodalAnalysis
 
 
-class ModifiedNodalAnalysis(Node):
-    def __init__(self, node_editor, label, position=(100, 100)):
-        self.nma = None
 
-        super().__init__(node_editor, label, position)
+class ModifiedNodalAnalysisNode(Node):
+    node_type: Literal[NodeType.MNA] = NodeType.MNA
 
-    def setup(self, node_editor_tag):
-        def build():
-            with self.add_input_attr() as magn_pin:
-                dpg.add_text(
-                    default_value="Connect Circuit here",
-                    tag=self.uuid("circuit_input_pin"),
-                )
-            self.input_pins[self.uuid("circuit_input_pin")] = magn_pin
+    circuit: Circuit = Field(default=Circuit(), exclude=True)
 
-            with self.add_static_attr():
-                dpg.add_button(label="Calculate Numeric Values", callback=self.update)
+    def build(self):
+        self.add_input_pin("circuit_input_pin", "Connect Circuit here")
 
-        return super().setup(build, node_editor_tag)
+        with self.add_static_attr():
+            dpg.add_button(label="Calculate Numeric Values", callback=self.update)
+
+        super().build()
 
     def onlink_callback(self):
-        self.circuit : Circuit = self.get_input_pin_value(self.uuid("circuit_input_pin"))
-
-        from Modified_Node_Analysis import ModifiedNodalAnalysis
-
-        self.mna = ModifiedNodalAnalysis(self.circuit)
+        self.circuit = self.get_input_pin_value("circuit_input_pin")
 
         dpg.set_value(self.uuid("circuit_input_pin"), "Circuit connected!")
         super().onlink_callback()
 
     def update(self):
-        self.mna.buildEquationsSystem()
+        mna = ModifiedNodalAnalysis(self.circuit)
+        mna.buildEquationsSystem()
 
         # get the log_space from the circuit
         log_space = self.circuit.get_sweep()
-        print(log_space)
 
-        if not dpg.does_item_exist(self.uuid("h_out")):
-            with self.add_output_attr() as output_pin:
-                dpg.add_text("H", tag=self.uuid("h_out"))
-            self.output_pins[self.uuid("h_out")] = output_pin
-        self.add_output_pin_value(self.uuid("h_out"), (log_space, self.mna))
+        mna.buildEquationsSystem()
+
+
+        self.add_output_pin(tag="h_out", text="H")
+        self.add_output_pin_value("h_out", mna)
 
         super().update()
