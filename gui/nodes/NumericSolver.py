@@ -74,7 +74,7 @@ class NumericSolver(Node):
 
         self.add_output_pin(tag="line_out", text="Numeric Values for BodePlots")
         self.add_output_pin_value(
-            self.uuid("line_out"), (freq_log, magnitude_db, phase_deg)
+            "line_out", (freq_log, magnitude_db, phase_deg)
         )
 
         super().update()

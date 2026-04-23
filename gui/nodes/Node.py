@@ -150,7 +150,7 @@ class Node(BaseModel):
     def delink_callback(self):
         pass
 
-    def get_input_pin_value(self, input_pin_tag):
+    def get_input_pin_value(self, input_pin_tag : str) -> Any:
         if input_pin_tag in self.input_pins:
             input_pin = self.input_pins.get(input_pin_tag, None)
             from_pin = self.connections.get(input_pin, None)

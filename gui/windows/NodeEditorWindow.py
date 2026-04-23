@@ -8,7 +8,7 @@ from gui.nodes.ApproximatorNode import ApproximatorNode
 from gui.nodes.BodePlot import BodePlot
 from gui.nodes.Flatten import FlattenNode
 from gui.nodes.ImportCircuit import ImportCircuit
-from gui.nodes.ModifiedNodalAnalysis import ModifiedNodalAnalysis
+from gui.nodes.ModifiedNodalAnalysis import ModifiedNodalAnalysisNode
 from gui.nodes.NetlistParserNode import NetlistParserNode
 from gui.nodes.NumericSolver import NumericSolver
 from gui.nodes.TransferFunctionNode import TransferFunctionNode
@@ -133,7 +133,7 @@ class NodeEditorWindow(Window):
                     dpg.add_menu_item(
                         label="ModifiedNodalAnalysis",
                         callback=lambda: self.add_node(
-                            ModifiedNodalAnalysis,
+                            ModifiedNodalAnalysisNode,
                             "ModifiedNodalAnalysis Node",
                             (000, 300),
                         ),

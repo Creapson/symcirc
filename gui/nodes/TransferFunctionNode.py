@@ -42,5 +42,5 @@ class TransferFunctionNode(Node):
         H = self.data["mna"].solveNumerical(self.data["mna"].value_dict, to_node, from_node)
 
         self.add_output_pin(tag="h_out", text="H")
-        self.add_output_pin_value(self.uuid("h_out"), (sweep, H))
+        self.add_output_pin_value("h_out", H)
         super().update()

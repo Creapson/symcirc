@@ -1,12 +1,18 @@
 import dearpygui.dearpygui as dpg
-
-from gui.nodes.Node import Node, NodeType
-from netlist.Circuit import Circuit
+from pydantic import Field
 from typing import Literal
 
 
-class ModifiedNodalAnalysis(Node):
+from gui.nodes.Node import Node, NodeType
+from netlist.Circuit import Circuit
+from Modified_Node_Analysis import ModifiedNodalAnalysis
+
+
+
+class ModifiedNodalAnalysisNode(Node):
     node_type: Literal[NodeType.MNA] = NodeType.MNA
+
+    circuit: Circuit = Field(default=Circuit(), exclude=True)
 
     def build(self):
         self.add_input_pin("circuit_input_pin", "Connect Circuit here")
@@ -17,25 +23,22 @@ class ModifiedNodalAnalysis(Node):
         super().build()
 
     def onlink_callback(self):
-        self.data["circuit"] = self.get_input_pin_value("circuit_input_pin")
-
-        from Modified_Node_Analysis import ModifiedNodalAnalysis
-
-        self.data["mna"] = ModifiedNodalAnalysis(self.data["circuit"])
+        self.circuit = self.get_input_pin_value("circuit_input_pin")
 
         dpg.set_value(self.uuid("circuit_input_pin"), "Circuit connected!")
         super().onlink_callback()
 
     def update(self):
-        self.data["mna"].buildEquationsSystem()
+        mna = ModifiedNodalAnalysis(self.circuit)
+        mna.buildEquationsSystem()
 
         # get the log_space from the circuit
-        log_space = self.data["circuit"].get_sweep()
+        log_space = self.circuit.get_sweep()
 
-        self.data["mna"].buildEquationsSystem()
+        mna.buildEquationsSystem()
 
 
         self.add_output_pin(tag="h_out", text="H")
-        self.add_output_pin_value(self.uuid("h_out"), self.data["mna"])
+        self.add_output_pin_value("h_out", mna)
 
         super().update()

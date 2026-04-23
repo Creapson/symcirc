@@ -213,19 +213,17 @@ class FlattenNode(Node):
             element.params["bipolar_model"] = bipolar_model
             element.params["mosfet_model"] = mosfet_model
 
-        self.data["flattend_circuit"] = self.circuit.copy()
+        flattend_circuit = self.circuit.copy()
         print(self.data.get("out_file_path", ""))
-        self.data["flattend_circuit"].flatten(True, self.data.get("out_file_path", ""))
+        flattend_circuit.flatten(True, self.data.get("out_file_path", ""))
 
         self.add_output_pin(tag="flattend_circuit_out_pin", text="Circuit with flattend Models", button_callback=self.open_circuit_edit, button_text="Edit Circuit")
 
-        self.add_output_pin_value(
-            self.uuid("flattend_circuit_out_pin"), self.data["flattend_circuit"]
-        )
+        self.add_output_pin_value("flattend_circuit_out_pin", flattend_circuit)
 
-        self.data["flattend_circuit"].to_ai_string()
+        flattend_circuit.to_ai_string()
         super().update()
 
     def open_circuit_edit(self):
-        ct_editor = CircuitEditor(self.data["flattend_circuit"], self.label)
+        ct_editor = CircuitEditor(flattend_circuit, self.label)
         ct_editor.setup()
