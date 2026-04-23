@@ -171,7 +171,7 @@ class Node(BaseModel):
         # when update is called all settings should be set
         self.do_propagation = True
 
-    def update_pos(self):
+    def save(self):
         self.position = dpg.get_item_pos(self.node_id)
 
     def debug_print(self):

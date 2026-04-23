@@ -4,29 +4,39 @@ from typing import List, Dict, Literal
 
 from gui.windows.CircuitEditor import CircuitEditor
 
-from gui.nodes.Node import Node, NodeType
-from netlist import Circuit
+from gui.components.node_editor.nodes.Node import Node, NodeType
+from netlist.Circuit import Circuit
 from parser.NetlistParser import get_circuit_from_file
 
 
 class NetlistParserNode(Node):
     node_type: Literal[NodeType.NETLIST_PARSER] = NodeType.NETLIST_PARSER
 
+    circuit: Circuit = Field(default=Circuit(), exclude=True)
     row_sources : List[int] = Field(default_factory=list, exclude=True)
     table_rows : Dict[str, int] = Field(default_factory=dict, exclude=True)
 
     def build(self):
         with dpg.value_registry():
+
             dpg.add_string_value(
                 default_value="Circuit is not flattend yet!",
                 tag=self.uuid("circuit_parser"),
             )
-            dpg.add_string_value(default_value="_", tag=self.uuid("separator"))
+
             dpg.add_string_value(
-                default_value="beta_with_r_be", tag=self.uuid("bipolar_model")
+                    default_value=self.data.get("separator", "_"), 
+                    tag=self.uuid("separator")
             )
+
             dpg.add_string_value(
-                default_value="BSIM", tag=self.uuid("mosfet_model")
+                default_value=self.data.get("bipolar_model", "beta_with_r_be"), 
+                tag=self.uuid("bipolar_model")
+            )
+
+            dpg.add_string_value(
+                default_value=self.data.get("mosfet_model", "BSIM"), 
+                tag=self.uuid("mosfet_model")
             )
 
         self.add_input_pin("file_path_pin", "Connect ImportNode fere! [filepath]")
@@ -70,6 +80,7 @@ class NetlistParserNode(Node):
                     callback=self.filter_table,
                     tag=self.uuid("subckt_filter"),
                 )
+
             with dpg.table(
                 header_row=True,
                 policy=dpg.mvTable_SizingFixedFit,
@@ -99,7 +110,7 @@ class NetlistParserNode(Node):
 
         from parser.NetlistParser import get_circuit_from_file 
 
-        self.data["circuit"] = get_circuit_from_file(filepath)
+        self.circuit = get_circuit_from_file(filepath)
 
         # extract name and folder_path from the file_path
         p = Path(filepath)
@@ -107,8 +118,8 @@ class NetlistParserNode(Node):
         ct_name = p.stem
         ct_folder_path = str(p.parent) + "\\"
 
-        self.data["circuit"].set_name(ct_name)
-        self.data["circuit"].set_netlist_path(ct_folder_path)
+        self.circuit.set_name(ct_name)
+        self.circuit.set_netlist_path(ct_folder_path)
 
         # populate the subcircuit table
         def add_cubcircuit_row(subct_name, bipolar_model, mosfet_model):
@@ -137,7 +148,7 @@ class NetlistParserNode(Node):
                 parent=row,
             )
 
-        subct_list = self.data["circuit"].get_subcircuits()
+        subct_list = self.circuit.get_subcircuits()
         self.delete_table()
         for subct_name, subct_obj in subct_list.items():
             add_cubcircuit_row(
@@ -171,14 +182,15 @@ class NetlistParserNode(Node):
     def update(self):
         # apply all options to the circuit
         # separator
-        separator = dpg.get_value(self.uuid("separator"))
-        self.data["circuit"].set_separator(separator)
-        # small signal models
-        # circuit
-        self.data["circuit"].set_bipolar_model(dpg.get_value(self.uuid("bipolar_model")))
-        self.data["circuit"].set_mosfet_model(dpg.get_value(self.uuid("mosfet_model")))
+        self.data["separator"] = dpg.get_value(self.uuid("separator"))
+        self.data["bipolar_model"] = dpg.get_value(self.uuid("bipolar_model"))
+        self.data["mosfet_model"] = dpg.get_value(self.uuid("mosfet_model"))
 
-        subct_list = self.data["circuit"].get_subcircuits()
+        self.circuit.set_separator(self.data.get("seperator", "_"))
+        self.circuit.set_bipolar_model(self.data.get("bipolar_model", ""))
+        self.circuit.set_mosfet_model(self.data.get("mosfet_model", ""))
+
+        subct_list = self.circuit.get_subcircuits()
         for subct_name, subct_obj in subct_list.items():
             bipolar_model = dpg.get_value(self.uuid(f"{subct_name}_bipolar_model"))
             mosfet_model = dpg.get_value(self.uuid(f"{subct_name}_mosfet_model"))
@@ -193,7 +205,7 @@ class NetlistParserNode(Node):
             if mosfet_model == "":
                 subct_obj.set_mosfet_model(dpg.get_value(self.uuid("mosfet_model")))
 
-        flattend_circuit = self.data["circuit"].copy()
+        flattend_circuit = self.circuit.copy()
         flattend_circuit.flatten()
 
         # create a output pin for the flattend circuit
@@ -212,6 +224,13 @@ class NetlistParserNode(Node):
 
         super().update()
 
+    def save(self):
+        self.data["separator"] = dpg.get_value(self.uuid("separator"))
+        self.data["bipolar_model"] = dpg.get_value(self.uuid("bipolar_model"))
+        self.data["mosfet_model"] = dpg.get_value(self.uuid("mosfet_model"))
+
+        super().save()
+
     def open_circuit_edit(self):
-        ct_editor = CircuitEditor(self.data["circuit"], self.label)
+        ct_editor = CircuitEditor(self.circuit, self.label)
         ct_editor.setup()

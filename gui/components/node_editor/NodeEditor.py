@@ -2,16 +2,16 @@ import dearpygui.dearpygui as dpg
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Any, Dict, Union, Tuple, Annotated
 
-from gui.nodes.Node import Node
+from gui.components.node_editor.nodes.Node import Node
 
-from gui.nodes.ApproximatorNode import ApproximatorNode
-from gui.nodes.BodePlot import BodePlot
-from gui.nodes.Flatten import FlattenNode
-from gui.nodes.ImportCircuit import ImportCircuit
-from gui.nodes.ModifiedNodalAnalysis import ModifiedNodalAnalysis
-from gui.nodes.NetlistParserNode import NetlistParserNode
-from gui.nodes.NumericSolver import NumericSolver
-from gui.nodes.TransferFunctionNode import TransferFunctionNode
+from gui.components.node_editor.nodes.ApproximatorNode import ApproximatorNode
+from gui.components.node_editor.nodes.BodePlot import BodePlot
+from gui.components.node_editor.nodes.Flatten import FlattenNode
+from gui.components.node_editor.nodes.ImportCircuit import ImportCircuit
+from gui.components.node_editor.nodes.ModifiedNodalAnalysis import ModifiedNodalAnalysis
+from gui.components.node_editor.nodes.NetlistParserNode import NetlistParserNode
+from gui.components.node_editor.nodes.NumericSolver import NumericSolver
+from gui.components.node_editor.nodes.TransferFunctionNode import TransferFunctionNode
 
 AnyNode = Annotated[
     Union[Node,
@@ -37,7 +37,7 @@ class NodeEditor(BaseModel):
 
     def save(self):
         for _, node in self.node_dic.items():
-            node.update_pos()
+            node.save()
 
     def add_node(self, node_editor_tag, node_constructor, label, pos):
         node = node_constructor(editor=self, label=label, position=pos)

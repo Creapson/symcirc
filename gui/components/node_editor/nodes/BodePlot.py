@@ -1,7 +1,7 @@
 import dearpygui.dearpygui as dpg
 import numpy as np
 
-from gui.nodes.Node import Node, NodeType
+from gui.components.node_editor.nodes.Node import Node, NodeType
 from typing import Literal
 
 

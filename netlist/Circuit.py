@@ -77,13 +77,17 @@ class Circuit(BaseModel):
     def set_separator(self, separator: str):
         self.separator = separator
 
-    def set_bipolar_model(self, new_model: str):
+    def set_bipolar_model(self, new_model: str = ""):
+        if new_model == "":
+            return
         self.bipolar_model = new_model
         for element in self.elements:
             if element.type == "Q":
                 element.add_param("bipolar_model", self.bipolar_model)
 
-    def set_mosfet_model(self, new_model: str):
+    def set_mosfet_model(self, new_model: str = ""):
+        if new_model == "":
+            return
         self.mosfet_model = new_model
         for element in self.elements:
             if element.type == "Q":
