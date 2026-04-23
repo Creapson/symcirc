@@ -62,7 +62,7 @@ class NodeEditorWindow(Window):
                 json_string = f.read()
             
             self.node_editor = NodeEditor.model_validate_json(json_string)
-            self.node_editor.application = self
+            self.node_editor.application = self.application
             self.setup_node_editor()
 
         except Exception as e:
@@ -206,15 +206,16 @@ class NodeEditorWindow(Window):
         return super().setup(build, show_menu_bar=True)
 
     def setup_node_editor(self):
-        old_dic = self.node_editor.node_dic
+        old_dic = self.node_editor.node_dic.copy()
         self.node_editor.node_dic = {}
         # Draw the node
         for _, node in old_dic.items():
-            node.editor = self
+            node.editor = self.node_editor
             new_id = node.setup(self.node_editor_tag)
             self.node_editor.node_dic[new_id] = node
 
-        ### CREATE THE LINKS ###
+
+
 
         # create big transition table
         trans_dic = {}
@@ -222,7 +223,16 @@ class NodeEditorWindow(Window):
             trans_dic.update(node.id_transition_table)
         print(trans_dic)
 
-        old_link_dic = self.node_editor.links
+        # update the output_values pin ids
+        for _,node in self.node_editor.node_dic.items():
+            old_dic = node.output_values.copy()
+            for pin_id,_ in old_dic.items():
+                if pin_id in trans_dic:
+                    node.output_values[trans_dic[pin_id]] = node.output_values[pin_id]
+                    del node.output_values[pin_id]
+
+        ### CREATE THE LINKS ###
+        old_link_dic = self.node_editor.links.copy()
         self.node_editor.links = {}
         for _,(from_pin, to_pin) in old_link_dic.items():
             # update pin ids if nessesary
@@ -230,4 +240,4 @@ class NodeEditorWindow(Window):
                 from_pin = trans_dic[from_pin]
             if to_pin in trans_dic:
                 to_pin = trans_dic[to_pin]
-            self.node_editor.add_link(from_pin, to_pin)
+            self.onlink_callback(sender=self.node_editor_tag, app_data=(from_pin, to_pin))

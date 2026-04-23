@@ -27,10 +27,10 @@ class Node(BaseModel):
     # non persistent data
     node_id: Union[int, str] = Field(default=0)
     editor: Any = Field(default=None, exclude=True)
-    connections: Dict[Any, Any] = Field(default_factory=dict)
-    output_values: Dict[Any, Any] = Field(default_factory=dict)
-    output_pins: Dict[Any, Any] = Field(default_factory=dict)
-    input_pins: Dict[Any, Any] = Field(default_factory=dict)
+    connections: Dict[int, int] = Field(default_factory=dict)
+    output_values: Dict[int, Any] = Field(default_factory=dict)
+    output_pins: Dict[str, int] = Field(default_factory=dict)
+    input_pins: Dict[str, int] = Field(default_factory=dict)
     do_propagation: bool = Field(default=False)
 
     id_transition_table: Dict[int, int] = Field(default_factory=dict, exclude=True)
@@ -61,7 +61,7 @@ class Node(BaseModel):
         # when laoding a pipeline from file
         # create all missing output_pins
         tmp_dic = self.output_pins
-        self.output_pins = {}
+        # self.output_pins = {}
         for text_tag, pin_id in tmp_dic.items():
             self.add_output_pin(tag=text_tag, text=pin_id)
 
@@ -118,6 +118,7 @@ class Node(BaseModel):
                 self.id_transition_table[self.output_pins[tag]] = output_pin
             self.output_pins[tag] = output_pin
 
+        print("added output pin", output_pin)
         return output_pin
 
     def add_input_pin(self, tag="", text=""):
@@ -134,6 +135,7 @@ class Node(BaseModel):
 
             self.input_pins[tag] = input_pin
 
+        print("added input pin", input_pin)
         return input_pin
 
     def add_connection(self, pin_id, connected_node):

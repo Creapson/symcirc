@@ -203,7 +203,7 @@ class NetlistParserNode(Node):
                 button_callback=self.open_circuit_edit, 
                 button_text="Edit Circuit"
                             )
-        self.add_output_pin_value(self.uuid("flattend_circuit"), flattend_circuit)
+        self.add_output_pin_value("flattend_circuit", flattend_circuit)
 
         flattend_circuit.to_ai_string()
 
