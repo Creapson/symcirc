@@ -25,7 +25,7 @@ class ApproximatorNode(Node):
             self.settings_window.setup()
 
     def onlink_callback(self):
-        self.h, self.mna = self.get_input_pin_value(self.uuid("h_input"))
+        self.h, self.mna = self.get_input_pin_value("h_input")
 
         super().onlink_callback()
 

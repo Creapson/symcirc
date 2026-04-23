@@ -17,7 +17,7 @@ class ModifiedNodalAnalysis(Node):
         super().build()
 
     def onlink_callback(self):
-        self.data["circuit"] = self.get_input_pin_value(self.uuid("circuit_input_pin"))
+        self.data["circuit"] = self.get_input_pin_value("circuit_input_pin")
 
         from Modified_Node_Analysis import ModifiedNodalAnalysis
 

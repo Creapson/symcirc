@@ -25,9 +25,7 @@ class TransferFunctionNode(Node):
 
 
     def onlink_callback(self):
-        self.data["mna"] = self.get_input_pin_value(
-            self.uuid("num_results_input_pin")
-        )
+        self.data["mna"] = self.get_input_pin_value("num_results_input_pin")
 
         nodes = list(self.data["mna"].node_map.keys())
         dpg.configure_item(self.uuid("from_node"), items=nodes)
