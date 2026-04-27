@@ -3,7 +3,7 @@ from pydantic import Field
 from typing import Literal
 
 
-from gui.nodes.Node import Node, NodeType
+from gui.components.node_editor.nodes.Node import Node, NodeType
 from netlist.Circuit import Circuit
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 

@@ -1,7 +1,7 @@
 import dearpygui.dearpygui as dpg
 from pydantic import Field
 
-from gui.nodes.Node import Node, NodeType
+from gui.components.node_editor.nodes.Node import Node, NodeType
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 from typing import Literal, List
 

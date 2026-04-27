@@ -1,6 +1,6 @@
 import dearpygui.dearpygui as dpg
 
-from gui.nodes.Node import Node, NodeType
+from gui.components.node_editor.nodes.Node import Node, NodeType
 from gui.windows.ApproximatorWindow import ApproximatorWindow
 
 from typing import Literal

@@ -4,7 +4,7 @@ from typing import List, Dict, Literal
 
 from gui.windows.CircuitEditor import CircuitEditor
 
-from gui.nodes.Node import Node, NodeType
+from gui.components.node_editor.nodes.Node import Node, NodeType
 from netlist.Circuit import Circuit
 from parser.NetlistParser import get_circuit_from_file
 

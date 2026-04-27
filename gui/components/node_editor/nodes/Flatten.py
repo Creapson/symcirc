@@ -3,7 +3,7 @@ from typing import List, Dict, Literal
 
 from pydantic import Field
 
-from gui.nodes.Node import Node, NodeType
+from gui.components.node_editor.nodes.Node import Node, NodeType
 from gui.components.OutputPin import OutputPin
 from gui.windows.CircuitEditor import CircuitEditor
 from netlist.Circuit import Circuit
