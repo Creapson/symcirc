@@ -114,7 +114,9 @@ class FlattenNode(Node):
         super().build()
 
     def onlink_callback(self):
-        self.circuit = self.get_input_pin_value("file_path_pin")
+        circuit_dict = self.get_input_pin_value("file_path_pin")
+
+        self.circuit = Circuit.model_validate(circuit_dict)
 
         self.circuit.to_ai_string()
 
