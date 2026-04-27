@@ -122,14 +122,16 @@ class Node(BaseModel):
         if button_callback is not None:
             pin_type = PinType.CIRCUIT_EDIT
 
-        out_pin = OutputPin(
-                tag=tag,
-                text=text,
-                button_text=button_text,
-                pin_type=pin_type
-                )
-        out_pin.setup_pin(self.node_id, self)
-        self.output_pins[tag] = out_pin
+        # does pin already exist
+        if tag not in self.output_pins:
+            out_pin = OutputPin(
+                    tag=tag,
+                    text=text,
+                    button_text=button_text,
+                    pin_type=pin_type
+                    )
+            out_pin.setup_pin(self.node_id, self)
+            self.output_pins[tag] = out_pin
 
     def add_input_pin(self, tag="", text=""):
         input_pin = 0
@@ -160,28 +162,33 @@ class Node(BaseModel):
     def delink_callback(self):
         pass
 
-    def get_input_pin_value(self, input_pin_tag : str) -> Any:
+    def get_input_pin_value(self, input_pin_tag : str, default_value: Any = None) -> Any:
         if input_pin_tag in self.input_pins:
             input_pin = self.input_pins.get(input_pin_tag, None)
             from_pin = self.connections.get(input_pin, None)
 
-            if from_pin is None:
-                return None
+            if input_pin is None: return default_value
+            if from_pin is None: return default_value
 
             # traverse the connection to the connected node
             # and get the object from there
             from_node_id = dpg.get_item_parent(from_pin)
             from_node = self.editor.node_dic[from_node_id]
             output_values = from_node.output_values | from_node.non_persistent_output_values
-            return output_values.get(from_pin, None)
+            return output_values.get(from_pin, default_value)
 
         else:
-            return None
+            return default_value
 
     def update(self):
-        # when update is called all settings should be set
-        if (self.node_type != NodeType.NETLIST_PARSER):
-            self.do_propagation = True
+        # when the first calculation is done. We assume a change in
+        # inputs doesnt mean a change in the settings
+
+        # exceptions
+        if (self.node_type == NodeType.NETLIST_PARSER): return
+        if (self.node_type == NodeType.TRANSFER_FUNCTION): return
+
+        self.do_propagation = True
 
     def save(self):
         self.position = dpg.get_item_pos(self.node_id)

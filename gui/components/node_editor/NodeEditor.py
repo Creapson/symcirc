@@ -55,7 +55,7 @@ class NodeEditor(BaseModel):
         to_node_id = dpg.get_item_parent(to_pin)
         to_node = self.node_dic[to_node_id]
 
-        # you can not connect multiple outputs to one input
+        # you cannot connect multiple outputs to one input
         # check if the input pin already has a connection
         if to_pin not in to_node.connections:
             to_node.add_connection(to_pin, from_pin)

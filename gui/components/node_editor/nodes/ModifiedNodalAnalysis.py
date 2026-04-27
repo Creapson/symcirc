@@ -23,7 +23,8 @@ class ModifiedNodalAnalysisNode(Node):
         super().build()
 
     def onlink_callback(self):
-        self.circuit = self.get_input_pin_value("circuit_input_pin")
+        circuit_dict = self.get_input_pin_value("circuit_input_pin", Circuit())
+        self.circuit = Circuit.model_validate(circuit_dict)
 
         dpg.set_value(self.uuid("circuit_input_pin"), "Circuit connected!")
         super().onlink_callback()

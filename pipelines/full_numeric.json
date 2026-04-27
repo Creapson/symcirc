@@ -14,7 +14,7 @@
             "output_pins": {
                 "file_path_out": {
                     "tag": "file_path_out",
-                    "pin_id": 124,
+                    "pin_id": 63,
                     "text": "Selected file",
                     "pin_type": 0,
                     "button_text": ""
@@ -22,15 +22,15 @@
             },
             "input_pins": {},
             "output_values": {
-                "124": "C:\\Users\\Nils\\Documents\\Development\\symcirc\\test_circuits\\Emitteramp_deutsch.cir"
+                "63": "C:\\Users\\Nils\\Documents\\Development\\symcirc\\test_circuits\\Emitteramp_deutsch.cir"
             },
             "do_propagation": false
         },
-        "63": {
+        "66": {
             "label": "Netlist Parser Node",
             "position": [
-                470,
-                75
+                451,
+                84
             ],
             "data": {
                 "separator": "_",
@@ -38,24 +38,25 @@
                 "mosfet_model": "BSIM"
             },
             "node_type": 6,
-            "node_id": 63,
+            "node_id": 66,
             "connections": {
-                "69": 124
+                "69": 93,
+                "72": 63
             },
             "output_pins": {
                 "flattend_circuit": {
                     "tag": "flattend_circuit",
-                    "pin_id": 128,
+                    "pin_id": 96,
                     "text": "Flattend Circuit",
                     "pin_type": 1,
                     "button_text": "Edit Circuit"
                 }
             },
             "input_pins": {
-                "file_path_pin": 69
+                "file_path_pin": 72
             },
             "output_values": {
-                "128": {
+                "96": {
                     "name": "Emitteramp_deutsch",
                     "netlist_file_path": "C:\\Users\\Nils\\Documents\\Development\\symcirc\\test_circuits\\",
                     "params": {
@@ -338,32 +339,33 @@
             },
             "do_propagation": false
         },
-        "93": {
+        "100": {
             "label": "Flatten Node",
             "position": [
-                929,
-                70
+                906,
+                80
             ],
             "data": {},
             "node_type": 3,
-            "node_id": 93,
+            "node_id": 100,
             "connections": {
-                "97": 128
+                "105": 97,
+                "104": 96
             },
             "output_pins": {
                 "flattend_circuit_out_pin": {
                     "tag": "flattend_circuit_out_pin",
-                    "pin_id": 133,
+                    "pin_id": 131,
                     "text": "Circuit with flattend Models",
                     "pin_type": 1,
                     "button_text": "Edit Circuit"
                 }
             },
             "input_pins": {
-                "file_path_pin": 97
+                "file_path_pin": 104
             },
             "output_values": {
-                "133": {
+                "131": {
                     "name": "Emitteramp_deutsch",
                     "netlist_file_path": "C:\\Users\\Nils\\Documents\\Development\\symcirc\\test_circuits\\",
                     "params": {
@@ -591,16 +593,134 @@
             "do_propagation": true,
             "out_file_path": "",
             "element_list": []
+        },
+        "135": {
+            "label": "ModifiedNodalAnalysis Node",
+            "position": [
+                260,
+                412
+            ],
+            "data": {},
+            "node_type": 5,
+            "node_id": 135,
+            "connections": {
+                "138": 133,
+                "136": 131
+            },
+            "output_pins": {
+                "h_out": {
+                    "tag": "h_out",
+                    "pin_id": 142,
+                    "text": "H",
+                    "pin_type": 0,
+                    "button_text": ""
+                }
+            },
+            "input_pins": {
+                "circuit_input_pin": 136
+            },
+            "output_values": {},
+            "do_propagation": true
+        },
+        "145": {
+            "label": "TransferFunction Node",
+            "position": [
+                510,
+                418
+            ],
+            "data": {},
+            "node_type": 8,
+            "node_id": 145,
+            "connections": {
+                "149": 145,
+                "146": 142
+            },
+            "output_pins": {
+                "h_out": {
+                    "tag": "h_out",
+                    "pin_id": 155,
+                    "text": "H",
+                    "pin_type": 0,
+                    "button_text": ""
+                }
+            },
+            "input_pins": {
+                "num_results_input_pin": 146
+            },
+            "output_values": {},
+            "do_propagation": false
+        },
+        "158": {
+            "label": "NumericSolver",
+            "position": [
+                773,
+                409
+            ],
+            "data": {},
+            "node_type": 7,
+            "node_id": 158,
+            "connections": {
+                "163": 155
+            },
+            "output_pins": {
+                "line_out": {
+                    "tag": "line_out",
+                    "pin_id": 179,
+                    "text": "Numeric Values for BodePlots",
+                    "pin_type": 0,
+                    "button_text": ""
+                }
+            },
+            "input_pins": {
+                "h_input_pin": 163
+            },
+            "output_values": {},
+            "do_propagation": true
+        },
+        "182": {
+            "label": "BodePlot Node",
+            "position": [
+                1313,
+                350
+            ],
+            "data": {},
+            "node_type": 2,
+            "node_id": 182,
+            "connections": {
+                "183": 179
+            },
+            "output_pins": {},
+            "input_pins": {
+                "line_pin": 183
+            },
+            "output_values": {},
+            "do_propagation": false
         }
     },
     "links": {
-        "127": [
-            124,
-            69
+        "202": [
+            63,
+            72
         ],
-        "132": [
-            128,
-            97
+        "203": [
+            96,
+            104
+        ],
+        "204": [
+            131,
+            136
+        ],
+        "205": [
+            142,
+            146
+        ],
+        "206": [
+            155,
+            163
+        ],
+        "207": [
+            179,
+            183
         ]
     }
 }

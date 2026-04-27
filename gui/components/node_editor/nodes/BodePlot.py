@@ -98,7 +98,7 @@ class BodePlot(Node):
 
     def onlink_callback(self):
         freq_log, magnitude, phase = self.get_input_pin_value("line_pin")
-        self.populate_plot(freq_log.tolist(), magnitude.tolist(), phase.tolist())
+        self.populate_plot(freq_log, magnitude, phase)
         super().onlink_callback()
 
     def populate_plot(self, freq, mag, phase):

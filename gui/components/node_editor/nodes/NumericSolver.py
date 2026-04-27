@@ -1,11 +1,16 @@
 import dearpygui.dearpygui as dpg
 
 from gui.components.node_editor.nodes.Node import Node, NodeType
-from typing import Literal
+from typing import Literal, List
+from pydantic import Field
 
 
 class NumericSolver(Node):
     node_type: Literal[NodeType.NUMERIC_SOLVER] = NodeType.NUMERIC_SOLVER
+
+
+    h: List[float] = Field(default_factory=list, exclude=True)
+    sweep: List[float] = Field(default_factory=list, exclude=True)
 
     def build(self):
         with dpg.value_registry():
@@ -47,34 +52,26 @@ class NumericSolver(Node):
         super().build()
 
     def onlink_callback(self):
-        self.h = self.get_input_pin_value("h_input_pin")
+        self.h, self.sweep = self.get_input_pin_value("h_input_pin")
 
         super().onlink_callback()
 
     def update(self):
         import numpy as np
-        import sympy as sp
-
-        s = sp.symbols("s")
-        # --- 2. SymPy → numerische Funktion umwandeln ---
-        H_lambdified = sp.lambdify(s, self.h, "numpy")
-        # --- 3. Frequenzachse definieren ---
-        w = np.logspace(-2, 8, 10000)  # Kreisfrequenz
-        jw = 1j * w
-        H_eval = H_lambdified(jw)
 
         # create solved arrays for later plotting
-        freq_log = np.log10(w)
-        magnitude_db = 20 * np.log10(np.abs(H_eval))
-        phase_deg = np.angle(H_eval, deg=True)
+        freq_log = self.sweep
+        magnitude = np.abs(self.h)
+        phase_deg = np.angle(self.h, deg=True)
 
         print(freq_log)
-        print(magnitude_db)
+        print(magnitude)
         print(phase_deg)
 
         self.add_output_pin(tag="line_out", text="Numeric Values for BodePlots")
         self.add_output_pin_value(
-            "line_out", (freq_log, magnitude_db, phase_deg)
+            "line_out", (freq_log, magnitude, phase_deg),
+            is_persistence=False
         )
 
         super().update()

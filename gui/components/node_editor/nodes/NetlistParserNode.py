@@ -6,8 +6,6 @@ from gui.windows.CircuitEditor import CircuitEditor
 
 from gui.components.node_editor.nodes.Node import Node, NodeType
 from netlist.Circuit import Circuit
-from parser.NetlistParser import get_circuit_from_file
-
 
 class NetlistParserNode(Node):
     node_type: Literal[NodeType.NETLIST_PARSER] = NodeType.NETLIST_PARSER
@@ -104,10 +102,9 @@ class NetlistParserNode(Node):
         super().build()
 
     def onlink_callback(self):
-        filepath = self.get_input_pin_value("file_path_pin")
+        filepath = self.get_input_pin_value("file_path_pin", "")
 
         from pathlib import Path
-
         from parser.NetlistParser import get_circuit_from_file 
 
         self.circuit = get_circuit_from_file(filepath)

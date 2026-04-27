@@ -26,18 +26,24 @@ class TransferFunctionNode(Node):
 
 
     def onlink_callback(self):
-        self.sweep, self.mna = self.get_input_pin_value("num_results_input_pin")
+        self.sweep, self.mna = self.get_input_pin_value("num_results_input_pin", ([], None))
 
-        nodes = self.mna.get_unknowns_as_strings()
+        if self.mna is None:
+            nodes = ["Update MNA"]
+        else:
+            nodes = self.mna.get_unknowns_as_strings()
+
         dpg.configure_item(self.uuid("output_node"), items=nodes)
         super().onlink_callback()
 
     def update(self):
+
+        self.onlink_callback()
         # use the selected nodes
         node_out = dpg.get_value(self.uuid("output_node"))
 
         H = self.mna.solveNumerical(self.sweep, node_out)
 
         self.add_output_pin(tag="h_out", text="H")
-        self.add_output_pin_value("h_out", H.tolist())
+        self.add_output_pin_value("h_out", (H.tolist(), self.sweep), is_persistence=False)
         super().update()
