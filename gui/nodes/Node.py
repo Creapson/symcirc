@@ -3,6 +3,8 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import Any, Dict, Annotated, Union, Tuple, Literal, List
 from enum import IntEnum
 
+from gui.components.OutputPin import OutputPin, PinType
+
 class NodeType(IntEnum):
     BASE = 0
     APPROXIMATOR = 1
@@ -18,23 +20,24 @@ class NodeType(IntEnum):
 class Node(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    # persistent Data (this gets saved)
+    # persistent Data
     label: str
     position: List[int] = [0, 0]
     data: Dict[str, Any] = Field(default_factory=dict)
     node_type: Literal[NodeType.BASE] = NodeType.BASE    
+    node_id: Union[int, str] = Field(default=0)
+
+    connections: Dict[int, int] = Field(default_factory=dict)
+    output_pins: Dict[str, OutputPin] = Field(default_factory=dict)
+    input_pins: Dict[str, int] = Field(default_factory=dict)
+    output_values: Dict[int, Any] = Field(default_factory=dict)
 
     # non persistent data
-    node_id: Union[int, str] = Field(default=0)
     editor: Any = Field(default=None, exclude=True)
-    connections: Dict[int, int] = Field(default_factory=dict)
-    output_values: Dict[int, Any] = Field(default_factory=dict)
-    output_pins: Dict[str, int] = Field(default_factory=dict)
-    input_pins: Dict[str, int] = Field(default_factory=dict)
-    do_propagation: bool = Field(default=False)
+    non_persistent_output_values: Dict[int, Any] = Field(default_factory=dict, exclude=True)
 
+    do_propagation: bool = Field(default=False)
     id_transition_table: Dict[int, int] = Field(default_factory=dict, exclude=True)
-    non_persistent_output_values: Dict[str, Any] = Field(default_factory=dict, exclude=True)
 
     def setup(self, node_editor_tag):
         old_id = self.node_id
@@ -63,9 +66,9 @@ class Node(BaseModel):
         # create all missing output_pins
         tmp_dic = self.output_pins
         # self.output_pins = {}
-        for text_tag, pin_id in tmp_dic.items():
-            self.add_output_pin(tag=text_tag, text=pin_id)
-
+        for _, output_pin in tmp_dic.items():
+            output_pin.setup_pin(self.node_id, self)
+            self.id_transition_table.update(output_pin.id_transition_table)
 
     def delete_output_pins(self):
         for pin_tag, attr_id in list(self.output_pins.items()):
@@ -99,31 +102,34 @@ class Node(BaseModel):
             tag=tag,
         )
 
-    def add_output_pin_value(self, output_pin_tag, value, is_persistence:bool=True):
+    def add_output_pin_value(self, output_pin_tag:str, value:Any, is_persistence:bool=True):
         output_pin = self.output_pins.get(output_pin_tag, None)
+        if output_pin is None:
+            return
         if is_persistence:
-            self.output_values[output_pin] = value
+            self.output_values[output_pin.pin_id] = value
         else:
-            self.non_persistent_output_values[output_pin] = value
+            self.non_persistent_output_values[output_pin.pin_id] = value
 
 
         self.editor.propagate(output_pin)
-        print("Output Values", self.output_values)
+        print(f"Added output value to {output_pin_tag}")
+        #print("Output Values", self.output_values)
 
     def add_output_pin(self, tag="", text="", button_callback=None, button_text=""):
-        output_pin = 0
-        if not dpg.does_item_exist(self.uuid(tag)):
-            with self.add_output_attr() as output_pin:
-                with dpg.group(horizontal=True):
-                    dpg.add_text(text, tag=self.uuid(tag))
-                    if button_callback is not None:
-                        dpg.add_button(label=button_text, callback=button_callback)
-            if tag in self.output_pins:
-                self.id_transition_table[self.output_pins[tag]] = output_pin
-            self.output_pins[tag] = output_pin
+        pin_type = PinType.BASE
 
-        print("added output pin", output_pin)
-        return output_pin
+        if button_callback is not None:
+            pin_type = PinType.CIRCUIT_EDIT
+
+        out_pin = OutputPin(
+                tag=tag,
+                text=text,
+                button_text=button_text,
+                pin_type=pin_type
+                )
+        out_pin.setup_pin(self.node_id, self)
+        self.output_pins[tag] = out_pin
 
     def add_input_pin(self, tag="", text=""):
         input_pin = 0

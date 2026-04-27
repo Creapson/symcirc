@@ -1,7 +1,7 @@
 import dearpygui.dearpygui as dpg
 import json
 
-from gui.data.NodeEditor import NodeEditor
+from gui.components.NodeEditor import NodeEditor
 
 
 from gui.nodes.ApproximatorNode import ApproximatorNode
@@ -212,9 +212,6 @@ class NodeEditorWindow(Window):
             node.editor = self.node_editor
             new_id = node.setup(self.node_editor_tag)
             self.node_editor.node_dic[new_id] = node
-
-
-
 
         # create big transition table
         trans_dic = {}
