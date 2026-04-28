@@ -97,16 +97,16 @@ class BodePlot(Node):
         pass
 
     def onlink_callback(self):
-        freq_log, magnitude, phase = self.get_input_pin_value("line_pin")
+        freq_log, magnitude, phase = self.get_input_pin_value("line_pin", ([], [], []))
         self.populate_plot(freq_log, magnitude, phase)
         super().onlink_callback()
 
     def populate_plot(self, freq, mag, phase):
         if freq is not None and mag is not None:
-            dpg.set_value(self.uuid("mag_series"), [freq, mag])
+            dpg.set_value(self.uuid("mag_series"), [list(freq), list(mag)])
 
         if freq is not None and phase is not None:
-            dpg.set_value(self.uuid("phase_series"), [freq, phase])
+            dpg.set_value(self.uuid("phase_series"), [list(freq), list(phase)])
 
     def update(self):
         super().update()

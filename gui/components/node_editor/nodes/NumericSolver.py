@@ -52,7 +52,7 @@ class NumericSolver(Node):
         super().build()
 
     def onlink_callback(self):
-        self.h, self.sweep = self.get_input_pin_value("h_input_pin")
+        self.h, self.sweep = self.get_input_pin_value("h_input_pin", ([], []))
 
         super().onlink_callback()
 
@@ -60,17 +60,16 @@ class NumericSolver(Node):
         import numpy as np
 
         # create solved arrays for later plotting
-        freq_log = self.sweep
-        magnitude = np.abs(self.h)
-        phase_deg = np.angle(self.h, deg=True)
+        magnitude = np.abs(self.h).flatten().tolist()
+        phase_deg = np.angle(self.h, deg=True).flatten().tolist()
 
-        print(freq_log)
+        print(self.sweep)
         print(magnitude)
         print(phase_deg)
 
         self.add_output_pin(tag="line_out", text="Numeric Values for BodePlots")
         self.add_output_pin_value(
-            "line_out", (freq_log, magnitude, phase_deg),
+            "line_out", (self.sweep, magnitude, phase_deg),
             is_persistence=False
         )
 

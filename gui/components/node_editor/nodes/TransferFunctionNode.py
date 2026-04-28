@@ -37,8 +37,6 @@ class TransferFunctionNode(Node):
         super().onlink_callback()
 
     def update(self):
-
-        self.onlink_callback()
         # use the selected nodes
         node_out = dpg.get_value(self.uuid("output_node"))
 

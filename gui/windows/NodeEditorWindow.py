@@ -211,6 +211,7 @@ class NodeEditorWindow(Window):
         for _, node in old_dic.items():
             node.editor = self.node_editor
             new_id = node.setup(self.node_editor_tag)
+            node.connections = {}
             self.node_editor.node_dic[new_id] = node
 
         # create big transition table

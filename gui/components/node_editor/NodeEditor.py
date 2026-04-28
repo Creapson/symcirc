@@ -103,9 +103,9 @@ class NodeEditor(BaseModel):
 
     # when the output changes run onlink_callback on
     # all connected nodes to update the value
-    def propagate(self, output_pin_id):
+    def propagate(self, output_pin):
         for link_id, (from_pin, to_pin) in self.links.items():
-            if from_pin == output_pin_id:
+            if from_pin == output_pin.pin_id:
                 # get the node which should be
                 # updated
                 to_node_id = dpg.get_item_parent(to_pin)
