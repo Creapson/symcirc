@@ -24,13 +24,17 @@ class NodeEditorWindow(Window):
 
         super().__init__(title=self.title)
 
-    def add_node(self, node_constructor, label, pos=(0, 100)):
+    def add_node(self, node_constructor, label):
+        mouse_pos = dpg.get_mouse_pos(local=False)
+        editor_offset = [0, 0]
         self.node_editor.add_node(
                 node_editor_tag=self.node_editor_tag, 
                 node_constructor=node_constructor, 
                 label=label, 
-                pos=pos
+                pos=mouse_pos
                 )
+        dpg.configure_item(self.uuid("add_node_context_menu"), show=False)
+
     def save_node_editor(self, sender, app_data):
         try:
             file_path:str = app_data.get("file_path_name")
@@ -75,6 +79,71 @@ class NodeEditorWindow(Window):
     def delink_callback(self, sender, app_data):
         self.node_editor.delink_callback(sender=sender, app_data=app_data)
 
+    def handle_click(self, sender, app_data):
+        # right_click is '1'
+        if app_data == 1:
+            if dpg.is_item_hovered(self.node_editor_tag):
+                mouse_pos = dpg.get_mouse_pos(local=False)
+                dpg.set_item_pos(self.uuid("add_node_context_menu"), mouse_pos)
+                dpg.configure_item(self.uuid("add_node_context_menu"), show=True)
+            else:
+                dpg.configure_item(self.uuid("add_node_context_menu"), show=False)
+
+    def build_add_node_menu(self):
+        # Dictionary can now contain nested dictionaries for sub-menus
+        menu_structure = [
+            {
+                "Netlist": [
+                        ("ImportCircuit", ImportCircuit, "Circuit import Node"),
+                        ("NetlistParserNode", NetlistParserNode, "Netlist Parser Node"),
+                        ("Flatten", FlattenNode, "Flatten Node")
+                    ]
+            },
+            {
+                "Numeric": [
+                        ("ModifiedNodalAnalysis", ModifiedNodalAnalysisNode, "ModifiedNodalAnalysis Node"),
+                        ("TransferFunction Node", TransferFunctionNode, "TransferFunction Node"),
+                        ("NumericSolver", NumericSolver, "NumericSolver"),
+                    ]
+            },
+            {
+                "Symbolic": []
+            },
+            {
+                "Display": [
+                    ("BodeBlot", BodePlot, "BodePlot Node"),
+                ]
+            },
+            ("ApproximatorNode", ApproximatorNode, "Approximate"),
+        ]
+
+        def _create_menu_recursive(data):
+            if isinstance(data, dict):
+                for key, value in data.items():
+                    with dpg.menu(label=key):
+                        _create_menu_recursive(value)
+            
+            elif isinstance(data, list):
+                for item in data:
+                    if isinstance(item, dict):
+                        _create_menu_recursive(item)
+
+                    elif isinstance(item, list):
+                        for item_label, node_class, desc in data:
+                            dpg.add_menu_item(
+                                label=item_label, 
+                                callback=lambda: self.add_node(node_class, desc)
+                            )
+                    else:
+                        item_label, node_class, desc = item
+                        dpg.add_menu_item(
+                            label=item_label, 
+                            callback=lambda: self.add_node(node_class, desc)
+                        )
+
+        # Kick off the recursion
+        _create_menu_recursive(menu_structure)
+
     def build(self):
         # ---------- MENU BAR ----------
         with dpg.file_dialog(
@@ -96,6 +165,9 @@ class NodeEditorWindow(Window):
             height=400,
         ):
             dpg.add_file_extension(".json")
+
+        with dpg.window(tag=self.uuid("add_node_context_menu"), show=False, popup=True):
+            self.build_add_node_menu()
         
         with dpg.menu_bar():
             with dpg.menu(label="File"):
@@ -118,60 +190,7 @@ class NodeEditorWindow(Window):
                 dpg.add_menu_item(label="Redo", enabled=False)
                 # sub menu (dropdown with all node types
                 with dpg.menu(label="Add Node"):
-                    dpg.add_menu_item(
-                        label="ImportCircuit",
-                        callback=lambda: self.add_node(
-                            ImportCircuit, "Circuit import Node", (000, 100)
-                        ),
-                    )
-                    dpg.add_menu_item(
-                        label="NetlistParserNode",
-                        callback=lambda: self.add_node(
-                            NetlistParserNode, "Netlist Parser Node", (600, 100)
-                        ),
-                    )
-                    dpg.add_menu_item(
-                        label="ModifiedNodalAnalysis",
-                        callback=lambda: self.add_node(
-                            ModifiedNodalAnalysisNode,
-                            "ModifiedNodalAnalysis Node",
-                            (000, 300),
-                        ),
-                    )
-                    dpg.add_menu_item(
-                        label="TransferFunction Node",
-                        callback=lambda: self.add_node(
-                            TransferFunctionNode,
-                            "TransferFunction Node",
-                            (000, 300),
-                        ),
-                    )
-                    dpg.add_menu_item(
-                        label="BodeBlot",
-                        callback=lambda: self.add_node(
-                            BodePlot, "BodePlot Node", (300, 300)
-                        ),
-                    )
-                    dpg.add_menu_item(
-                        label="Flatten",
-                        callback=lambda: self.add_node(
-                            FlattenNode, "Flatten Node", (600, 300)
-                        ),
-                    )
-
-                    dpg.add_menu_item(
-                        label="NumericSolver",
-                        callback=lambda: self.add_node(
-                            NumericSolver, "NumericSolver", (600, 300)
-                        ),
-                    )
-
-                    dpg.add_menu_item(
-                        label="Approximator",
-                        callback=lambda: self.add_node(
-                            ApproximatorNode, "Approimate", (600, 300)
-                        ),
-                    )
+                    self.build_add_node_menu()
 
             with dpg.menu(label="Settings"):
                 dpg.add_menu_item(
@@ -199,6 +218,9 @@ class NodeEditorWindow(Window):
             delink_callback=self.delink_callback,
             minimap=True,
             minimap_location=dpg.mvNodeMiniMap_Location_BottomRight)
+
+        with dpg.handler_registry():
+            dpg.add_mouse_click_handler(callback=self.handle_click)
 
         self.setup_node_editor()
 
