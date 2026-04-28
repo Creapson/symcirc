@@ -1,5 +1,4 @@
 import dearpygui.dearpygui as dpg
-import json
 
 from gui.components.node_editor.NodeEditor import NodeEditor
 
@@ -89,8 +88,12 @@ class NodeEditorWindow(Window):
             else:
                 dpg.configure_item(self.uuid("add_node_context_menu"), show=False)
 
+    def _menu_callback(self, sender, app_data, user_data):
+        # user_data is the (node_class, desc) tuple we passed above
+        node_constructor, label = user_data
+        self.add_node(node_constructor, label)
+
     def build_add_node_menu(self):
-        # Dictionary can now contain nested dictionaries for sub-menus
         menu_structure = [
             {
                 "Netlist": [
@@ -105,9 +108,6 @@ class NodeEditorWindow(Window):
                         ("TransferFunction Node", TransferFunctionNode, "TransferFunction Node"),
                         ("NumericSolver", NumericSolver, "NumericSolver"),
                     ]
-            },
-            {
-                "Symbolic": []
             },
             {
                 "Display": [
@@ -125,23 +125,17 @@ class NodeEditorWindow(Window):
             
             elif isinstance(data, list):
                 for item in data:
-                    if isinstance(item, dict):
-                        _create_menu_recursive(item)
+                    _create_menu_recursive(item)
 
-                    elif isinstance(item, list):
-                        for item_label, node_class, desc in data:
-                            dpg.add_menu_item(
-                                label=item_label, 
-                                callback=lambda: self.add_node(node_class, desc)
-                            )
-                    else:
-                        item_label, node_class, desc = item
-                        dpg.add_menu_item(
-                            label=item_label, 
-                            callback=lambda: self.add_node(node_class, desc)
-                        )
+            elif isinstance(data, tuple):
+                node_label, node_class, desc = data
+                
+                dpg.add_menu_item(
+                    label=node_label,
+                    callback=self._menu_callback,
+                    user_data=(node_class, desc)
+                )
 
-        # Kick off the recursion
         _create_menu_recursive(menu_structure)
 
     def build(self):

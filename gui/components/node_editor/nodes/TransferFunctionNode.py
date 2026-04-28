@@ -32,6 +32,18 @@ class TransferFunctionNode(Node):
             nodes = ["Update MNA"]
         else:
             nodes = self.mna.get_unknowns_as_strings()
+            inputs = self.mna.get_System_Inputs()
+
+            with self.add_static_attr():
+                with dpg.tree_node(label="Advanced Settings"):
+                    for name in inputs:
+                        if name == "0": continue
+                        with dpg.group(horizontal=True):
+                            dpg.add_checkbox(label="Enabled", callback=lambda: dpg.configure_item(self.uuid(name), enabled=False))
+                            dpg.add_text(name)
+                            dpg.add_input_float(width=100)
+
+
 
         dpg.configure_item(self.uuid("output_node"), items=nodes)
         super().onlink_callback()
@@ -40,7 +52,7 @@ class TransferFunctionNode(Node):
         # use the selected nodes
         node_out = dpg.get_value(self.uuid("output_node"))
 
-        H = self.mna.solveNumerical(self.sweep, node_out)
+        H = self.mna.solveNumerical(self.sweep, node_out, )
 
         self.add_output_pin(tag="h_out", text="H")
         self.add_output_pin_value("h_out", (H.tolist(), self.sweep), is_persistence=False)
