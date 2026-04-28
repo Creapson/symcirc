@@ -1,27 +1,30 @@
 import dearpygui.dearpygui as dpg
+from numpy import sort
 
+from Approximate import Approximation
 from gui.windows.Window import Window
 
 
 class ApproximatorWindow(Window):
-    def __init__(self, h, mna, parent_id=None):
+    def __init__(self, sweep, mna, par_node, parent_id=None):
         if parent_id is not None:
             self.title = f"{parent_id}_approx_settings_window"
         else:
             self.title = "approx_settings_window"
 
-        self.h = h
+        self.par_node = par_node
+        self.sweep = sweep
         self.mna = mna
         self.approximation_points = []
         self.drag_lines = []
         self.row_sources = {}
-        # map mag_drag_line -> (freq_input, error_input)
         self.drag_to_inputs = {}
+        self.mna_approx = None
 
         self.approx_mag = None
         self.approx_phase = None
+
         super().__init__(title=self.title, autosize=False)
-        pass
 
     def update(self):
         import sympy as sp
@@ -31,33 +34,32 @@ class ApproximatorWindow(Window):
         ap = Approximation(self.mna)
         print(self.approximation_points)
 
-        from_node = "V_" + dpg.get_value(self.uuid("from_node"))
-        to_node = "V_" + dpg.get_value(self.uuid("to_node"))
+        to_node = dpg.get_value(self.uuid("to_node"))
+        from_node = dpg.get_value(self.uuid("from_node"))
 
-        self.approx = ap.approximate(
+        elimination_method = dpg.get_value(self.uuid("elim_mothod"))
+        sorting_method = dpg.get_value(self.uuid("sorting_method"))
+
+        self.mna_approx = ap.approximate(
             sp.symbols(from_node),
             sp.symbols(to_node),
             self.approximation_points,
-            "tbt",
-            0.1,
-            "column",
-            0,
+            elimination_method,
+            0.6,
+            sorting_method,
+            1,
         )
 
-        self.approx = sp.simplify(self.approx)
-
-        approx_num = self.approx.subs(self.mna.value_dict)
+        numeric_values = self.mna_approx.solveNumerical(self.sweep, to_node)
 
         # calculate numeric values and plot them
-        freq_log, magnitude_db, phase_deg = self.calculate_numeric_values(approx_num)
+        freq_log, magnitude_db, phase_deg = self.calculate_numeric_values(numeric_values)
         self.add_plot_line(freq_log, magnitude_db, phase_deg, "Approximation")
         # show approx_func as Text
-        dpg.configure_item(
-            self.uuid("approx_func_txt"), default_value=f"TF: {str(self.approx)}"
-        )
-
-        print(self.approx)
-
+        # dpg.configure_item(
+        #     self.uuid("approx_func_txt"), default_value=f"TF: {str(self.approx)}"
+        # )
+        self.par_node.update()
         super().update()
 
     def add_plot_line(self, freq_log, magnitude_db, phase_deg, label="None"):
@@ -70,16 +72,16 @@ class ApproximatorWindow(Window):
 
         # magnitude
         dpg.add_line_series(
-            freq_log.tolist(),
-            magnitude_db.tolist(),
+            freq_log,
+            magnitude_db,
             label=label,
             tag=self.uuid(label + "_mag"),
             parent=self.uuid("y_axis_mag"),
         )
         # phase
         dpg.add_line_series(
-            freq_log.tolist(),
-            phase_deg.tolist(),
+            freq_log,
+            phase_deg,
             label=label,
             tag=self.uuid(label + "_phase"),
             parent=self.uuid("y_axis_phase"),
@@ -87,14 +89,13 @@ class ApproximatorWindow(Window):
 
     def build(self):
         # add selection for the transfer-function
-        nodes = list(self.mna.node_map.keys())
-        with dpg.group(horizontal=True):
-            dpg.add_text("From Node:")
-            dpg.add_combo(items=nodes, tag=self.uuid("from_node"))
-
+        nodes = self.mna.get_unknowns_as_strings()
         with dpg.group(horizontal=True):
             dpg.add_text("To Node:")
             dpg.add_combo(items=nodes, tag=self.uuid("to_node"))
+        with dpg.group(horizontal=True):
+            dpg.add_text("From Node:")
+            dpg.add_combo(items=nodes, tag=self.uuid("from_node"))
 
         dpg.add_button(label="Confirm TransferFunction", callback=self.tf_selected)
 
@@ -109,6 +110,16 @@ class ApproximatorWindow(Window):
             dpg.add_table_column(label="Error")
         pass
 
+        sort_methods = Approximation.get_Sorting_Methods()
+        with dpg.group(horizontal=True):
+            dpg.add_text("Sorting Method")
+            dpg.add_combo(items=sort_methods, tag=self.uuid("sorting_method"), default_value=sort_methods[0])
+
+        elim_methods = Approximation.get_Elimination_Methods()
+        with dpg.group(horizontal=True):
+            dpg.add_text("Elimination Method")
+            dpg.add_combo(items=elim_methods, tag=self.uuid("elim_mothod"), default_value=elim_methods[0])
+
         dpg.add_text(
             default_value="Not Calculated yet!", tag=self.uuid("approx_func_txt")
         )
@@ -118,43 +129,20 @@ class ApproximatorWindow(Window):
         super().build()
 
     def tf_selected(self, sender, app_data):
-        import sympy as sp
+        to_node = dpg.get_value(self.uuid("to_node"))
 
-        from_node = "V_" + dpg.get_value(self.uuid("from_node"))
-        to_node = "V_" + dpg.get_value(self.uuid("to_node"))
+        print(self.sweep)
+        print(to_node)
+        h = self.mna.solveNumerical(self.sweep, to_node)
 
-        num_results = self.mna.solveNumerical(self.mna.value_dict)
-
-        self.h = num_results[sp.symbols(to_node)] / num_results[sp.symbols(from_node)]
-
-        freq_log, magnitude_db, phase_deg = self.calculate_numeric_values(self.h)
+        freq_log, magnitude_db, phase_deg = self.calculate_numeric_values(h)
         self.add_plot_line(freq_log, magnitude_db, phase_deg, "Numeric Calculation")
 
-    def calculate_numeric_values(self, transfer_func):
+    def calculate_numeric_values(self, h):
         import numpy as np
-        import sympy as sp
-
-        s = sp.symbols("s")
-        H_lambdified = sp.lambdify(s, transfer_func, "numpy")
-        w = np.logspace(-2, 10, 10000)  # Kreisfrequenz
-        jw = 1j * w
-
-        H_eval = np.asarray(H_lambdified(jw), dtype=complex)
-
-        if H_eval.shape == ():  # scalar → broadcast
-            H_eval = np.full_like(w, H_eval, dtype=complex)
-
-        # create solved arrays for later plotting
-        freq_log = w
-        magnitude_db = 20 * np.log10(np.abs(H_eval))
-        phase_deg = np.angle(H_eval, deg=True)
-
-        print("freq:\t", freq_log)
-        print(type(freq_log))
-        print("mag:\t", magnitude_db)
-        print(type(magnitude_db))
-        print("phase:\t", phase_deg)
-        print(type(phase_deg))
+        freq_log = self.sweep
+        magnitude_db = 20 * np.log10(np.abs(h)).flatten().tolist()
+        phase_deg = np.unwrap(np.angle(h, deg=True), axis=0).flatten().tolist()
 
         return freq_log, magnitude_db, phase_deg
 

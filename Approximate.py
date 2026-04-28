@@ -17,11 +17,13 @@ class Approximation:
         self.analysis = equation_formulator
         warnings.filterwarnings("error", category=scipy.LinAlgWarning)
         
-    def get_Elimination_Methods(self):
-        return ["term-by-term"]
+    @staticmethod
+    def get_Elimination_Methods():
+        return list(("term-by-term",))
     
-    def get_Sorting_Methods(self):
-        return ["max", "avg", "column"]
+    @staticmethod
+    def get_Sorting_Methods():
+        return list(("max", "avg", "column"))
 
 
     def generate_term_list(self, matrix):

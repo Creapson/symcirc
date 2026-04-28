@@ -1,0 +1,838 @@
+{
+    "title": "Node Editor",
+    "node_dic": {
+        "71": {
+            "label": "Circuit import Node",
+            "position": [
+                -1056,
+                346
+            ],
+            "data": {},
+            "node_type": 4,
+            "node_id": 71,
+            "connections": {},
+            "output_pins": {
+                "file_path_out": {
+                    "tag": "file_path_out",
+                    "pin_id": 80,
+                    "text": "Selected file",
+                    "pin_type": 0,
+                    "button_text": ""
+                }
+            },
+            "input_pins": {},
+            "output_values": {
+                "80": "C:\\Users\\Nils\\Documents\\Development\\symcirc\\test_circuits\\Emitteramp_deutsch.cir"
+            },
+            "do_propagation": false
+        },
+        "83": {
+            "label": "Netlist Parser Node",
+            "position": [
+                -645,
+                344
+            ],
+            "data": {
+                "separator": "_",
+                "bipolar_model": "beta_with_r_be",
+                "mosfet_model": "BSIM"
+            },
+            "node_type": 6,
+            "node_id": 83,
+            "connections": {
+                "89": 80
+            },
+            "output_pins": {
+                "flattend_circuit": {
+                    "tag": "flattend_circuit",
+                    "pin_id": 113,
+                    "text": "Flattend Circuit",
+                    "pin_type": 1,
+                    "button_text": "Edit Circuit"
+                }
+            },
+            "input_pins": {
+                "file_path_pin": 89
+            },
+            "output_values": {
+                "113": {
+                    "name": "Emitteramp_deutsch",
+                    "netlist_file_path": "C:\\Users\\Nils\\Documents\\Development\\symcirc\\test_circuits\\",
+                    "params": {
+                        "sweep": "DEC 101 1.0 1000000000.0"
+                    },
+                    "inner_connecting_nodes": [],
+                    "bipolar_model": "beta_with_r_be",
+                    "mosfet_model": "BSIM",
+                    "nodes": [
+                        "4",
+                        "3",
+                        "5",
+                        "6",
+                        "0",
+                        "1",
+                        "2",
+                        "Q_Q1.Q2N2222_Q_Q1_ee"
+                    ],
+                    "elements": [
+                        {
+                            "name": "Q_Q1",
+                            "symbol": "",
+                            "connections": [
+                                "4",
+                                "3",
+                                "5"
+                            ],
+                            "type": "Q",
+                            "params": {
+                                "ref_model": "Q2N2222",
+                                "bipolar_model": "beta_with_r_be",
+                                "mosfet_model": "BSIM",
+                                "MODEL": "Q2N2222",
+                                "IB": "1.15e-05",
+                                "IC": "0.0019",
+                                "VBE": "0.661",
+                                "VBC": "-4.55",
+                                "VCE": "5.21",
+                                "BETADC": "165.0",
+                                "GM": "0.073",
+                                "RPI": "2480.0",
+                                "RX": "10.0",
+                                "RO": "41400.0",
+                                "CBE": "6.68e-11",
+                                "CBC": "3.75e-12",
+                                "CJS": "0.0",
+                                "BETAAC": "181.0",
+                                "CBX": "0.0",
+                                "FT": "165000000.0"
+                            }
+                        },
+                        {
+                            "name": "Vcc",
+                            "symbol": "",
+                            "connections": [
+                                "6",
+                                "0"
+                            ],
+                            "type": "V",
+                            "params": {
+                                "value_dc": "15"
+                            }
+                        },
+                        {
+                            "name": "Cin",
+                            "symbol": "",
+                            "connections": [
+                                "1",
+                                "3"
+                            ],
+                            "type": "C",
+                            "params": {
+                                "value_dc": "100n"
+                            }
+                        },
+                        {
+                            "name": "R1",
+                            "symbol": "",
+                            "connections": [
+                                "6",
+                                "3"
+                            ],
+                            "type": "R",
+                            "params": {
+                                "value_dc": "95331.9"
+                            }
+                        },
+                        {
+                            "name": "R2",
+                            "symbol": "",
+                            "connections": [
+                                "3",
+                                "0"
+                            ],
+                            "type": "R",
+                            "params": {
+                                "value_dc": "25683.2"
+                            }
+                        },
+                        {
+                            "name": "RC",
+                            "symbol": "",
+                            "connections": [
+                                "6",
+                                "4"
+                            ],
+                            "type": "R",
+                            "params": {
+                                "value_dc": "3947.37"
+                            }
+                        },
+                        {
+                            "name": "RL",
+                            "symbol": "",
+                            "connections": [
+                                "2",
+                                "0"
+                            ],
+                            "type": "R",
+                            "params": {
+                                "value_dc": "1000k"
+                            }
+                        },
+                        {
+                            "name": "Cout",
+                            "symbol": "",
+                            "connections": [
+                                "4",
+                                "2"
+                            ],
+                            "type": "C",
+                            "params": {
+                                "value_dc": "10n"
+                            }
+                        },
+                        {
+                            "name": "RE",
+                            "symbol": "",
+                            "connections": [
+                                "5",
+                                "0"
+                            ],
+                            "type": "R",
+                            "params": {
+                                "value_dc": "1198.02"
+                            }
+                        },
+                        {
+                            "name": "VIN",
+                            "symbol": "",
+                            "connections": [
+                                "1",
+                                "0"
+                            ],
+                            "type": "V",
+                            "params": {
+                                "value_ac": "1"
+                            }
+                        }
+                    ],
+                    "models": {
+                        "Q2N2222": {
+                            "name": "Q2N2222",
+                            "filename": "",
+                            "params": {
+                                "type": "NPN",
+                                "IS": "14.340000E-15",
+                                "BF": "255.9",
+                                "NF": "1",
+                                "VAF": "74.03",
+                                "IKF": ".2847",
+                                "ISE": "14.340000E-15",
+                                "NE": "1.307",
+                                "BR": "6.092",
+                                "NR": "1",
+                                "RB": "10",
+                                "RC": "1",
+                                "CJE": "22.010000E-12",
+                                "MJE": ".377",
+                                "CJC": "7.306000E-12",
+                                "MJC": ".3416",
+                                "TF": "411.100000E-12",
+                                "XTF": "3",
+                                "VTF": "1.7",
+                                "ITF": ".6",
+                                "TR": "46.910000E-09",
+                                "XTB": "1.5"
+                            }
+                        }
+                    },
+                    "subcircuits": {
+                        "Q_Q1.Q2N2222": {
+                            "name": "beta_with_r_be",
+                            "netlist_file_path": "",
+                            "params": {},
+                            "inner_connecting_nodes": [
+                                "c",
+                                "b",
+                                "e"
+                            ],
+                            "bipolar_model": "beta_with_r_be_G",
+                            "mosfet_model": "BSIM",
+                            "nodes": [
+                                "b",
+                                "ee",
+                                "c",
+                                "e"
+                            ],
+                            "elements": [
+                                {
+                                    "name": "R_be",
+                                    "symbol": "R_be",
+                                    "connections": [
+                                        "b",
+                                        "ee"
+                                    ],
+                                    "type": "R",
+                                    "params": {
+                                        "value_dc": "2480.0"
+                                    }
+                                },
+                                {
+                                    "name": "C_be",
+                                    "symbol": "C_be",
+                                    "connections": [
+                                        "b",
+                                        "ee"
+                                    ],
+                                    "type": "C",
+                                    "params": {
+                                        "value_dc": "6.68e-11"
+                                    }
+                                },
+                                {
+                                    "name": "C_bc",
+                                    "symbol": "C_be",
+                                    "connections": [
+                                        "b",
+                                        "c"
+                                    ],
+                                    "type": "C",
+                                    "params": {
+                                        "value_dc": "3.75e-12"
+                                    }
+                                },
+                                {
+                                    "name": "R_ce",
+                                    "symbol": "R_ce",
+                                    "connections": [
+                                        "c",
+                                        "e"
+                                    ],
+                                    "type": "R",
+                                    "params": {
+                                        "value_dc": "41400.0"
+                                    }
+                                },
+                                {
+                                    "name": "F1",
+                                    "symbol": "F1",
+                                    "connections": [
+                                        "c",
+                                        "e",
+                                        "ee",
+                                        "e"
+                                    ],
+                                    "type": "F",
+                                    "params": {
+                                        "value": "181.0"
+                                    }
+                                }
+                            ],
+                            "models": {},
+                            "subcircuits": {},
+                            "separator": "."
+                        }
+                    },
+                    "separator": "_"
+                }
+            },
+            "do_propagation": false
+        },
+        "117": {
+            "label": "Flatten Node",
+            "position": [
+                -179,
+                344
+            ],
+            "data": {},
+            "node_type": 3,
+            "node_id": 117,
+            "connections": {
+                "121": 113
+            },
+            "output_pins": {
+                "flattend_circuit_out_pin": {
+                    "tag": "flattend_circuit_out_pin",
+                    "pin_id": 148,
+                    "text": "Circuit with flattend Models",
+                    "pin_type": 1,
+                    "button_text": "Edit Circuit"
+                }
+            },
+            "input_pins": {
+                "file_path_pin": 121
+            },
+            "output_values": {
+                "148": {
+                    "name": "Emitteramp_deutsch",
+                    "netlist_file_path": "C:\\Users\\Nils\\Documents\\Development\\symcirc\\test_circuits\\",
+                    "params": {
+                        "sweep": "DEC 101 1.0 1000000000.0"
+                    },
+                    "inner_connecting_nodes": [],
+                    "bipolar_model": "beta_with_r_be",
+                    "mosfet_model": "BSIM",
+                    "nodes": [
+                        "4",
+                        "3",
+                        "5",
+                        "6",
+                        "0",
+                        "1",
+                        "2",
+                        "Q_Q1.Q2N2222_Q_Q1_ee"
+                    ],
+                    "elements": [
+                        {
+                            "name": "R_be_Q_Q1",
+                            "symbol": "R_be",
+                            "connections": [
+                                "3",
+                                "Q_Q1.Q2N2222_Q_Q1_ee"
+                            ],
+                            "type": "R",
+                            "params": {
+                                "value_dc": "2480.0"
+                            }
+                        },
+                        {
+                            "name": "C_be_Q_Q1",
+                            "symbol": "C_be",
+                            "connections": [
+                                "3",
+                                "Q_Q1.Q2N2222_Q_Q1_ee"
+                            ],
+                            "type": "C",
+                            "params": {
+                                "value_dc": "6.68e-11"
+                            }
+                        },
+                        {
+                            "name": "C_bc_Q_Q1",
+                            "symbol": "C_be",
+                            "connections": [
+                                "3",
+                                "4"
+                            ],
+                            "type": "C",
+                            "params": {
+                                "value_dc": "3.75e-12"
+                            }
+                        },
+                        {
+                            "name": "R_ce_Q_Q1",
+                            "symbol": "R_ce",
+                            "connections": [
+                                "4",
+                                "5"
+                            ],
+                            "type": "R",
+                            "params": {
+                                "value_dc": "41400.0"
+                            }
+                        },
+                        {
+                            "name": "F1_Q_Q1",
+                            "symbol": "F1",
+                            "connections": [
+                                "4",
+                                "5",
+                                "Q_Q1.Q2N2222_Q_Q1_ee",
+                                "5"
+                            ],
+                            "type": "F",
+                            "params": {
+                                "value": "181.0"
+                            }
+                        },
+                        {
+                            "name": "Vcc",
+                            "symbol": "",
+                            "connections": [
+                                "6",
+                                "0"
+                            ],
+                            "type": "V",
+                            "params": {
+                                "value_dc": "15"
+                            }
+                        },
+                        {
+                            "name": "Cin",
+                            "symbol": "",
+                            "connections": [
+                                "1",
+                                "3"
+                            ],
+                            "type": "C",
+                            "params": {
+                                "value_dc": "100n"
+                            }
+                        },
+                        {
+                            "name": "R1",
+                            "symbol": "",
+                            "connections": [
+                                "6",
+                                "3"
+                            ],
+                            "type": "R",
+                            "params": {
+                                "value_dc": "95331.9"
+                            }
+                        },
+                        {
+                            "name": "R2",
+                            "symbol": "",
+                            "connections": [
+                                "3",
+                                "0"
+                            ],
+                            "type": "R",
+                            "params": {
+                                "value_dc": "25683.2"
+                            }
+                        },
+                        {
+                            "name": "RC",
+                            "symbol": "",
+                            "connections": [
+                                "6",
+                                "4"
+                            ],
+                            "type": "R",
+                            "params": {
+                                "value_dc": "3947.37"
+                            }
+                        },
+                        {
+                            "name": "RL",
+                            "symbol": "",
+                            "connections": [
+                                "2",
+                                "0"
+                            ],
+                            "type": "R",
+                            "params": {
+                                "value_dc": "1000k"
+                            }
+                        },
+                        {
+                            "name": "Cout",
+                            "symbol": "",
+                            "connections": [
+                                "4",
+                                "2"
+                            ],
+                            "type": "C",
+                            "params": {
+                                "value_dc": "10n"
+                            }
+                        },
+                        {
+                            "name": "RE",
+                            "symbol": "",
+                            "connections": [
+                                "5",
+                                "0"
+                            ],
+                            "type": "R",
+                            "params": {
+                                "value_dc": "1198.02"
+                            }
+                        },
+                        {
+                            "name": "VIN",
+                            "symbol": "",
+                            "connections": [
+                                "1",
+                                "0"
+                            ],
+                            "type": "V",
+                            "params": {
+                                "value_ac": "1"
+                            }
+                        }
+                    ],
+                    "models": {
+                        "Q2N2222": {
+                            "name": "Q2N2222",
+                            "filename": "",
+                            "params": {
+                                "type": "NPN",
+                                "IS": "14.340000E-15",
+                                "BF": "255.9",
+                                "NF": "1",
+                                "VAF": "74.03",
+                                "IKF": ".2847",
+                                "ISE": "14.340000E-15",
+                                "NE": "1.307",
+                                "BR": "6.092",
+                                "NR": "1",
+                                "RB": "10",
+                                "RC": "1",
+                                "CJE": "22.010000E-12",
+                                "MJE": ".377",
+                                "CJC": "7.306000E-12",
+                                "MJC": ".3416",
+                                "TF": "411.100000E-12",
+                                "XTF": "3",
+                                "VTF": "1.7",
+                                "ITF": ".6",
+                                "TR": "46.910000E-09",
+                                "XTB": "1.5"
+                            }
+                        }
+                    },
+                    "subcircuits": {},
+                    "separator": "_"
+                }
+            },
+            "do_propagation": true,
+            "out_file_path": "",
+            "element_list": []
+        },
+        "152": {
+            "label": "ModifiedNodalAnalysis Node",
+            "position": [
+                286,
+                345
+            ],
+            "data": {},
+            "node_type": 5,
+            "node_id": 152,
+            "connections": {
+                "153": 148
+            },
+            "output_pins": {
+                "h_out": {
+                    "tag": "h_out",
+                    "pin_id": 159,
+                    "text": "H",
+                    "pin_type": 0,
+                    "button_text": ""
+                }
+            },
+            "input_pins": {
+                "circuit_input_pin": 153
+            },
+            "output_values": {},
+            "do_propagation": true
+        },
+        "162": {
+            "label": "TransferFunction Node",
+            "position": [
+                693,
+                346
+            ],
+            "data": {},
+            "node_type": 8,
+            "node_id": 162,
+            "connections": {
+                "163": 159
+            },
+            "output_pins": {
+                "h_out": {
+                    "tag": "h_out",
+                    "pin_id": 172,
+                    "text": "H",
+                    "pin_type": 0,
+                    "button_text": ""
+                }
+            },
+            "input_pins": {
+                "num_results_input_pin": 163
+            },
+            "output_values": {},
+            "do_propagation": false
+        },
+        "175": {
+            "label": "NumericSolver",
+            "position": [
+                925,
+                344
+            ],
+            "data": {},
+            "node_type": 7,
+            "node_id": 175,
+            "connections": {
+                "180": 172
+            },
+            "output_pins": {
+                "line_out": {
+                    "tag": "line_out",
+                    "pin_id": 196,
+                    "text": "Numeric Values for BodePlots",
+                    "pin_type": 0,
+                    "button_text": ""
+                }
+            },
+            "input_pins": {
+                "h_input_pin": 180
+            },
+            "output_values": {},
+            "do_propagation": true
+        },
+        "199": {
+            "label": "BodePlot Node",
+            "position": [
+                1883,
+                433
+            ],
+            "data": {},
+            "node_type": 2,
+            "node_id": 199,
+            "connections": {
+                "200": 196
+            },
+            "output_pins": {},
+            "input_pins": {
+                "line_pin": 200
+            },
+            "output_values": {},
+            "do_propagation": false
+        },
+        "231": {
+            "label": "Approximate",
+            "position": [
+                519,
+                552
+            ],
+            "data": {},
+            "node_type": 1,
+            "node_id": 231,
+            "connections": {
+                "232": 159
+            },
+            "output_pins": {
+                "approx_mna": {
+                    "tag": "approx_mna",
+                    "pin_id": 279,
+                    "text": "Approximated MNA",
+                    "pin_type": 0,
+                    "button_text": ""
+                }
+            },
+            "input_pins": {
+                "h_input": 232
+            },
+            "output_values": {},
+            "do_propagation": false
+        },
+        "282": {
+            "label": "TransferFunction Node",
+            "position": [
+                692,
+                549
+            ],
+            "data": {},
+            "node_type": 8,
+            "node_id": 282,
+            "connections": {
+                "283": 279
+            },
+            "output_pins": {
+                "h_out": {
+                    "tag": "h_out",
+                    "pin_id": 320,
+                    "text": "H",
+                    "pin_type": 0,
+                    "button_text": ""
+                }
+            },
+            "input_pins": {
+                "num_results_input_pin": 283
+            },
+            "output_values": {},
+            "do_propagation": false
+        },
+        "292": {
+            "label": "NumericSolver",
+            "position": [
+                923,
+                548
+            ],
+            "data": {},
+            "node_type": 7,
+            "node_id": 292,
+            "connections": {
+                "297": 320
+            },
+            "output_pins": {
+                "line_out": {
+                    "tag": "line_out",
+                    "pin_id": 324,
+                    "text": "Numeric Values for BodePlots",
+                    "pin_type": 0,
+                    "button_text": ""
+                }
+            },
+            "input_pins": {
+                "h_input_pin": 297
+            },
+            "output_values": {},
+            "do_propagation": true
+        },
+        "327": {
+            "label": "BodePlot Node",
+            "position": [
+                1447,
+                430
+            ],
+            "data": {},
+            "node_type": 2,
+            "node_id": 327,
+            "connections": {
+                "328": 324
+            },
+            "output_pins": {},
+            "input_pins": {
+                "line_pin": 328
+            },
+            "output_values": {},
+            "do_propagation": false
+        }
+    },
+    "links": {
+        "219": [
+            80,
+            89
+        ],
+        "220": [
+            113,
+            121
+        ],
+        "221": [
+            148,
+            153
+        ],
+        "228": [
+            159,
+            163
+        ],
+        "229": [
+            172,
+            180
+        ],
+        "230": [
+            196,
+            200
+        ],
+        "238": [
+            159,
+            232
+        ],
+        "319": [
+            279,
+            283
+        ],
+        "323": [
+            320,
+            297
+        ],
+        "347": [
+            324,
+            328
+        ]
+    }
+}

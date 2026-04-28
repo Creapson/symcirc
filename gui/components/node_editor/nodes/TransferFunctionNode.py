@@ -52,7 +52,7 @@ class TransferFunctionNode(Node):
         # use the selected nodes
         node_out = dpg.get_value(self.uuid("output_node"))
 
-        H = self.mna.solveNumerical(self.sweep, node_out, )
+        H = self.mna.solveNumerical(self.sweep, node_out)
 
         self.add_output_pin(tag="h_out", text="H")
         self.add_output_pin_value("h_out", (H.tolist(), self.sweep), is_persistence=False)

@@ -187,6 +187,7 @@ class Node(BaseModel):
         # exceptions
         if (self.node_type == NodeType.NETLIST_PARSER): return
         if (self.node_type == NodeType.TRANSFER_FUNCTION): return
+        if (self.node_type == NodeType.APPROXIMATOR): return
 
         self.do_propagation = True
 

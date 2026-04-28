@@ -61,7 +61,7 @@ class NumericSolver(Node):
 
         # create solved arrays for later plotting
         magnitude = np.abs(self.h).flatten().tolist()
-        phase_deg = np.angle(self.h, deg=True).flatten().tolist()
+        phase_deg = np.unwrap(np.angle(self.h, deg=True), axis=0).flatten().tolist()
 
         print(self.sweep)
         print(magnitude)
