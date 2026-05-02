@@ -265,6 +265,19 @@ class Circuit(BaseModel):
         self.elements = new_elements
         self.update_nodes()
 
+    def remove_unused_models(self):
+        used_models = []
+        for element in self.elements:
+            ref_model = element.params.get("ref_model", "None")
+            if ref_model != "None":
+                used_models.append(ref_model)
+
+        tmp_dic = self.models.copy()
+        for name,_ in tmp_dic.items():
+            if name not in used_models:
+                del self.models[name]
+                print(f"deleted unsed model:  {name}")
+
     # --------------------------------------------------
     # DEBUG STRING
     # --------------------------------------------------

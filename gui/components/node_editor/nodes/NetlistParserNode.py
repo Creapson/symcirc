@@ -102,22 +102,6 @@ class NetlistParserNode(Node):
         super().build()
 
     def onlink_callback(self):
-        filepath = self.get_input_pin_value("file_path_pin", "")
-
-        from pathlib import Path
-        from parser.NetlistParser import get_circuit_from_file 
-
-        self.circuit = get_circuit_from_file(filepath)
-
-        # extract name and folder_path from the file_path
-        p = Path(filepath)
-
-        ct_name = p.stem
-        ct_folder_path = str(p.parent) + "\\"
-
-        self.circuit.set_name(ct_name)
-        self.circuit.set_netlist_path(ct_folder_path)
-
         # populate the subcircuit table
         def add_cubcircuit_row(subct_name, bipolar_model, mosfet_model):
             with dpg.value_registry():
@@ -144,6 +128,22 @@ class NetlistParserNode(Node):
                 source=self.uuid(f"{subct_name}_mosfet_model"),
                 parent=row,
             )
+
+        filepath = self.get_input_pin_value("file_path_pin", "")
+
+        from pathlib import Path
+        from parser.NetlistParser import get_circuit_from_file 
+
+        self.circuit = get_circuit_from_file(filepath)
+
+        # extract name and folder_path from the file_path
+        p = Path(filepath)
+
+        ct_name = p.stem
+        ct_folder_path = str(p.parent) + "\\"
+
+        self.circuit.set_name(ct_name)
+        self.circuit.set_netlist_path(ct_folder_path)
 
         subct_list = self.circuit.get_subcircuits()
         self.delete_table()

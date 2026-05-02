@@ -9,6 +9,7 @@ def get_circuit_from_file(file_path : str = "") -> Circuit:
     spice_parser = Spice()
     spice_parser.set_cir_file(file_path)
     circuit = spice_parser.parse_netlist()
+    circuit.remove_unused_models()
     return circuit
 
 def get_element_parameters_from_outfile(file_path : str, elements: list[Element]): 

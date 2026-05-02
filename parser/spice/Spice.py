@@ -52,13 +52,19 @@ class Spice:
         # Remove empty lines from the list
         self.netlist_lines = list(filter(None, lines))
 
-        # resolve missing includes
+        # resolve missing includes / librarys
         index = 0
         end_index = len(self.netlist_lines)
         while index < end_index:
             line = self.netlist_lines[index]
             if line.startswith((".inc", ".INC")):
                 feedback.append(self.parse_inc(index))
+                end_index = len(self.netlist_lines)
+                index += 1
+                continue
+
+            if line.startswith((".lib", ".LIB")):
+                feedback.append(self.parse_lib(index))
                 end_index = len(self.netlist_lines)
                 index += 1
                 continue
@@ -110,6 +116,10 @@ class Spice:
                     index += 1 
                     continue
 
+                if line.lower().startswith((".inc", ".lib")):
+                    index += 1 
+                    continue
+
                 # output currently not parsable lines
                 self.print_parser_error(line)
 
@@ -150,6 +160,38 @@ class Spice:
                 return ""
 
     def parse_inc(self, index: int) -> str:
+        line_splits = self.netlist_lines[index].split()
+        # try leading the file
+        file_path = line_splits[1].replace('"', "")
+
+        if file_path.endswith(".als"): return ""
+
+        import os
+
+        dir_path = os.path.dirname(self.file_path)
+        new_file_path = os.path.join(dir_path, file_path)
+
+        lines = []
+        try:
+            with open(new_file_path, "r") as file:
+                lines = [
+                    line.strip() for line in file if not line.lstrip().startswith("*")
+                ]
+                # Remove empty lines from the list
+                include_lines = list(filter(None, lines))
+                # squeeze the includes lines into the main line array
+                self.netlist_lines = (
+                    self.netlist_lines[:index]
+                    + include_lines
+                    + self.netlist_lines[index + 1 :]
+                )
+
+            print(f"Succesfully loaded {file_path}!")
+            return ""
+        except FileNotFoundError:
+            return f"The file: {file_path} could not be found!"
+
+    def parse_lib(self, index: int) -> str:
         line_splits = self.netlist_lines[index].split()
         # try leading the file
         file_path = line_splits[1].replace('"', "")
@@ -216,7 +258,7 @@ class Spice:
                 return self.parse_controlled_sources(element, line_splits, circuit)
 
             # Transistors
-            case "Q":
+            case "Q" | "M":
                 return self.parse_transistor(element, line_splits)
 
             # Subcircuits

@@ -1,0 +1,30 @@
+* D:\Dokumente\docs\ESS\Grundlagen_MNE\PSpice\Verstaerker\CS-Amp\MOS_Amp_Example5_d.sch
+
+* Schematics Version 8.0 - July 1997
+* Sat May 02 12:34:51 2020
+
+
+
+** Analysis setup **
+.ac DEC 101 10 100MEG
+.tran 20ns 5m 0 10u
+.OP 
+.LIB "RASH_PCE3_MODEL.LIB"
+.LIB "mos.lib"
+
+
+* From [SCHEMATICS NETLIST] section of msim.ini:
+.lib "D:\MSim_8\lib\User\mos.lib"
+.lib "D:\MSim_8\lib\EBIPOLAR.LIB"
+.lib "D:\MSim_8\lib\User\RASH_PCE3_MODEL.LIB"
+.lib "D:\MSim_8\lib\ts.lib"
+.lib "D:\msim_8\lib\nom.lib"
+
+.INC "MOS_Amp_Example5_d.net"
+.INC "MOS_Amp_Example5_d.als"
+
+
+.probe
+
+
+.END
