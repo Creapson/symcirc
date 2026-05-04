@@ -4,7 +4,7 @@ from typing import Any, Dict, Union, Tuple, Annotated
 
 from gui.components.node_editor.nodes.Node import Node
 from gui.components.node_editor.nodes.ApproximatorNode import ApproximatorNode
-from gui.components.node_editor.nodes.BodePlot import BodePlot
+from gui.components.node_editor.nodes.BodePlotNode import BodePlotNode
 from gui.components.node_editor.nodes.Flatten import FlattenNode
 from gui.components.node_editor.nodes.ImportCircuit import ImportCircuit
 from gui.components.node_editor.nodes.ModifiedNodalAnalysis import ModifiedNodalAnalysisNode
@@ -15,7 +15,7 @@ from gui.components.node_editor.nodes.TransferFunctionNode import TransferFuncti
 AnyNode = Annotated[
     Union[Node,
           ApproximatorNode,
-          BodePlot,
+          BodePlotNode,
           FlattenNode,
           ImportCircuit,
           ModifiedNodalAnalysisNode,

@@ -4,7 +4,7 @@ from gui.components.node_editor.NodeEditor import NodeEditor
 
 
 from gui.components.node_editor.nodes.ApproximatorNode import ApproximatorNode
-from gui.components.node_editor.nodes.BodePlot import BodePlot
+from gui.components.node_editor.nodes.BodePlotNode import BodePlotNode
 from gui.components.node_editor.nodes.Flatten import FlattenNode
 from gui.components.node_editor.nodes.ImportCircuit import ImportCircuit
 from gui.components.node_editor.nodes.ModifiedNodalAnalysis import ModifiedNodalAnalysisNode
@@ -111,7 +111,7 @@ class NodeEditorWindow(Window):
             },
             {
                 "Display": [
-                    ("BodeBlot", BodePlot, "BodePlot Node"),
+                    ("BodeBlot", BodePlotNode, "BodePlot Node"),
                 ]
             },
             ("ApproximatorNode", ApproximatorNode, "Approximate"),

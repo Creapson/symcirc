@@ -1,8 +1,8 @@
 import dearpygui.dearpygui as dpg
-from numpy import sort
 
 from Approximate import Approximation
 from gui.windows.Window import Window
+from gui.components.BodePlot import BodePlot
 
 
 class ApproximatorWindow(Window):
@@ -23,6 +23,8 @@ class ApproximatorWindow(Window):
 
         self.approx_mag = None
         self.approx_phase = None
+
+        self.bode_plot = BodePlot()
 
         super().__init__(title=self.title, autosize=False)
 
@@ -55,37 +57,12 @@ class ApproximatorWindow(Window):
         # calculate numeric values and plot them
         freq_log, magnitude_db, phase_deg = self.calculate_numeric_values(numeric_values)
         self.add_plot_line(freq_log, magnitude_db, phase_deg, "Approximation")
-        # show approx_func as Text
-        # dpg.configure_item(
-        #     self.uuid("approx_func_txt"), default_value=f"TF: {str(self.approx)}"
-        # )
+
         self.par_node.update()
         super().update()
 
     def add_plot_line(self, freq_log, magnitude_db, phase_deg, label="None"):
-        # delete existing line_series
-        if dpg.does_item_exist(self.uuid(label + "_mag")):
-            dpg.delete_item(self.uuid(label + "_mag"))
-
-        if dpg.does_item_exist(self.uuid(label + "_phase")):
-            dpg.delete_item(self.uuid(label + "_phase"))
-
-        # magnitude
-        dpg.add_line_series(
-            freq_log,
-            magnitude_db,
-            label=label,
-            tag=self.uuid(label + "_mag"),
-            parent=self.uuid("y_axis_mag"),
-        )
-        # phase
-        dpg.add_line_series(
-            freq_log,
-            phase_deg,
-            label=label,
-            tag=self.uuid(label + "_phase"),
-            parent=self.uuid("y_axis_phase"),
-        )
+        self.bode_plot.add_line_series(label, freq_log, magnitude_db, phase_deg)
 
     def build(self):
         # add selection for the transfer-function
@@ -99,7 +76,14 @@ class ApproximatorWindow(Window):
 
         dpg.add_button(label="Confirm TransferFunction", callback=self.tf_selected)
 
-        self.setup_bode_plot()
+        self.bode_plot.setup()
+        with dpg.handler_registry():
+            dpg.add_mouse_release_handler(
+                button=dpg.mvMouseButton_Left, callback=self.add_approx_point
+            )
+            dpg.add_mouse_release_handler(
+                button=dpg.mvMouseButton_Right, callback=self.remove_approx_point
+            )
 
         # create table
         with dpg.table(
@@ -173,7 +157,7 @@ class ApproximatorWindow(Window):
         ):
             return
 
-        if not dpg.is_item_hovered(self.bode_plot_id):
+        if not dpg.is_item_hovered(self.bode_plot.mag_plot_id):
             return
 
         # Mouse position in plot coordinates
@@ -186,7 +170,7 @@ class ApproximatorWindow(Window):
         # Add vertical drag line two both Plots
         # Bode Plot
         mag_drag_line = dpg.add_drag_line(
-            parent=self.bode_plot_id,
+            parent=self.bode_plot.mag_plot_id,
             color=(0, 255, 0, 255),
             default_value=x,
             callback=self.on_drag,
@@ -194,7 +178,7 @@ class ApproximatorWindow(Window):
         )
         # Phase Plot
         phase_line = dpg.add_drag_line(
-            parent=self.phase_plot_id,
+            parent=self.bode_plot.phase_plot_id,
             color=(0, 255, 0, 255),
             source=mag_drag_line,
             vertical=True,
@@ -212,7 +196,7 @@ class ApproximatorWindow(Window):
         ):
             return
 
-        if not dpg.is_item_hovered(self.bode_plot_id):
+        if not dpg.is_item_hovered(self.bode_plot.mag_plot_id):
             return
 
         # Mouse position in plot coordinates
@@ -292,59 +276,6 @@ class ApproximatorWindow(Window):
         # delete the used sources(value regestries) of each cell
         self.row_sources.clear()
         self.drag_to_inputs.clear()
-
-    def setup_bode_plot(self):
-        with dpg.subplots(2, 1, label="", link_all_x=True, width=-1, height=500):
-            # -------- Magnitude Plot --------
-            with dpg.plot(label="Betrag (dB)", no_menus=True) as self.bode_plot_id:
-                dpg.add_plot_legend()
-
-                # X axis (log scale)
-                xaxis = dpg.add_plot_axis(
-                    dpg.mvXAxis, label="Frequency (Hz)", scale=dpg.mvPlotScale_Log10
-                )
-
-                # Y axis
-                dpg.add_plot_axis(
-                    dpg.mvYAxis, label="Betrag [dB]", tag=self.uuid("y_axis_mag")
-                )
-
-            # -------- Phase Plot --------
-            with dpg.plot(label="Phase (°)", no_menus=True) as self.phase_plot_id:
-                dpg.add_plot_legend()
-
-                # X axis (log scale)
-                xaxis = dpg.add_plot_axis(
-                    dpg.mvXAxis, label="Frequency (Hz)", scale=dpg.mvPlotScale_Log10
-                )
-
-                # Y axis
-                dpg.add_plot_axis(
-                    dpg.mvYAxis, label="Phase [°]", tag=self.uuid("y_axis_phase")
-                )
-
-        # Create on_click callback for the plot
-
-        with dpg.handler_registry():
-            dpg.add_mouse_release_handler(
-                button=dpg.mvMouseButton_Left, callback=self.add_approx_point
-            )
-            dpg.add_mouse_release_handler(
-                button=dpg.mvMouseButton_Right, callback=self.remove_approx_point
-            )
-        """
-        with dpg.handler_registry():
-            dpg.add_mouse_click_handler(
-                button=dpg.mvMouseButton_Left, callback=self.add_approx_point
-            )
-        """
-
-        """
-        with dpg.item_handler_registry() as handler:
-            dpg.add_item_clicked_handler(callback=self.add_approx_point)
-
-        dpg.bind_item_handler_registry(self.bode_plot_id, handler)
-        """
 
     def on_close(self, sender, app_data, user_data):
         super().on_close(sender=sender, app_data=app_data, user_data=user_data)

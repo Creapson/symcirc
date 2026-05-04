@@ -1,12 +1,16 @@
 import dearpygui.dearpygui as dpg
 import numpy as np
+from pydantic import Field
 
 from gui.components.node_editor.nodes.Node import Node, NodeType
+from gui.components.BodePlot import BodePlot
 from typing import Literal
 
 
-class BodePlot(Node):
+class BodePlotNode(Node):
     node_type: Literal[NodeType.BODE_PLOT] = NodeType.BODE_PLOT
+
+    bode_plot: BodePlot = Field(default=BodePlot(), exclude=True)
     def build(self):
         # create pins for all nessary inputs
         self.add_input_pin("line_pin", "Connect freq_log here!")
@@ -26,35 +30,8 @@ class BodePlot(Node):
                 label="Open File Dialog",
                 callback=lambda: dpg.show_item(f"{self.node_id}_file_dialog_id"),
             )
-            with dpg.subplots(
-                2, 1, label="", link_all_x=True, height=600
-            ) as subplot_id:
-                # -------- Magnitude Plot --------
-                with dpg.plot(label="Betrag (dB)"):
-                    dpg.add_plot_legend()
-                    dpg.add_plot_axis(
-                        dpg.mvXAxis,
-                        label="Frequency (Hz)",
-                        scale=dpg.mvPlotScale_Log10,
-                    )
-                    with dpg.plot_axis(dpg.mvYAxis, label="Betrag [dB]"):
-                        dpg.add_line_series(
-                            [], [], label="|H(jω)|", tag=self.uuid("mag_series")
-                        )
 
-                # -------- Phase Plot --------
-                with dpg.plot(label="Phase (°)"):
-                    dpg.add_plot_legend()
-
-                    dpg.add_plot_axis(
-                        dpg.mvXAxis,
-                        label="Frequency (Hz)",
-                        scale=dpg.mvPlotScale_Log10,
-                    )
-                    with dpg.plot_axis(dpg.mvYAxis, label="Phase [°]"):
-                        dpg.add_line_series(
-                            [], [], label="∠H(jω)", tag=self.uuid("phase_series")
-                        )
+            self.bode_plot.setup(width=400)
 
         super().build()
 
@@ -92,9 +69,9 @@ class BodePlot(Node):
         magnitudes = np.abs(values).tolist()
         phases_rad = np.angle(values).tolist()
         phases_deg = np.degrees(np.angle(values)).tolist()
+
         self.populate_plot(freqs, magnitudes, phases_deg)
         print(subset)
-        pass
 
     def onlink_callback(self):
         freq_log, magnitude, phase = self.get_input_pin_value("line_pin", ([], [], []))
@@ -102,11 +79,7 @@ class BodePlot(Node):
         super().onlink_callback()
 
     def populate_plot(self, freq, mag, phase):
-        if freq is not None and mag is not None:
-            dpg.set_value(self.uuid("mag_series"), [list(freq), list(mag)])
-
-        if freq is not None and phase is not None:
-            dpg.set_value(self.uuid("phase_series"), [list(freq), list(phase)])
+        self.bode_plot.add_line_series("Test",freq, mag, phase)
 
     def update(self):
         super().update()
