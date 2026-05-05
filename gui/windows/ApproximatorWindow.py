@@ -37,14 +37,12 @@ class ApproximatorWindow(Window):
         print(self.approximation_points)
 
         to_node = dpg.get_value(self.uuid("to_node"))
-        from_node = dpg.get_value(self.uuid("from_node"))
 
         elimination_method = dpg.get_value(self.uuid("elim_mothod"))
         sorting_method = dpg.get_value(self.uuid("sorting_method"))
 
         self.mna_approx = ap.approximate(
-            sp.symbols(from_node),
-            sp.symbols(to_node),
+            to_node,
             self.approximation_points,
             elimination_method,
             0.6,
@@ -70,9 +68,6 @@ class ApproximatorWindow(Window):
         with dpg.group(horizontal=True):
             dpg.add_text("To Node:")
             dpg.add_combo(items=nodes, tag=self.uuid("to_node"))
-        with dpg.group(horizontal=True):
-            dpg.add_text("From Node:")
-            dpg.add_combo(items=nodes, tag=self.uuid("from_node"))
 
         dpg.add_button(label="Confirm TransferFunction", callback=self.tf_selected)
 
