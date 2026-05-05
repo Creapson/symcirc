@@ -48,7 +48,6 @@ class Approximation:
 
     def generate_relevance_coefficients_sm(
         self,
-        input_potential,
         output_potential,
         approx_points,
         sysMatrix
@@ -138,7 +137,7 @@ class Approximation:
 
 
     
-    def generate_relevance_coefficients(self, input_potential,  output_potential, approx_points, sysMatrix):
+    def generate_relevance_coefficients(self, output_potential, approx_points, sysMatrix):
         """Generate relevance coefficients for each term in the term list.
 
         Args:
@@ -164,7 +163,7 @@ class Approximation:
 
     
         x_syms = list(self.analysis.get_unknowns())
-        idx_in = x_syms.index(input_potential)
+        
         idx_out = x_syms.index(output_potential)
 
     
@@ -194,7 +193,7 @@ class Approximation:
             lu, piv = scipy.lu_factor(A_num)
             x = scipy.lu_solve((lu, piv), z_num)
 
-            H = x[idx_out] / x[idx_in]
+            H = x[idx_out] 
             abs_H_ref[k] = np.abs(H)
 
             A_base.append(A_num)
@@ -225,7 +224,7 @@ class Approximation:
                     lu, piv = scipy.lu_factor(A_mod)
                     x_mod = scipy.lu_solve((lu, piv), z_num_cache[k])
 
-                    H_mod = x_mod[idx_out] / x_mod[idx_in]
+                    H_mod = x_mod[idx_out] 
                     abs_H_mod[k] = np.abs(H_mod)
                     
 
@@ -249,8 +248,7 @@ class Approximation:
     
     def approximate(
         self,
-        input_potential,
-        output_potential,
+        output_potential_str,
         reference_points,
         elimination_method,
         rel_error_threshold,
@@ -271,7 +269,17 @@ class Approximation:
         #----------------------------------------------------------
         #get potential indices
         x_syms = list(self.analysis.get_unknowns())
-        idx_in = x_syms.index(input_potential)
+
+
+        output_potential = sp.symbols(output_potential_str)
+
+        
+        if output_potential not in self.analysis.unknowns:
+            raise ValueError("Unknown variable "" + output_potential_str + "" not in the system")
+        
+
+
+
         idx_out = x_syms.index(output_potential)
 
         
@@ -282,7 +290,7 @@ class Approximation:
         
         #Compute sensitivities
         term_list_sym = self.generate_relevance_coefficients( 
-                                                         input_potential, 
+                                                         
                                                          output_potential, 
                                                          approx_points, 
                                                          self.analysis.A)
@@ -330,7 +338,6 @@ class Approximation:
             A1,
             z_num_func,
             approx_points,
-            idx_in,
             idx_out
         )
         abs_H_ref = np.abs(H_ref)
@@ -505,7 +512,6 @@ class Approximation:
                                 A1_trial,
                                 z_num_func,
                                 approx_points,
-                                idx_in,
                                 idx_out
                             )
                         # print("Computed trial transfer function.")
@@ -538,7 +544,7 @@ class Approximation:
                     #check if true error is acceptable
                     if (true_error > max_error) or (np.isnan(true_error) and (accumulated_relevance_error > max_error)): #TODO: max_error per frequency point
                         print("Error too high, ending approximation...")
-                        return self.calc_End_Result(removed_terms, input_potential, output_potential)
+                        return self.calc_End_Result(removed_terms)
 
 
                     #-------------------------------------------------------------------------------
@@ -565,7 +571,6 @@ class Approximation:
                         term_list_sym = self.update_remaining_terms(
                             removed_terms,
                             term_list_sym,
-                            input_potential,
                             output_potential,
                             approx_points,
                             sorting_method,
@@ -590,10 +595,10 @@ class Approximation:
          
         
         
-        return self.calc_End_Result(removed_terms, input_potential, output_potential)
+        return self.calc_End_Result(removed_terms)
 
         
-    def calc_End_Result(self, rem_terms, input_potential, output_potential): 
+    def calc_End_Result(self, rem_terms): 
 
         """Generate new MNA object with reduced system matrix
 
@@ -619,7 +624,7 @@ class Approximation:
         
         return A_sym
 
-    def compute_transfer_function_numeric(self, A0, A1, z_func ,approx_points, input_potential, output_potential):
+    def compute_transfer_function_numeric(self, A0, A1, z_func ,approx_points, output_potential):
 
         
         #s = sp.symbols("s")
@@ -666,7 +671,7 @@ class Approximation:
 
             
 
-            H[k] = x[output_potential] / x[input_potential]
+            H[k] = x[output_potential] #/ x[input_potential]
 
         return H, is_singular
 
@@ -682,7 +687,6 @@ class Approximation:
         self,
         rem_terms,
         remaining_terms,
-        input_potential,
         output_potential,
         approx_points,
         sorting_method,
@@ -697,7 +701,6 @@ class Approximation:
         t0 = time.perf_counter_ns()
 
         updated = self.generate_relevance_coefficients(
-            input_potential,
             output_potential,
             approx_points,
             A_current

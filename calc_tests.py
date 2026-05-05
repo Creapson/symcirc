@@ -60,7 +60,7 @@ print("Available elimination methods:", ap.get_Elimination_Methods())
 print("Available sorting methods:", ap.get_Sorting_Methods())
 t0 = t.perf_counter_ns()
 #approximate(self, in_var, out_var, points/errors, term_removal_method, tolerance (tbt- rel_error; block - jmp_threshold), sorting_criterion, sorting_extra_var(column - col_num))
-approx = ap.approximate(sp.symbols('V_1'), sp.symbols('V_10'), ((1e5,0.05),), "term-by-term",0.6, "max", 1)
+approx = ap.approximate('V_10', ((1e5,0.05),), "term-by-term",0.6, "max", 1)
 t1 = t.perf_counter_ns()
 print(f"Time for approximation: {(t1 - t0) / 1e6} ms")
 
