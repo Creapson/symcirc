@@ -3,14 +3,21 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import Any, Dict, Union, Tuple, Annotated
 
 from gui.components.node_editor.nodes.Node import Node
-from gui.components.node_editor.nodes.ApproximatorNode import ApproximatorNode
 from gui.components.node_editor.nodes.BodePlotNode import BodePlotNode
+
 from gui.components.node_editor.nodes.Flatten import FlattenNode
 from gui.components.node_editor.nodes.ImportCircuit import ImportCircuit
-from gui.components.node_editor.nodes.ModifiedNodalAnalysis import ModifiedNodalAnalysisNode
 from gui.components.node_editor.nodes.NetlistParserNode import NetlistParserNode
+
+from gui.components.node_editor.nodes.MNA import MNA
+
+from gui.components.node_editor.nodes.TransferFunctionNumeric import TransferFunctionNumeric
 from gui.components.node_editor.nodes.NumericSolver import NumericSolver
-from gui.components.node_editor.nodes.TransferFunctionNode import TransferFunctionNode
+
+from gui.components.node_editor.nodes.TransferFunctionSymbolic import TransferFunctionSymbolic
+from gui.components.node_editor.nodes.SymbolicSolver import SymbolicSolver
+
+from gui.components.node_editor.nodes.ApproximatorNode import ApproximatorNode
 
 AnyNode = Annotated[
     Union[Node,
@@ -18,10 +25,12 @@ AnyNode = Annotated[
           BodePlotNode,
           FlattenNode,
           ImportCircuit,
-          ModifiedNodalAnalysisNode,
+          MNA,
           NetlistParserNode,
           NumericSolver,
-          TransferFunctionNode
+          SymbolicSolver,
+          TransferFunctionNumeric,
+          TransferFunctionSymbolic
           ], 
     Field(discriminator='node_type')
 ]

@@ -160,12 +160,10 @@ class FlattenNode(Node):
         self.delete_table()
         for item in self.element_list:
             if item.type == "Q":
-                (
-                    add_element_row(
-                        item.name,
-                        item.params["bipolar_model"],
-                        item.params["mosfet_model"],
-                    ),
+                add_element_row(
+                    item.name,
+                    item.params["bipolar_model"],
+                    item.params["mosfet_model"],
                 )
 
         super().onlink_callback()

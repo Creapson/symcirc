@@ -11,10 +11,15 @@ class NodeType(IntEnum):
     BODE_PLOT = 2
     FLATTEN = 3
     IMPORT_CIRCUIT = 4
-    MNA = 5
-    NETLIST_PARSER = 6
-    NUMERIC_SOLVER= 7
-    TRANSFER_FUNCTION = 8
+    NETLIST_PARSER = 5
+
+    MNA = 6
+
+    TRANSFER_FUNCTION_NUMERIC = 7
+    NUMERIC_SOLVER= 8
+
+    SYMBOLIC_SOLVER= 9
+    TRANSFER_FUNCTION_SYMBOLIC = 10
 
 
 class Node(BaseModel):
@@ -186,7 +191,8 @@ class Node(BaseModel):
 
         # exceptions
         if (self.node_type == NodeType.NETLIST_PARSER): return
-        if (self.node_type == NodeType.TRANSFER_FUNCTION): return
+        if (self.node_type == NodeType.TRANSFER_FUNCTION_NUMERIC): return
+        if (self.node_type == NodeType.TRANSFER_FUNCTION_SYMBOLIC): return
         if (self.node_type == NodeType.APPROXIMATOR): return
 
         self.do_propagation = True

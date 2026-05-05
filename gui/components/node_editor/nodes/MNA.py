@@ -8,8 +8,7 @@ from netlist.Circuit import Circuit
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 
 
-
-class ModifiedNodalAnalysisNode(Node):
+class MNA(Node):
     node_type: Literal[NodeType.MNA] = NodeType.MNA
 
     circuit: Circuit = Field(default=Circuit(), exclude=True)

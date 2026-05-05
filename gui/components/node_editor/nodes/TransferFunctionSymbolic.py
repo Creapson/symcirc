@@ -5,8 +5,8 @@ from gui.components.node_editor.nodes.Node import Node, NodeType
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 from typing import Literal, List
 
-class TransferFunctionNode(Node):
-    node_type: Literal[NodeType.TRANSFER_FUNCTION] = NodeType.TRANSFER_FUNCTION
+class TransferFunctionSymbolic(Node):
+    node_type: Literal[NodeType.TRANSFER_FUNCTION_SYMBOLIC] = NodeType.TRANSFER_FUNCTION_SYMBOLIC
 
     mna: ModifiedNodalAnalysis = Field(default=None, exclude=True)
     sweep: List[float] = Field(default_factory=list, exclude=True)
@@ -34,8 +34,11 @@ class TransferFunctionNode(Node):
             nodes = self.mna.get_unknowns_as_strings()
             inputs = self.mna.get_System_Inputs()
 
+            if dpg.does_item_exist(self.uuid("adv_settings")):
+                dpg.delete_item(self.uuid("adv_settings"))
+
             with self.add_static_attr():
-                with dpg.tree_node(label="Advanced Settings"):
+                with dpg.tree_node(label="Advanced Settings", tag=self.uuid("adv_settings")):
                     for name in inputs:
                         if name == "0": continue
                         with dpg.group(horizontal=True):
@@ -52,8 +55,8 @@ class TransferFunctionNode(Node):
         # use the selected nodes
         node_out = dpg.get_value(self.uuid("output_node"))
 
-        H = self.mna.solveNumerical(self.sweep, node_out)
+        H = self.mna.solve(node_out)
 
         self.add_output_pin(tag="h_out", text="H")
-        self.add_output_pin_value("h_out", (H.tolist(), self.sweep), is_persistence=False)
+        self.add_output_pin_value("h_out", (H, self.sweep), is_persistence=False)
         super().update()

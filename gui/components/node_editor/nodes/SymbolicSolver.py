@@ -1,15 +1,16 @@
 import dearpygui.dearpygui as dpg
+import sympy as sp
 
 from gui.components.node_editor.nodes.Node import Node, NodeType
 from typing import Literal, List
 from pydantic import Field
 
 
-class NumericSolver(Node):
-    node_type: Literal[NodeType.NUMERIC_SOLVER] = NodeType.NUMERIC_SOLVER
+class SymbolicSolver(Node):
+    node_type: Literal[NodeType.SYMBOLIC_SOLVER] = NodeType.SYMBOLIC_SOLVER
 
 
-    h: List[float] = Field(default_factory=list, exclude=True)
+    transfer_function: List[float] = Field(default_factory=list, exclude=True)
     sweep: List[float] = Field(default_factory=list, exclude=True)
 
     def build(self):
@@ -21,16 +22,26 @@ class NumericSolver(Node):
         super().build()
 
     def onlink_callback(self):
-        self.h, self.sweep = self.get_input_pin_value("h_input_pin", ([], []))
+        self.transfer_function, self.sweep = self.get_input_pin_value("h_input_pin", ([], []))
 
         super().onlink_callback()
 
     def update(self):
         import numpy as np
 
-        # create solved arrays for later plotting
-        magnitude = np.abs(self.h).flatten().tolist()
-        phase_deg = np.unwrap(np.angle(self.h, deg=True), axis=0).flatten().tolist()
+        print("started calculating the numeric values")
+
+
+        s = sp.symbols("s")
+
+        H_lambdified = sp.lambdify(s, self.transfer_function, "numpy")
+        jw = 1j * np.array(self.sweep)
+        H_eval = H_lambdified(jw)
+
+        magnitude = 20 * np.log10(np.abs(H_eval)).flatten.tolist()
+        phase_deg = np.unwrap(np.angle(self.transfer_function, deg=True), axis=0).flatten().tolist()
+
+        print("finished")
 
         self.add_output_pin(tag="line_out", text="Numeric Values for BodePlots")
         self.add_output_pin_value(

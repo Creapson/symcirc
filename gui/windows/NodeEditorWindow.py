@@ -2,15 +2,22 @@ import dearpygui.dearpygui as dpg
 
 from gui.components.node_editor.NodeEditor import NodeEditor
 
-
-from gui.components.node_editor.nodes.ApproximatorNode import ApproximatorNode
 from gui.components.node_editor.nodes.BodePlotNode import BodePlotNode
+
 from gui.components.node_editor.nodes.Flatten import FlattenNode
 from gui.components.node_editor.nodes.ImportCircuit import ImportCircuit
-from gui.components.node_editor.nodes.ModifiedNodalAnalysis import ModifiedNodalAnalysisNode
 from gui.components.node_editor.nodes.NetlistParserNode import NetlistParserNode
+
+from gui.components.node_editor.nodes.MNA import MNA
+
+from gui.components.node_editor.nodes.TransferFunctionNumeric import TransferFunctionNumeric
 from gui.components.node_editor.nodes.NumericSolver import NumericSolver
-from gui.components.node_editor.nodes.TransferFunctionNode import TransferFunctionNode
+
+from gui.components.node_editor.nodes.TransferFunctionSymbolic import TransferFunctionSymbolic
+from gui.components.node_editor.nodes.SymbolicSolver import SymbolicSolver
+
+from gui.components.node_editor.nodes.ApproximatorNode import ApproximatorNode
+
 from gui.windows.Window import Window
 
 
@@ -104,9 +111,14 @@ class NodeEditorWindow(Window):
             },
             {
                 "Numeric": [
-                        ("ModifiedNodalAnalysis", ModifiedNodalAnalysisNode, "ModifiedNodalAnalysis Node"),
-                        ("TransferFunction Node", TransferFunctionNode, "TransferFunction Node"),
+                        ("TransferFunction Node", TransferFunctionNumeric, "TransferFunction - Numeric"),
                         ("NumericSolver", NumericSolver, "NumericSolver"),
+                    ]
+            },
+            {
+                "Symbolic": [
+                        ("TransferFunction Node", TransferFunctionSymbolic, "TransferFunction - Symbolic"),
+                        ("SymbolicSolver", SymbolicSolver, "SymbolicSolver"),
                     ]
             },
             {
@@ -115,6 +127,7 @@ class NodeEditorWindow(Window):
                 ]
             },
             ("ApproximatorNode", ApproximatorNode, "Approximate"),
+            ("ModifiedNodalAnalysis", MNA, "MNA Node"),
         ]
 
         def _create_menu_recursive(data):
