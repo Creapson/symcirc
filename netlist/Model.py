@@ -34,7 +34,7 @@ class Model(BaseModel):
                 + str(bipolar_model)
                 + ".json"
             )
-        elif param_list["type"] in ("MOS"):
+        elif param_list["type"] in ("MOS", "NMOS"):
             target_model = (
                 "library/small_signal_models/mosfet_models/"
                 + str(mosfet_model)

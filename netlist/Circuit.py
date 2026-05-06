@@ -90,7 +90,7 @@ class Circuit(BaseModel):
             return
         self.mosfet_model = new_model
         for element in self.elements:
-            if element.type == "Q":
+            if element.type == "M":
                 element.add_param("mosfet_model", self.mosfet_model)
 
     # def add_param(self, param, value):
@@ -144,6 +144,7 @@ class Circuit(BaseModel):
             subcircuits = {}
 
         combined_subct_list = self.subcircuits | subcircuits
+        print(combined_subct_list)
         subct = combined_subct_list[subcircuit_name]
 
         subct_connections = subct.inner_connecting_nodes
@@ -176,6 +177,7 @@ class Circuit(BaseModel):
 
             if new_ele.type == "Q":
                 new_ele.add_param("bipolar_model", subct.bipolar_model)
+            if new_ele.type == "M":
                 new_ele.add_param("mosfet_model", subct.mosfet_model)
 
             subct_elements.append(new_ele)
@@ -230,7 +232,7 @@ class Circuit(BaseModel):
                 continue
 
             # Expand transistor models
-            if element.type == "Q" and flatten_models:
+            if (element.type == "Q" or element.type == "M") and flatten_models:
                 model_name = element.params["ref_model"]
                 model = self.models[model_name]
 

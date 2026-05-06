@@ -1,6 +1,10 @@
 import dearpygui.dearpygui as dpg
 from pydantic import Field
 
+import sympy as sp
+from sympy import init_printing
+init_printing(use_unicode=True)
+
 from gui.components.node_editor.nodes.Node import Node, NodeType
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 from typing import Literal, List
@@ -12,8 +16,13 @@ class TransferFunctionSymbolic(Node):
     sweep: List[float] = Field(default_factory=list, exclude=True)
 
     def build(self):
-        self.add_input_pin("num_results_input_pin", "Connect Circuit here")
+        with dpg.value_registry():
+            dpg.add_string_value(
+                default_value="Transfer Function not calculated yet!",
+                tag=self.uuid("sym_tf_output"),
+            )
 
+        self.add_input_pin("num_results_input_pin", "Connect Circuit here")
 
         with self.add_static_attr():
             # add selection for the transfer-function
@@ -21,6 +30,8 @@ class TransferFunctionSymbolic(Node):
                 dpg.add_text("Output Node")
                 dpg.add_combo(items=[], tag=self.uuid("output_node"), width=100)
             dpg.add_button(label="Calculate Numeric Values", callback=self.update)
+
+            dpg.add_input_text(source=self.uuid("sym_tf_output"))
 
         super().build()
 
@@ -55,8 +66,14 @@ class TransferFunctionSymbolic(Node):
         # use the selected nodes
         node_out = dpg.get_value(self.uuid("output_node"))
 
-        H = self.mna.solve(node_out)
+        H_sym = self.mna.solve(node_out)
+        # smpl = H_sym
+        # smpl = sp.cancel(H_sym)
+        smpl = sp.simplify(H_sym)
+        print(smpl)
+        dpg.set_value(self.uuid("sym_tf_output"), sp.latex(smpl))
+        H_num = self.mna.solveNumerical(self.sweep, node_out)
 
         self.add_output_pin(tag="h_out", text="H")
-        self.add_output_pin_value("h_out", (H, self.sweep), is_persistence=False)
+        self.add_output_pin_value("h_out", (H_num.tolist(), self.sweep), is_persistence=False)
         super().update()
