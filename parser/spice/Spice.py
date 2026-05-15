@@ -1,5 +1,7 @@
 import numpy as np
 
+from typing import List
+
 from netlist.Circuit import Circuit
 from netlist.Element import Element
 from netlist.Model import Model
@@ -108,6 +110,7 @@ class Spice:
                     index, model = self.parse_model(index)
                     if model is not None:
                         circuit.add_model(model)
+                    index += 1 
                     continue
 
                 if line.startswith((".AC", ".ac")): 
@@ -432,21 +435,10 @@ class Spice:
         return end_index + 1, ct_name, ct
 
     def parse_model(self, index : int) -> tuple[int, Model | None]:
-        """Parse the model
-
-        Args:
-            index (int): line-index there the model definiton starts
-
-        Returns:
-            index: line-index where the model definition ends
-            model: Fully populated Model object
-        """
-
-        def parse_params(param_list):
+        def parse_params(param_list: List[str], model: Model):
             for param in param_list:
-                # remove the brackets from the parameters
-                param.removeprefix("(")
-                param.removesuffix(")")
+                param = param.removeprefix("(")
+                param = param.removesuffix(")")
 
                 if "NPN" in param:
                     model.add_param("type", "NPN")
@@ -459,6 +451,7 @@ class Spice:
 
         # 1. .model name type (params)
         # 1. .model name type (param
+        #    + ...
         #    + param=value param=value)
         # 2. .model name
         #    + type
@@ -471,36 +464,35 @@ class Spice:
 
         model = Model()
 
-        model.name = line_splits[1]
 
+        model.name = line_splits[1]
         match len(line_splits):
             # 2nd Type
-            case _ if len(line_splits) < 2:
-                self.print_parser_error(f"Failed to parse this Model: {line}\t")
-                return index, None
-            case 2:
-                pass
             case 3:
                 model.add_param("type", line_splits[2])
             case _ if len(line_splits) > 3:
                 model.add_param("type", line_splits[2])
-                parse_params(line_splits[3:])
-                pass
+                parse_params(line_splits[3:], model)
+            case _:
+                self.print_parser_error(f"Failed to parse this Model: {line}\t")
+                return index, None
+
+        if ")" in line:
+            return index, model
 
         # Check for params after the model name
-        index += 1
         # Loop over all lines with "+" at the start
         while index < len(self.netlist_lines) - 1:
+            index += 1
             if not self.netlist_lines[index].strip().startswith("+"):
                 return index, model
 
             # parse the model Parameters
             param_line = self.netlist_lines[index].removeprefix("+").strip()
-            parse_params(param_line.split())
+            parse_params(param_line.split(), model)
 
             if ")" in param_line:
                 return index, model
-            index += 1
 
         return index, model
 
