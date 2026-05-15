@@ -14,6 +14,13 @@ class Element(BaseModel):
     def set_type(self, newType: str):
         self.type = newType
 
+    def remove_type_prefix(self):
+        if self.name.startswith(f"{self.type}_{self.type}"):
+            self.name = self.name.removeprefix(f"{self.type}_")
+        if self.name.startswith(f"{self.type}{self.type}"):
+            self.name = self.name.removeprefix(self.type)
+
+
     def get_symbol(self) -> str:
         if self.symbol == "":
             return self.name

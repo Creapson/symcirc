@@ -110,7 +110,6 @@ class Spice:
                     index, model = self.parse_model(index)
                     if model is not None:
                         circuit.add_model(model)
-                    index += 1 
                     continue
 
                 if line.startswith((".AC", ".ac")): 
@@ -235,18 +234,14 @@ class Spice:
         """
         line_splits = line.split()
         element = Element()
-        # check if the element type is present twice e.g: CC32
-        if len(line_splits[0]) >= 2:
-            if line_splits[0][0] == line_splits[0][1]:
-                # If Element Name starts with RR, CC, .. ignore the first char
-                element.name = line_splits[0][1:-1]
-            element.name = line_splits[0]
-        else:
-            element.name = line_splits[0]
 
-        element.set_type(line_splits[0][0])
+        element.set_type(line_splits[0].upper()[0])
 
-        match line_splits[0].upper()[0]:
+        element.name = line_splits[0]
+        element.remove_type_prefix()
+
+
+        match element.type:
             # Admittance
             case "R" | "C" | "L" | "D":
                 return self.parse_admittance(element, line_splits)
@@ -478,12 +473,13 @@ class Spice:
                 return index, None
 
         if ")" in line:
+            index += 1
             return index, model
 
+        index += 1
         # Check for params after the model name
         # Loop over all lines with "+" at the start
         while index < len(self.netlist_lines) - 1:
-            index += 1
             if not self.netlist_lines[index].strip().startswith("+"):
                 return index, model
 
@@ -491,8 +487,7 @@ class Spice:
             param_line = self.netlist_lines[index].removeprefix("+").strip()
             parse_params(param_line.split(), model)
 
-            if ")" in param_line:
-                return index, model
+            index += 1
 
         return index, model
 
