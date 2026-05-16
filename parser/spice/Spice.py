@@ -126,7 +126,7 @@ class Spice:
                 self.print_parser_error(line)
 
             else:
-                element = self.parse_element(line, circuit)
+                element, index = self.parse_element(index, circuit)
                 if element is not None:
                     circuit.add_element(element)
             index += 1
@@ -223,7 +223,7 @@ class Spice:
         except FileNotFoundError:
             return f"The file: {file_path} could not be found!"
 
-    def parse_element(self, line: str, circuit : Circuit) -> Element | None:
+    def parse_element(self, index:int, circuit : Circuit) -> tuple[Element, int]:
         """Parses the element from the given string.
 
         Args:
@@ -232,6 +232,7 @@ class Spice:
         Returns:
             The parsed Element
         """
+        line = self.netlist_lines[index]
         line_splits = line.split()
         element = Element()
 
@@ -244,35 +245,37 @@ class Spice:
         match element.type:
             # Admittance
             case "R" | "C" | "L" | "D":
-                return self.parse_admittance(element, line_splits)
+                return self.parse_admittance(element, index)
 
             # Sources
             case "V" | "I":
-                return self.parse_souces(element, line_splits)
+                return self.parse_souces(element, index)
 
 
             # Controlles Sources
             case "E" | "G" | "F" | "H":
-                return self.parse_controlled_sources(element, line_splits, circuit)
+                return self.parse_controlled_sources(element, index, circuit)
 
             # Transistors
             case "Q" | "M":
-                return self.parse_transistor(element, line_splits)
+                return self.parse_transistor(element, index)
 
             # Subcircuits
             case "X":
-                return self.parse_subcircuit_element(element, line_splits)
+                return self.parse_subcircuit_element(element, index)
 
             case _:
                 self.print_parser_error(line)
-                return None
+                return (Element(), index)
 
-    def parse_admittance(self, element : Element, line_splits : list[str]) -> Element:
+    def parse_admittance(self, element : Element, index:int) -> tuple[Element, int]:
+        line_splits = self.netlist_lines[index].split()
         element.connections = line_splits[1:-1]
         element.add_param("value_dc", line_splits[3])
-        return element
+        return element, index
 
-    def parse_souces(self, element : Element, line_splits : list[str]) -> Element:
+    def parse_souces(self, element : Element, index:int) -> tuple[Element, int]:
+        line_splits = self.netlist_lines[index].split()
         if len(line_splits) == 4:
             element.connections = line_splits[1:-1]
             element.add_param("value_dc", line_splits[3])
@@ -325,9 +328,11 @@ class Spice:
 
                 else:
                     i += 1
-        return element
+        return (element, index)
 
-    def parse_controlled_sources(self, element : Element, line_splits : list[str], circuit : Circuit) -> Element:
+    def parse_controlled_sources(self, element : Element, index, circuit : Circuit) -> tuple[Element, int]:
+        line_splits = self.netlist_lines[index].split()
+
         if len(line_splits) == 6:
             element.connections = line_splits[1:-1]
             element.add_param("value", line_splits[5])
@@ -337,15 +342,25 @@ class Spice:
             ref_element = circuit.get_element(line_splits[3])
             if ref_element is None:
                 self.print_parser_error("Could not find Element to resolve the connections" + str(line_splits))
-                return element 
+                return (element, index)
 
             element.connections = line_splits[1:-2] + ref_element.connections
             element.add_param("value", line_splits[4])
         else:
             self.print_parser_error("This line is too long or short!" + str(line_splits))
-        return element
+        return (element, index)
 
-    def parse_transistor(self, element : Element, line_splits : list[str]) -> Element:
+    def parse_transistor(self, element : Element, index: int) -> tuple[Element, int]:
+        def parse_params(param_list: List[str], element: Element):
+            for param in param_list:
+                param = param.removeprefix("(")
+                param = param.removesuffix(")")
+
+                if "=" in param:
+                    key, val = param.split("=", 1)
+                    element.add_param(key.upper(), val)
+
+        line_splits = self.netlist_lines[index].split()
         if len(line_splits) == 5:
             element.connections = line_splits[1:4]
             element.add_param("ref_model", line_splits[4])
@@ -356,9 +371,22 @@ class Spice:
             element.connections = line_splits[1:5]
             element.add_param("ref_model", line_splits[5])
             element.add_param("area", line_splits[6])
-        return element
 
-    def parse_subcircuit_element(self, element : Element, line_splits : list[str]) -> Element:
+        # check for aditional parameter
+        while index < len(self.netlist_lines) - 2:
+            if not self.netlist_lines[index+1].strip().startswith("+"):
+                return (element, index)
+
+            # parse the model Parameters
+            param_line = self.netlist_lines[index+1].removeprefix("+").strip()
+            parse_params(param_line.split(), element)
+
+            index += 1
+
+        return (element, index)
+
+    def parse_subcircuit_element(self, element : Element, index:int) -> tuple[Element, int]:
+        line_splits = self.netlist_lines[index].split()
         # find param start
         params_index = None
         for i, tok in enumerate(line_splits):
@@ -370,7 +398,7 @@ class Spice:
         if params_index is None:
             element.connections = line_splits[1:-1]
             element.add_param("ref_cir", line_splits[-1])
-            return element
+            return (element, index)
 
         # with PARAMS
         element.connections = line_splits[1 : params_index - 1]
@@ -382,7 +410,7 @@ class Spice:
             key, val = p.split("=")
             element.add_param(key.lower(), val)
 
-        return element
+        return (element, index)
 
 
     def find_subcircuit(self, subct_name : str) -> int:
@@ -463,6 +491,8 @@ class Spice:
         model.name = line_splits[1]
         match len(line_splits):
             # 2nd Type
+            case 2:
+                pass
             case 3:
                 model.add_param("type", line_splits[2])
             case _ if len(line_splits) > 3:
