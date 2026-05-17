@@ -1,3 +1,4 @@
+from operator import call
 import dearpygui.dearpygui as dpg
 
 from gui.components.node_editor.NodeEditor import NodeEditor
@@ -77,6 +78,12 @@ class NodeEditorWindow(Window):
 
         except Exception as e:
             print(f"Error loading file: {e}")
+
+    def clear_node_editor(self):
+        for _, node in self.node_editor.node_dic.items():
+            node.delete()
+
+        dpg.delete_item(self.node_editor_tag, children_only=True)
 
     def onlink_callback(self, sender, app_data):
         self.node_editor.onlink_callback(sender=sender, app_data=app_data)
@@ -178,7 +185,7 @@ class NodeEditorWindow(Window):
         
         with dpg.menu_bar():
             with dpg.menu(label="File"):
-                dpg.add_menu_item(label="New", enabled=False)
+                dpg.add_menu_item(label="New", callback=self.clear_node_editor)
                 dpg.add_menu_item(
                         label="Open", 
                         enabled=True, 

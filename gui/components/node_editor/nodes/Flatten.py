@@ -43,15 +43,7 @@ class FlattenNode(Node):
         self.add_input_pin("file_path_pin", "Connect Circuit here! [circuit]")
 
         with self.add_static_attr():
-            with dpg.file_dialog(
-                directory_selector=False,
-                show=False,
-                callback=self.callback,
-                tag=self.uuid("file_dialog_id"),
-                width=700,
-                height=400,
-            ):
-                dpg.add_file_extension(".out")
+            self.add_file_dialog("file_dialog_id", self.callback, [".out"])
 
             dpg.add_button(
                 label="Select .out File",

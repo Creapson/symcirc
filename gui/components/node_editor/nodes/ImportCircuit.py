@@ -32,17 +32,7 @@ class ImportCircuit(Node):
         )
 
     def build(self):
-        if not dpg.does_item_exist(self.uuid("file_dialog_id")):
-            with dpg.file_dialog(
-                directory_selector=False,
-                show=False,
-                callback=self.callback,
-                tag=self.uuid("file_dialog_id"),
-                width=700,
-                height=400,
-            ):
-                dpg.add_file_extension(".cir", parent=self.uuid("file_dialog_id"))
-                dpg.add_file_extension(".net", parent=self.uuid("file_dialog_id"))
+        self.add_file_dialog("file_dialog_id", self.callback, [".cir", ".net"])
 
         with self.add_static_attr():
             dpg.add_button(

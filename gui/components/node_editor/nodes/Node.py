@@ -41,6 +41,9 @@ class Node(BaseModel):
     editor: Any = Field(default=None, exclude=True)
     non_persistent_output_values: Dict[int, Any] = Field(default_factory=dict, exclude=True)
 
+    value_registries: List[str] = Field(default_factory=list, exclude=True)
+    file_dialogs: List[str] = Field(default_factory=list, exclude=True)
+
     do_propagation: bool = Field(default=False)
     id_transition_table: Dict[int, int] = Field(default_factory=dict, exclude=True)
 
@@ -62,6 +65,11 @@ class Node(BaseModel):
         dpg.set_item_pos(self.node_id, self.position)
 
         return self.node_id
+
+    def delete(self):
+        for tag in self.value_registries + self.file_dialogs:
+            dpg.delete_item(tag)
+        pass
 
     def build(self):
         with self.add_static_attr():
@@ -158,6 +166,21 @@ class Node(BaseModel):
     def add_connection(self, pin_id, connected_node):
         self.connections[pin_id] = connected_node
         print("Connections in Node: ", self.connections)
+
+    def add_file_dialog(self, tag:str, callback:Any, file_extensions:List[str]):
+        if not dpg.does_item_exist(self.uuid(tag)):
+            with dpg.file_dialog(
+                directory_selector=False,
+                show=False,
+                callback=callback,
+                tag=self.uuid(tag),
+                width=700,
+                height=400,
+            ):
+                for extension in file_extensions:
+                    dpg.add_file_extension(extension, parent=self.uuid(tag))
+
+            self.file_dialogs.append(self.uuid(tag))
 
     def onlink_callback(self):
         if self.do_propagation:

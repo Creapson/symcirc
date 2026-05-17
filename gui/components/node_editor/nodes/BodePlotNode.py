@@ -1,34 +1,30 @@
 import dearpygui.dearpygui as dpg
 import numpy as np
+import pandas as pd
 from pydantic import Field
 
 from gui.components.node_editor.nodes.Node import Node, NodeType
 from gui.components.BodePlot import BodePlot
-from typing import Literal
+from typing import Literal, List
 
 
 class BodePlotNode(Node):
     node_type: Literal[NodeType.BODE_PLOT] = NodeType.BODE_PLOT
+
+    df: pd.DataFrame = Field(default=None, exclude=True)
+    signal_names: List[str] = Field(default_factory=list, exclude=True)
 
     bode_plot: BodePlot = Field(default=BodePlot(), exclude=True)
     def build(self):
         # create pins for all nessary inputs
         self.add_input_pin("line_pin", "Connect freq_log here!")
 
-        with dpg.file_dialog(
-            directory_selector=False,
-            show=False,
-            callback=self.csd_select_callback,
-            tag=f"{self.node_id}_file_dialog_id",
-            width=700,
-            height=400,
-        ):
-            dpg.add_file_extension(".csd")
+        self.add_file_dialog("file_dialog_id", self.csd_select_callback, [".csd"])
 
         with dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Static):
             dpg.add_button(
                 label="Open File Dialog",
-                callback=lambda: dpg.show_item(f"{self.node_id}_file_dialog_id"),
+                callback=lambda: dpg.show_item(self.uuid("file_dialog_id")),
             )
 
             self.bode_plot.setup(width=400)
