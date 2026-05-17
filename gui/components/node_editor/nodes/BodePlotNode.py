@@ -19,12 +19,10 @@ class BodePlotNode(Node):
         # create pins for all nessary inputs
         self.add_input_pin("line_pin", "Connect freq_log here!")
 
-        self.add_file_dialog("file_dialog_id", self.csd_select_callback, [".csd"])
-
         with dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Static):
             dpg.add_button(
                 label="Open File Dialog",
-                callback=lambda: dpg.show_item(self.uuid("file_dialog_id")),
+                callback=self.csd_select_callback,
             )
 
             self.bode_plot.setup(width=400)
@@ -34,7 +32,7 @@ class BodePlotNode(Node):
     def csd_select_callback(self, sender, app_data):
         import parser.CommonSimulationData as csd
 
-        filepath = app_data["file_path_name"]
+        filepath = self.open_file_dialog("Select CSD File", [("CSD File", "*.csd")])[0]
         self.df, self.signal_names = csd.parse_csd(filepath)
 
         combo_tag = self.uuid("csd_select_combo")
