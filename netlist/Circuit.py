@@ -145,7 +145,7 @@ class Circuit(BaseModel):
 
         combined_subct_list = self.subcircuits | subcircuits
         print(combined_subct_list)
-        subct = combined_subct_list[subcircuit_name]
+        subct = combined_subct_list.get(subcircuit_name, Circuit())
 
         subct_connections = subct.inner_connecting_nodes
 

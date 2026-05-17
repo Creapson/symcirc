@@ -2,6 +2,7 @@ import dearpygui.dearpygui as dpg
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Any, Dict, Annotated, Union, Tuple, Literal, List
 from enum import IntEnum
+from plyer import filechooser
 
 from gui.components.OutputPin import OutputPin, PinType
 
@@ -167,20 +168,13 @@ class Node(BaseModel):
         self.connections[pin_id] = connected_node
         print("Connections in Node: ", self.connections)
 
-    def add_file_dialog(self, tag:str, callback:Any, file_extensions:List[str]):
-        if not dpg.does_item_exist(self.uuid(tag)):
-            with dpg.file_dialog(
-                directory_selector=False,
-                show=False,
-                callback=callback,
-                tag=self.uuid(tag),
-                width=700,
-                height=400,
-            ):
-                for extension in file_extensions:
-                    dpg.add_file_extension(extension, parent=self.uuid(tag))
+    def open_file_dialog(self, title:str, file_extensions:List[tuple[str, str]]) -> List[str]:
 
-            self.file_dialogs.append(self.uuid(tag))
+        path = filechooser.open_file(
+            title=title,
+            filters=file_extensions
+        )
+        return path
 
     def onlink_callback(self):
         if self.do_propagation:

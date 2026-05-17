@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import Dict, TYPE_CHECKING
 from pydantic import BaseModel, ConfigDict
+import os
+from pathlib import Path
 
 if TYPE_CHECKING:
     from netlist.Circuit import Circuit
@@ -27,22 +29,19 @@ class Model(BaseModel):
 
         from netlist.Circuit import Circuit
 
-        # Choose correct small signal model library
+        current_file_dir = Path(__file__).resolve().parent
+        project_root = current_file_dir.parent
+
+        # 3. Choose correct small signal model library sub-path
         if param_list["type"] in ("NPN", "PNP"):
-            target_model = (
-                "library/small_signal_models/bipolar_models/"
-                + str(bipolar_model)
-                + ".json"
-            )
+            sub_path = Path("library/small_signal_models/bipolar_models") / f"{bipolar_model}.json"
         elif param_list["type"] in ("MOS", "NMOS"):
-            target_model = (
-                "library/small_signal_models/mosfet_models/"
-                + str(mosfet_model)
-                + ".json"
-            )
+            sub_path = Path("library/small_signal_models/mosfet_models") / f"{mosfet_model}.json"
         else:
             print(f"Failed to load model! Type: {param_list['type']} is not known!")
             return None
+
+        target_model = project_root / sub_path
 
         # load small signal model from library
         with open(target_model, "r", encoding="utf-8") as f:

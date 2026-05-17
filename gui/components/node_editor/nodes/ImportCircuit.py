@@ -17,13 +17,15 @@ class ImportCircuit(Node):
 
         from parser.NetlistParser import get_pre_format_info 
 
-        feedback = get_pre_format_info(app_data["file_path_name"])
+        file_path = self.open_file_dialog("Select Ciruit file", [("Circtui File","*.cir")])
+
+        feedback = get_pre_format_info(file_path[0])
 
         # when a file is selected create the output pin
         self.add_output_pin(tag="file_path_out", text="Selected file")
 
         self.add_output_pin_value(
-            "file_path_out", app_data["file_path_name"]
+            "file_path_out", file_path[0]
         )
 
         dpg.set_value(
@@ -32,12 +34,10 @@ class ImportCircuit(Node):
         )
 
     def build(self):
-        self.add_file_dialog("file_dialog_id", self.callback, [".cir", ".net"])
-
         with self.add_static_attr():
             dpg.add_button(
                 label="Open File Dialog",
-                callback=lambda: dpg.show_item(self.uuid("file_dialog_id")),
+                callback=self.callback,
             )
             dpg.add_text(
                     label="No file currently selected",

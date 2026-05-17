@@ -125,6 +125,10 @@ class Spice:
                 # output currently not parsable lines
                 self.print_parser_error(line)
 
+            elif line.startswith("+"):
+                index += 1
+                continue
+
             else:
                 element, index = self.parse_element(index, circuit)
                 if element is not None:

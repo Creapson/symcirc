@@ -24,9 +24,8 @@ class FlattenNode(Node):
     flattend_circuit : Circuit = Field(default=Circuit(), exclude=True)
 
     def callback(self, sender, app_data):
-        print(sender)
-        print(app_data)
-        self.data["out_file_path"] = app_data["file_path_name"]
+        file_path = self.open_file_dialog("Select Output File", [("Output Files","*.out")])
+        self.data["out_file_path"] = file_path[0]
         dpg.set_value(self.uuid("out_file_path"), f"Selected {self.data["out_file_path"]}")
 
     def build(self):
@@ -43,11 +42,9 @@ class FlattenNode(Node):
         self.add_input_pin("file_path_pin", "Connect Circuit here! [circuit]")
 
         with self.add_static_attr():
-            self.add_file_dialog("file_dialog_id", self.callback, [".out"])
-
             dpg.add_button(
                 label="Select .out File",
-                callback=lambda: dpg.show_item(self.uuid("file_dialog_id")),
+                callback=self.callback,
             )
             dpg.add_text(source=self.uuid("out_file_path"))
 
