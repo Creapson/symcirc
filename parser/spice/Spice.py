@@ -540,6 +540,13 @@ class Spice:
             # Replace any separator with a dot
             name = re.sub(r"[,_]", ".", name)
 
+            type:str = name[0]
+            # remove type_prefix
+            if name.startswith(f"{type}.{type}"):
+                name = name.removeprefix(f"{type}.")
+            if name.startswith(f"{type}{type}"):
+                name = name.removeprefix(type)
+
             return name.strip()
 
         with open(out_filepath, "r") as file:

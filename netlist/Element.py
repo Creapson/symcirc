@@ -20,7 +20,6 @@ class Element(BaseModel):
         if self.name.startswith(f"{self.type}{self.type}"):
             self.name = self.name.removeprefix(self.type)
 
-
     def get_symbol(self) -> str:
         if self.symbol == "":
             return self.name
