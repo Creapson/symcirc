@@ -18,7 +18,6 @@ class ImportCircuit(Node):
         from parser.NetlistParser import get_pre_format_info 
 
         file_path = self.open_file_dialog("Select Ciruit file", [("Circtui File","*.cir")])
-
         feedback = get_pre_format_info(file_path[0])
 
         # when a file is selected create the output pin

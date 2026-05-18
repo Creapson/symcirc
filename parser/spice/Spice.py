@@ -96,44 +96,47 @@ class Spice:
         index = starting_index
         while index < end_index:
             line = self.netlist_lines[index]
+            try:
+                if line.startswith("."):
 
-            if line.startswith("."):
+                    # start of subcircuit definition
+                    if line.startswith((".SUBCKT", ".subckt")):
+                        index, ct_name, sub_ct = self.parse_subcircuit(index)
+                        circuit.add_subcircuit(ct_name, sub_ct)
+                        continue
 
-                # start of subcircuit definition
-                if line.startswith((".SUBCKT", ".subckt")):
-                    index, ct_name, sub_ct = self.parse_subcircuit(index)
-                    circuit.add_subcircuit(ct_name, sub_ct)
+                    # start of model definition
+                    if line.startswith((".model", ".MODEL")):
+                        index, model = self.parse_model(index)
+                        if model is not None:
+                            circuit.add_model(model)
+                        continue
+
+                    if line.startswith((".AC", ".ac")): 
+                        log_space = self.parse_sweep(index)
+                        circuit.add_param("sweep", log_space)
+                        index += 1 
+                        continue
+
+                    if line.lower().startswith((".inc", ".lib")):
+                        index += 1 
+                        continue
+
+                    # output currently not parsable lines
+                    self.print_parser_error(line)
+
+                elif line.startswith("+"):
+                    index += 1
                     continue
 
-                # start of model definition
-                if line.startswith((".model", ".MODEL")):
-                    index, model = self.parse_model(index)
-                    if model is not None:
-                        circuit.add_model(model)
-                    continue
-
-                if line.startswith((".AC", ".ac")): 
-                    log_space = self.parse_sweep(index)
-                    circuit.add_param("sweep", log_space)
-                    index += 1 
-                    continue
-
-                if line.lower().startswith((".inc", ".lib")):
-                    index += 1 
-                    continue
-
-                # output currently not parsable lines
-                self.print_parser_error(line)
-
-            elif line.startswith("+"):
+                else:
+                    element, index = self.parse_element(index, circuit)
+                    if element is not None:
+                        circuit.add_element(element)
                 index += 1
-                continue
 
-            else:
-                element, index = self.parse_element(index, circuit)
-                if element is not None:
-                    circuit.add_element(element)
-            index += 1
+            except:
+                self.print_parser_error("Unable to parse the following string: " + line)
 
         return circuit 
 
@@ -226,6 +229,8 @@ class Spice:
             return ""
         except FileNotFoundError:
             return f"The file: {file_path} could not be found!"
+        except PermissionError:
+            return f"Unable to open the file {file_path}!"
 
     def parse_element(self, index:int, circuit : Circuit) -> tuple[Element, int]:
         """Parses the element from the given string.
