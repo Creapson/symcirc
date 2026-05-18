@@ -5,7 +5,7 @@ from gui.components.node_editor.NodeEditor import NodeEditor
 
 from gui.components.node_editor.nodes.BodePlotNode import BodePlotNode
 
-from gui.components.node_editor.nodes.Flatten import FlattenNode
+from gui.components.node_editor.nodes.FlattenNode import FlattenNode
 from gui.components.node_editor.nodes.ImportCircuit import ImportCircuit
 from gui.components.node_editor.nodes.NetlistParserNode import NetlistParserNode
 

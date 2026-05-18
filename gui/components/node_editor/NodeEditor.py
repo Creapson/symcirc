@@ -5,7 +5,7 @@ from typing import Any, Dict, Union, Tuple, Annotated
 from gui.components.node_editor.nodes.Node import Node
 from gui.components.node_editor.nodes.BodePlotNode import BodePlotNode
 
-from gui.components.node_editor.nodes.Flatten import FlattenNode
+from gui.components.node_editor.nodes.FlattenNode import FlattenNode
 from gui.components.node_editor.nodes.ImportCircuit import ImportCircuit
 from gui.components.node_editor.nodes.NetlistParserNode import NetlistParserNode
 
@@ -72,7 +72,7 @@ class NodeEditor(BaseModel):
                 to_node.onlink_callback()  # may raise
             except Exception as e:
                 to_node.connections = {}
-                print(f"Link rejected: {e}")
+                print(f"Link rejected: {e.__cause__}")
                 return
 
             link_id = dpg.add_node_link(from_pin, to_pin, parent=sender)
