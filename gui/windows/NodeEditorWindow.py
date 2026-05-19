@@ -44,19 +44,19 @@ class NodeEditorWindow(Window):
 
     def save_node_editor(self, sender, app_data):
         try:
-            file_path:str = app_data.get("file_path_name")
+            file_path = self.open_file_dialog("Open Pipeline", [("JSON File", "*.json")], False)
             if not file_path:
                 print("No file selected")
                 return
 
             # Ensure .json extension
-            if not file_path.endswith(".json"):
-                file_path += ".json"
+            if not file_path[0].endswith(".json"):
+                file_path[0] += ".json"
 
             # save / update chaging variables like the position
             self.node_editor.save()
             # Dump Pydantic object to JSON
-            with open(file_path, "w", encoding="utf-8") as f:
+            with open(file_path[0], "w", encoding="utf-8") as f:
                 f.write(self.node_editor.model_dump_json(indent=4))
 
             print(f"Saved to {file_path}")
@@ -67,9 +67,13 @@ class NodeEditorWindow(Window):
 
     def load_node_editor(self, sender, app_data):
         try:
-            file_path: str = app_data["file_path_name"]
+            file_path = self.open_file_dialog("Select Pipeline", [("JSON File","*.json")])
+            if not file_path:
+                print("No file selected")
+                return
+            print(file_path)
             
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path[0], "r", encoding="utf-8") as f:
                 json_string = f.read()
             
             self.node_editor = NodeEditor.model_validate_json(json_string)
@@ -160,26 +164,6 @@ class NodeEditorWindow(Window):
 
     def build(self):
         # ---------- MENU BAR ----------
-        with dpg.file_dialog(
-            directory_selector=False,
-            show=False,
-            callback=self.save_node_editor,
-            tag=self.uuid("file_save_dialog"),
-            width=700,
-            height=400,
-        ):
-            dpg.add_file_extension(".json")
-
-        with dpg.file_dialog(
-            directory_selector=False,
-            show=False,
-            callback=self.load_node_editor,
-            tag=self.uuid("file_load_dialog"),
-            width=700,
-            height=400,
-        ):
-            dpg.add_file_extension(".json")
-
         with dpg.window(tag=self.uuid("add_node_context_menu"), show=False, popup=True):
             self.build_add_node_menu()
         
@@ -189,12 +173,12 @@ class NodeEditorWindow(Window):
                 dpg.add_menu_item(
                         label="Open", 
                         enabled=True, 
-                        callback=lambda: dpg.show_item(self.uuid("file_load_dialog"))
+                        callback=self.load_node_editor
                         )
                 dpg.add_menu_item(
                         label="Save", 
                         enabled=True, 
-                        callback=lambda: dpg.show_item(self.uuid("file_save_dialog"))
+                        callback=self.save_node_editor
                         )
                 dpg.add_separator()
                 dpg.add_menu_item(label="Exit", enabled=False)

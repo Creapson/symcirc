@@ -1,4 +1,6 @@
 import dearpygui.dearpygui as dpg
+from typing import List
+from plyer import filechooser
 
 
 class Window:
@@ -29,6 +31,13 @@ class Window:
     
     def update(self):
         pass
+
+    def open_file_dialog(self, title:str, file_extensions:List[tuple[str, str]], open_mode: bool = True) -> List[str]:
+
+        if open_mode:
+            return filechooser.open_file(title=title, filters=file_extensions)
+        else:
+            return filechooser.save_file(title=title, filters=file_extensions)
 
     def on_close(self, sender, app_data, user_data):
         # sender is the window tag
