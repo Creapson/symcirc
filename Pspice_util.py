@@ -17,6 +17,7 @@ def pspice_to_float(s: str):
         "K": 1e3,
         "M": 1e-3,
         "U": 1e-6,
+        "UF": 1e-6,  # Some use "uF" for microfarads
         "N": 1e-9,
         "P": 1e-12,
         "F": 1e-15

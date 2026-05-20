@@ -13,13 +13,13 @@ import matplotlib.pyplot as plt
 
 circuit = Circuit()
 
-circuit = get_circuit_from_file("test_circuits/Conrad2st.cir")
+circuit = get_circuit_from_file("test_circuits/MOS_Amp_Example5_d.cir")
 circuit.to_ai_string()
 print("\n\n\nThe now flattend subcircuits")
 circuit.flatten()
 circuit.to_ai_string()
 print("\n\n\nThe flattend circuit with small signal models")
-circuit.flatten(True, "test_circuits/Conrad2st.out")
+circuit.flatten(True, "test_circuits/MOS_Amp_Example5_d.out")
 circuit.to_ai_string()
 print(circuit.get_nodes())
 
@@ -34,10 +34,10 @@ x_syms = list(mna.get_unknowns())
 print("Unknowns:")
 print(x_syms)
 idx_in = x_syms.index(sp.symbols("V_1"))
-idx_out = x_syms.index(sp.symbols("V_10"))
+idx_out = x_syms.index(sp.symbols("V_6"))
 f = np.logspace(0, 7, 800)
 
-H_lambdified = mna.solveNumerical(f, "V_10")
+H_lambdified = mna.solveNumerical(f, "V_6")
 
 
 print("\n\n\n\n\n\n")
@@ -60,11 +60,11 @@ print("Available elimination methods:", ap.get_Elimination_Methods())
 print("Available sorting methods:", ap.get_Sorting_Methods())
 t0 = t.perf_counter_ns()
 #approximate(self, in_var, out_var, points/errors, term_removal_method, tolerance (tbt- rel_error; block - jmp_threshold), sorting_criterion, sorting_extra_var(column - col_num))
-approx = ap.approximate('V_10', ((1e5,0.05),), "term-by-term",0.6, "max", 1)
+approx = ap.approximate('V_6', ((1e5,0.05),), "term-by-term",0.6, "max", 1)
 t1 = t.perf_counter_ns()
 print(f"Time for approximation: {(t1 - t0) / 1e6} ms")
 
-approx_H_lambdified = approx.solveNumerical(f, "V_10")
+approx_H_lambdified = approx.solveNumerical(f, "V_6")
 
 
 
@@ -73,25 +73,7 @@ approx_H_lambdified = approx.solveNumerical(f, "V_10")
 
 # --- 1. Symbolische Übertragungsfunktion definieren ---
 s = sp.symbols("s")
-# Beispiel: Tiefpass 1. Ordnung: H(s) = 1 / (s + 1)
 
-
-
-
-# --- 2. SymPy → numerische Funktion umwandeln ---
-
-# --- 3. Frequenzachse definieren ---
-  # Kreisfrequenz
-# w = np.logspace(-2, 10, 10000)
-# jw = 1j * 2* np.pi* f
-
-# approx_eval = approx_H_lambdified(jw)
-
-
-# if np.isscalar(approx_eval):
-#     approx_eval = np.full_like(H_lambdified, approx_eval)
-
-#print("\n\n\n\n\n\n", H_lambdified, "\n\n\n\n\n")
 # --- 4. Bode-Plot erstellen ---
 fig, (ax_mag, ax_phase) = plt.subplots(2, 1, figsize=(8, 6))
 
@@ -104,8 +86,8 @@ ax_mag.grid(True, which="both")
 ax_mag.legend()
 
 # Phase (in Grad)
-ax_phase.semilogx(f, np.angle(H_lambdified, deg=True), label="Original")
-ax_phase.semilogx(f, np.angle(approx_H_lambdified, deg=True), "r--", label="Approximiert")
+ax_phase.semilogx(f, np.unwrap(np.angle(H_lambdified, deg=True), axis=0).flatten(), label="Original")
+ax_phase.semilogx(f, np.unwrap(np.angle(approx_H_lambdified, deg=True), axis=0).flatten(), "r--", label="Approximiert")
 ax_phase.set_ylabel("Phase [°]")
 ax_phase.set_xlabel("Kreisfrequenz ω [rad/s]")
 ax_phase.grid(True, which="both")

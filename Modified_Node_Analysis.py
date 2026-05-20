@@ -38,23 +38,25 @@ class ModifiedNodalAnalysis(EquationFormulator):
    
         self.node_map = {}
         used_values = set()
-        
+
         for node in self.ct.nodes:
-            if node.isdigit():
-                val = int(node)
-                if val not in used_values:
-                    self.node_map[node] = val
-                    used_values.add(val)
-        
-        for node in self.ct.nodes:
-            if not node.isdigit():      
-                # No number, assign next available starting from 1
-                val = 1
-                while val in used_values:
-                    val += 1
-                self.node_map[node] = val
-                used_values.add(val)
-        
+            #filter out ground node and assign them value 0
+            if (node == "ground") | (node == "0") | (node == "GND") | (node == "gnd"):
+                self.node_map[node] = 0
+                used_values.add(0)
+                continue
+             
+            #assign next available starting from 1
+            val = 1
+            while val in used_values:
+                val += 1
+            self.node_map[node] = val
+            used_values.add(val)
+
+        print("Node mapping:")
+        print(self.node_map)
+
+        #create vector with symbols of unknown node voltages based on the size of the matrix      
         size = len(self.node_map)
         self.unknowns = [None] * size
 
