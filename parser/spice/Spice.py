@@ -9,6 +9,7 @@ from netlist.Model import Model
 
 class Spice:
     netlist_lines: list[str] = []
+    netlist_lines_source: list[str] = []
     file_path: str = ""
     def parse_netlist(self) -> Circuit:
         """Parse the entire loaded Netlist. Load the netlist with
@@ -30,18 +31,28 @@ class Spice:
         self.file_path = file_path
         pass
 
-    def print_parser_error(self, extra_string : str):
+    def print_parser_error(self, extra_string : str, index:int = 0):
         """Print a error in red for a given line
 
         Args:
             extra_string (str): String with extra details to output
         """
-        print(
-            "\x1b[31m",
-            "Unable to parse the following string: ",
-            extra_string,
-            "\x1b[0m",
-        )
+        if index == 0:
+            print(
+                "\x1b[31m",
+                "Unable to parse the following string: ",
+                extra_string,
+                "\x1b[0m",
+            )
+        else:
+            print(
+                "\x1b[31m",
+                "Unable to parse the following string: ",
+                extra_string,
+                "\tFrom file:",
+                self.netlist_lines_source[index],
+                "\x1b[0m",
+            )
 
 
     def pre_format(self) -> list[str]:
@@ -53,6 +64,7 @@ class Spice:
 
         # Remove empty lines from the list
         self.netlist_lines = list(filter(None, lines))
+        self.netlist_lines_source = [f"{self.file_path}_{x}]" for x in range(len(self.netlist_lines))]
 
         # resolve missing includes / librarys
         index = 0
@@ -123,8 +135,9 @@ class Spice:
                         continue
 
                     # output currently not parsable lines
-                    self.print_parser_error(line)
+                    self.print_parser_error(line, index)
 
+                # skip those lines
                 elif line.startswith("+"):
                     index += 1
                     continue
@@ -136,7 +149,8 @@ class Spice:
                 index += 1
 
             except:
-                self.print_parser_error("Unable to parse the following string: " + line)
+                self.print_parser_error("Unable to parse the following string: " + line, index)
+                index += 1
 
         return circuit 
 
@@ -188,17 +202,23 @@ class Spice:
                 ]
                 # Remove empty lines from the list
                 include_lines = list(filter(None, lines))
+                include_line_source = [new_file_path for x in range(len(include_lines))]
                 # squeeze the includes lines into the main line array
                 self.netlist_lines = (
                     self.netlist_lines[:index]
                     + include_lines
                     + self.netlist_lines[index + 1 :]
                 )
+                self.netlist_lines_source = (
+                    self.netlist_lines_source[:index]
+                    + include_line_source
+                    + self.netlist_lines_source[index + 1 :]
+                )
 
             print(f"Succesfully loaded {file_path}!")
             return ""
         except FileNotFoundError:
-            return f"The file: {file_path} could not be found!"
+            return f"The file: {file_path} could not be found!\n"
 
     def parse_lib(self, index: int) -> str:
         line_splits = self.netlist_lines[index].split()
@@ -218,6 +238,8 @@ class Spice:
                 ]
                 # Remove empty lines from the list
                 include_lines = list(filter(None, lines))
+                include_line_source = [new_file_path for x in range(len(include_lines))]
+
                 # squeeze the includes lines into the main line array
                 self.netlist_lines = (
                     self.netlist_lines[:index]
@@ -225,12 +247,18 @@ class Spice:
                     + self.netlist_lines[index + 1 :]
                 )
 
+                self.netlist_lines_source = (
+                    self.netlist_lines_source[:index]
+                    + include_line_source
+                    + self.netlist_lines_source[index + 1 :]
+                )
+
             print(f"Succesfully loaded {file_path}!")
             return ""
         except FileNotFoundError:
-            return f"The file: {file_path} could not be found!"
+            return f"The file: {file_path} could not be found!\n"
         except PermissionError:
-            return f"Unable to open the file {file_path}!"
+            return f"Unable to open the file {file_path}!\n"
 
     def parse_element(self, index:int, circuit : Circuit) -> tuple[Element, int]:
         """Parses the element from the given string.
@@ -274,7 +302,7 @@ class Spice:
                 return self.parse_subcircuit_element(element, index)
 
             case _:
-                self.print_parser_error(line)
+                self.print_parser_error(line, index)
                 return (Element(), index)
 
     def parse_admittance(self, element : Element, index:int) -> tuple[Element, int]:
@@ -350,13 +378,13 @@ class Spice:
         elif len(line_splits) == 5:
             ref_element = circuit.get_element(line_splits[3])
             if ref_element is None:
-                self.print_parser_error("Could not find Element to resolve the connections" + str(line_splits))
+                self.print_parser_error("Could not find Element to resolve the connections: " + str(self.netlist_lines[index]), index)
                 return (element, index)
 
             element.connections = line_splits[1:-2] + ref_element.connections
             element.add_param("value", line_splits[4])
         else:
-            self.print_parser_error("This line is too long or short!" + str(line_splits))
+            self.print_parser_error("This line is too long or short! " + str(self.netlist_lines[index]), index)
         return (element, index)
 
     def parse_transistor(self, element : Element, index: int) -> tuple[Element, int]:
@@ -508,7 +536,7 @@ class Spice:
                 model.add_param("type", line_splits[2])
                 parse_params(line_splits[3:], model)
             case _:
-                self.print_parser_error(f"Failed to parse this Model: {line}\t")
+                self.print_parser_error(f"Failed to parse this Model: {line}\t", index)
                 return index, None
 
         if ")" in line:

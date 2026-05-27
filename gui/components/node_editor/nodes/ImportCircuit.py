@@ -12,7 +12,7 @@ class ImportCircuit(Node):
             message = ""
             for string in feedback:
                 if string is not None:
-                    message += "\n" + string
+                    message += string
             return message
 
         from parser.NetlistParser import get_pre_format_info 

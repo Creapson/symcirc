@@ -1,0 +1,285 @@
+from __future__ import annotations
+
+from typing import Dict, List
+
+from netlist.Circuit import Circuit
+from netlist.Element import Element
+from netlist.Model import Model
+
+# Inspired by https://github.com/PySpice-org/PySpice/blob/master/PySpice/Spice/Parser.py
+
+class SpiceParser:
+    def __init__(self, path:str = "") -> None:
+        self._path = path
+        self.raw_lines: List[str] = []
+        self.feedback: List[str] = []
+
+        # self.lines
+        if path is not None:
+            try:
+                with open(str(path), 'r') as f:
+                    self._raw_lines = f.readlines()
+            except:
+                self.feedback.append(f"Could not load file: {path}")
+
+        self._add_includes()
+
+        formatted_lines: List[str] = self._format_lines(self._raw_lines)
+        self.lines: List[Line] = self._merge_lines(formatted_lines)
+
+    def _add_includes(self):
+        for idx, line in enumerate(self._raw_lines):
+            if line.lower().startswith(".inc"):
+                new_file_path = ""
+                try:
+                    import os
+                    path = line.split()[1].strip("\"")
+                    dir_path = os.path.dirname(self._path)
+                    new_file_path = os.path.join(dir_path, path)
+
+                    inc_lines: List[str] = []
+                    if path is not None:
+                        with open(str(new_file_path), 'r') as f:
+                            inc_lines = f.readlines()
+                    self._raw_lines = (
+                        self._raw_lines[:idx]
+                        + inc_lines
+                        + self._raw_lines[idx + 1 :]
+                    )
+                except:
+                    self.feedback.append(f"Could not load file {new_file_path}")
+                    print(Exception)
+
+
+    def _format_lines(self, raw_lines: list[str]):
+        lines = [line.strip() for line in raw_lines if not line.lstrip().startswith("*")]
+        return lines
+
+    def _merge_lines(self, raw_lines: list[str]) -> List[Line]:
+        lines = []
+        current_line: Line = Line()
+        for line_string in raw_lines:
+
+            if line_string.startswith('+'):
+                current_line.append(line_string[1:].strip('\r\n'))
+            else:
+                if line_string:
+                    line = Line(line_string)
+                    lines.append(line)
+                    current_line = line
+
+        for line in lines:
+            print(line._text)
+        return lines
+
+    def _parse(self) -> Circuit:
+        base_circuit: Circuit = Circuit()
+        tmp_subct: Circuit = Circuit()
+        _scope = base_circuit
+
+        for line in self.lines:
+            line_str = line._text.lower()
+            if line_str.startswith("."):
+
+                if line_str.startswith(".ends"):
+                    base_circuit.add_subcircuit(tmp_subct)
+                    _scope = base_circuit
+
+                if line_str.startswith(".subckt"):
+                    tmp_subct = self._parse_subct(line)
+                    tmp_subct.name = line.tokens[1]
+                    _scope = tmp_subct
+                    pass
+
+                if line_str.startswith(".model"):
+                    model = self._parse_model(line)
+                    _scope.add_model(model)
+
+                if line_str.startswith(".lib"):
+                    pass
+
+                if line_str.startswith(".inc"):
+                    pass
+
+                if line_str.startswith(".ac"):
+                    # log_space = self.parse_sweep(index)
+                    # _scope.add_param("sweep", log_space)
+                    pass
+
+                pass
+            else:
+                element = self._parse_element(line)
+                _scope.add_element(element)
+
+
+        base_circuit.to_ai_string()
+        return base_circuit
+
+    def _parse_element(self, line: Line) -> Element:
+        """Parses the element from the given string.
+
+        Args:
+            line: str representing the Element
+
+        Returns:
+            The parsed Element
+        """
+        element: Element = Element()
+
+        name = line.tokens[0]
+
+        ele_type = name[0]
+        element.set_type(ele_type)
+
+        element.name = name
+        element.remove_type_prefix()
+
+        match element.type:
+            # Admittance
+            case "R" | "C" | "L" | "D":
+                element.connections = line.tokens[1:-1]
+                element.add_param("value_dc", line.tokens[-1])
+
+            # Sources
+            case "V" | "I":
+                if line.token_cnd == 4:
+                    element.connections = line.tokens[1:-1]
+                    element.add_param("value_dc", line.tokens[-1])
+                elif line.token_cnd > 4:
+                    element.connections = line.tokens[1:3]
+
+                    # parse all values from this token
+                    def parse_token(index, token_str):
+                        token_list = ["DC", "AC", "SIN(", "SIN", "PULSE", "EXP", "SFFM"]
+                        token_list.remove(token_str)
+                        param_token_str = "value_" + token_str.lower()
+                        value = ""
+                        index += 1
+                        while (
+                            index < line.token_cnd
+                            and line.tokens[index].upper() not in token_list
+                        ):
+                            value += line.tokens[index]
+                            index += 1
+                        element.add_param(param_token_str, value)
+                        return index
+
+                    i = 3
+                    while i < len(line.tokens):
+                        token = line.tokens[i].upper()
+
+                        if token == "DC":
+                            i = parse_token(i, "DC")
+                            continue
+
+                        elif token == "AC":
+                            i = parse_token(i, "AC")
+                            continue
+
+                        elif token.startswith("SIN"):
+                            i += 1
+                            continue
+
+                        elif token == "PULSE":
+                            i += 1
+                            continue
+
+                        elif token == "EXP":
+                            i += 1
+                            continue
+
+                        elif token == "SFFM":
+                            i += 1
+                            continue
+
+                        else:
+                            i += 1
+
+
+            # Controlles Sources
+            case "E" | "G" | "F" | "H":
+                if line.token_cnd == 6:
+                    element.connections = line.tokens[1:-1]
+                    element.add_param("value", line.tokens[-1])
+
+            # Transistors
+            case "Q" | "M":
+                if line.token_cnd <= 6:
+                    element.connections = line.tokens[1:-1]
+                    element.add_param("ref_model", line.tokens[-1])
+                else:
+                    element.connections = line.tokens[1:5]
+                    element.add_param("ref_model", line.tokens[5])
+                    element.add_param("area", line.tokens[6])
+                
+                # add params
+                param_str = " ".join(line.tokens[7:])
+                element.params.update(line.get_kwargs(param_str))
+
+            # Subcircuits
+            case "X":
+                element.connections = line.tokens[1:-1]
+                element.add_param("ref_cir", line.tokens[-1])
+
+            case _:
+                return Element()
+
+        return element
+
+    def _parse_model(self, line: Line) -> Model:
+        model: Model = Model()
+
+        text = line.right_of('.model').strip()
+        import re
+        mtch = re.match("\s*([^ \t]+)\s*([^ \t(]+)(.*)", text)
+
+        model.name = mtch[1]
+        model.type = mtch[2]
+        params = mtch[3]
+        params = params.strip('() ')
+        model.params = Line.get_kwargs(params)
+
+        return Model()
+
+    def _parse_subct(self, line: Line) -> Circuit:
+        return Circuit()
+
+class Line:
+    def __init__(self, line:str = "") -> None:
+        self._text = line.strip()
+        self.tokens = self._text.split()
+        self.token_cnd = len(self.tokens)
+    
+    def append(self, line:str):
+        self._text += " " + line
+
+    def right_of(self, text):
+        return self._text[len(text):].strip()
+
+    @staticmethod
+    def get_kwargs(text:str) -> Dict[str, str]:
+        dict_parameters = {}
+
+        parts = []
+        for part in text.split():
+            if '=' in part and part != '=':
+                left, right = [x for x in part.split('=')]
+                parts.append(left)
+                parts.append('=')
+                if right:
+                    parts.append(right)
+            else:
+                parts.append(part)
+
+        i = 0
+        i_stop = len(parts)
+        while i < i_stop:
+            if i + 1 < i_stop and parts[i + 1] == '=':
+                key, value = parts[i], parts[i + 2]
+                dict_parameters[key] = value
+                i += 3
+            else:
+                raise Exception("Bad kwarg: {}".format(text))
+
+        return dict_parameters
+

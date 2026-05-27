@@ -12,6 +12,7 @@ class Model(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     name: str = ""
+    type: str = ""
     filename: str = ""
     params: Dict[str, str] = {} 
 

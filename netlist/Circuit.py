@@ -34,7 +34,11 @@ class Circuit(BaseModel):
         self.name = name
 
     def add_param(self, param:str, value:str):
-        self.params[param] = value;
+        self.params[param] = value
+
+    def resolve_controlled_sources(self):
+        print("resolve_controlled_sources not implemented yet!")
+        pass
 
     def get_sweep(self):
         sweep:str = self.params.get("sweep", "None")
@@ -124,13 +128,13 @@ class Circuit(BaseModel):
         self.models[model.name] = model
 
     def add_element(self, element: Element):
-        if element is not None:
+        if element != Element():
             self.elements.append(element)
             for node in element.connections:
                 self.add_node(node)
 
-    def add_subcircuit(self, circuitName: str, circuit: "Circuit"):
-        self.subcircuits[circuitName] = circuit
+    def add_subcircuit(self, circuit: "Circuit"):
+        self.subcircuits[circuit.name] = circuit
 
     def flatten_subcircuit(
         self,
@@ -144,7 +148,7 @@ class Circuit(BaseModel):
             subcircuits = {}
 
         combined_subct_list = self.subcircuits | subcircuits
-        print(combined_subct_list)
+        # print(combined_subct_list)
         subct = combined_subct_list.get(subcircuit_name, Circuit())
 
         subct_connections = subct.inner_connecting_nodes
