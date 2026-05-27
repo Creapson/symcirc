@@ -11,7 +11,7 @@ from netlist.Model import Model
 class SpiceParser:
     def __init__(self, path:str = "") -> None:
         self._path = path
-        self.raw_lines: List[str] = []
+        self._raw_lines: List[str] = []
         self._libs: List[str] = []
         self.feedback: List[str] = []
 
@@ -119,21 +119,25 @@ class SpiceParser:
                 pass
             else:
                 element = self._parse_element(line)
-                if element.type == "Q":
-                    used_models.append(element.params.get("ref_model", ""))
-                if element.type == "X":
-                    used_models.append(element.params.get("ref_cir", ""))
                 _scope.add_element(element)
+                if _scope == base_circuit:
+                    if element.type in ("Q", "M"):
+                        used_models.append(element.params.get("ref_model", ""))
+                    if element.type == "X":
+                        used_subckts.append(element.params.get("ref_cir", ""))
 
         # get all missing models and subckt from the libs
         for lib in self._libs:
+            subcts: Dict[str, Circuit] = {}
+            models: Dict[str, Model] = {}
             try:
                 parser = SpiceParser(lib)
                 lib_ct = parser._parse()
                 subcts = lib_ct.get_subcircuits()
                 models = lib_ct.get_models()
-            except:
-                print(f"could not parse lib: {lib}")
+            except Exception as error:
+                print(error.with_traceback(None))
+                print(f"Could not parse lib: {lib}")
 
             for model_name in used_models:
                 if model_name in models:
@@ -312,7 +316,7 @@ class Line:
                 dict_parameters[key] = value
                 i += 3
             else:
-                print("Bad kwarg: {}".format(text))
+                # print("Bad kwarg: {}".format(text))
                 i += 3
 
         return dict_parameters

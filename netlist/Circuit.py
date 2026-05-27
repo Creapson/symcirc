@@ -54,7 +54,7 @@ class Circuit(BaseModel):
             case "LIN": 
                 start = int(sweep_split[2])
                 stop = int(sweep_split[3])
-                return np.linspace(start=start, stop=stop, num=num_of_points)
+                return np.linspace(start=start, stop=stop, num=num_of_points).tolist()
 
             case "DEC": 
                 start = int(float(sweep_split[2]))
@@ -62,18 +62,18 @@ class Circuit(BaseModel):
 
                 num_decades = np.log10(stop) - np.log10(start)
                 total_pts = int(num_of_points * num_decades) + 1
-                return np.logspace(np.log10(start), np.log10(stop), num=total_pts)
+                return np.logspace(np.log10(start), np.log10(stop), num=total_pts).tolist()
 
             case "OCT": 
                 start = int(sweep_split[2])
                 stop = int(sweep_split[3])
                 num_octaves = np.log2(stop / start)
                 total_pts = int(num_of_points * num_octaves) + 1
-                return np.logspace(np.log2(start), np.log2(stop), num=total_pts, base=2)
+                return np.logspace(np.log2(start), np.log2(stop), num=total_pts, base=2).tolist()
 
             case "POI": 
                 points_of_interest = [float(point) for point in sweep_split[2:]]
-                return np.array(points_of_interest)
+                return np.array(points_of_interest).tolist()
 
     def set_netlist_path(self, path: str):
         self.netlist_file_path = path

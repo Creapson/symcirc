@@ -33,7 +33,7 @@ class MNA(Node):
         mna.buildEquationsSystem()
 
         # get the log_space from the circuit
-        log_space = self.circuit.get_sweep().tolist()
+        log_space = self.circuit.get_sweep()
 
         self.add_output_pin(tag="h_out", text="H")
         self.add_output_pin_value("h_out", (log_space, mna), is_persistence=False)
