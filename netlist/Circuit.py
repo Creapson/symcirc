@@ -120,6 +120,9 @@ class Circuit(BaseModel):
     def get_subcircuits(self) -> Dict[str, "Circuit"]:
         return self.subcircuits
 
+    def get_models(self) -> Dict[str, Model]:
+        return self.models
+
     def add_node(self, nodeID: str):
         if nodeID not in self.nodes:
             self.nodes.append(nodeID)
@@ -133,8 +136,10 @@ class Circuit(BaseModel):
             for node in element.connections:
                 self.add_node(node)
 
-    def add_subcircuit(self, circuit: "Circuit"):
-        self.subcircuits[circuit.name] = circuit
+    def add_subcircuit(self, circuit: "Circuit", ct_name: str = ""):
+        if circuit == Circuit(): return
+        if ct_name == "": ct_name = circuit.name
+        self.subcircuits[ct_name] = circuit
 
     def flatten_subcircuit(
         self,
@@ -177,6 +182,7 @@ class Circuit(BaseModel):
         for element in subct.elements:
             new_ele = element.copy()
             new_ele.name = f"{new_ele.name}{self.separator}{element_name}"
+            new_ele.historical_name = f"{element_name}{self.separator}{new_ele.name}"
             new_ele.connections = new_node_ids(element.connections)
 
             if new_ele.type == "Q":
@@ -252,7 +258,7 @@ class Circuit(BaseModel):
                 )
 
                 if model_subct is not None:
-                    self.add_subcircuit(subct_name, model_subct)
+                    self.add_subcircuit(model_subct, subct_name)
 
                 subct_elements = self.flatten_subcircuit(
                     subct_name,

@@ -34,9 +34,9 @@ class Model(BaseModel):
         project_root = current_file_dir.parent
 
         # 3. Choose correct small signal model library sub-path
-        if param_list["type"] in ("NPN", "PNP"):
+        if self.type in ("NPN", "PNP"):
             sub_path = Path("library/small_signal_models/bipolar_models") / f"{bipolar_model}.json"
-        elif param_list["type"] in ("MOS", "NMOS"):
+        elif self.type in ("MOS", "NMOS"):
             sub_path = Path("library/small_signal_models/mosfet_models") / f"{mosfet_model}.json"
         else:
             print(f"Failed to load model! Type: {param_list['type']} is not known!")
@@ -57,4 +57,4 @@ class Model(BaseModel):
 
     def to_ai_string(self, indent: int):
         param_string = ", ".join(f'"{k}" -> {v}' for k, v in self.params.items())
-        print("\t" * indent, self.name, self.filename, param_string)
+        print("\t" * indent, self.name, self.type, self.filename, param_string)

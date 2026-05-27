@@ -601,7 +601,7 @@ class Spice:
                 param_start_index += 1
 
         # Build fast lookup
-        lookup = {normalize_name(el.get_name_reversed()): el for el in elements}
+        lookup = {normalize_name(el.historical_name): el for el in elements}
         i = 0
         n = len(lines)
 

@@ -72,7 +72,7 @@ class NodeEditor(BaseModel):
                 to_node.onlink_callback()  # may raise
             except Exception as e:
                 to_node.connections = {}
-                print(f"Link rejected: {e.__cause__}")
+                print(f"Link rejected: {e}")
                 return
 
             link_id = dpg.add_node_link(from_pin, to_pin, parent=sender)

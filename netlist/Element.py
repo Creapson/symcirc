@@ -6,6 +6,7 @@ class Element(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     name: str = ""
+    historical_name: str = ""
     symbol: str = ""
     connections: List[str] = []
     type: str = "None"

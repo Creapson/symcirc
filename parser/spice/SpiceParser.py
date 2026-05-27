@@ -12,6 +12,7 @@ class SpiceParser:
     def __init__(self, path:str = "") -> None:
         self._path = path
         self.raw_lines: List[str] = []
+        self._libs: List[str] = []
         self.feedback: List[str] = []
 
         # self.lines
@@ -50,6 +51,12 @@ class SpiceParser:
                     self.feedback.append(f"Could not load file {new_file_path}")
                     print(Exception)
 
+            if line.lower().startswith(".lib"):
+                try:
+                    self._libs.append(line.split()[1].strip("\""))
+                except:
+                    self.feedback.append(f"Could not get path from lib: {line}")
+                    print(Exception)
 
     def _format_lines(self, raw_lines: list[str]):
         lines = [line.strip() for line in raw_lines if not line.lstrip().startswith("*")]
@@ -68,14 +75,17 @@ class SpiceParser:
                     lines.append(line)
                     current_line = line
 
-        for line in lines:
-            print(line._text)
+        # for line in lines:
+        #     print(line._text)
         return lines
 
     def _parse(self) -> Circuit:
         base_circuit: Circuit = Circuit()
         tmp_subct: Circuit = Circuit()
         _scope = base_circuit
+
+        used_models: List[str] = []
+        used_subckts: List[str] = []
 
         for line in self.lines:
             line_str = line._text.lower()
@@ -109,10 +119,31 @@ class SpiceParser:
                 pass
             else:
                 element = self._parse_element(line)
+                if element.type == "Q":
+                    used_models.append(element.params.get("ref_model", ""))
+                if element.type == "X":
+                    used_models.append(element.params.get("ref_cir", ""))
                 _scope.add_element(element)
 
+        # get all missing models and subckt from the libs
+        for lib in self._libs:
+            try:
+                parser = SpiceParser(lib)
+                lib_ct = parser._parse()
+                subcts = lib_ct.get_subcircuits()
+                models = lib_ct.get_models()
+            except:
+                print(f"could not parse lib: {lib}")
 
-        base_circuit.to_ai_string()
+            for model_name in used_models:
+                if model_name in models:
+                    base_circuit.add_model(models.get(model_name, Model()))
+
+            for subct_name in used_subckts:
+                if subct_name in subcts:
+                    base_circuit.add_subcircuit(subcts.get(subct_name, Circuit()))
+
+        # base_circuit.to_ai_string()
         return base_circuit
 
     def _parse_element(self, line: Line) -> Element:
@@ -132,6 +163,7 @@ class SpiceParser:
         element.set_type(ele_type)
 
         element.name = name
+        element.historical_name = name
         element.remove_type_prefix()
 
         match element.type:
@@ -239,7 +271,7 @@ class SpiceParser:
         params = params.strip('() ')
         model.params = Line.get_kwargs(params)
 
-        return Model()
+        return model
 
     def _parse_subct(self, line: Line) -> Circuit:
         return Circuit()
@@ -258,6 +290,7 @@ class Line:
 
     @staticmethod
     def get_kwargs(text:str) -> Dict[str, str]:
+        text = text.strip(" ;()")
         dict_parameters = {}
 
         parts = []
@@ -279,7 +312,7 @@ class Line:
                 dict_parameters[key] = value
                 i += 3
             else:
-                raise Exception("Bad kwarg: {}".format(text))
+                print("Bad kwarg: {}".format(text))
+                i += 3
 
         return dict_parameters
-
