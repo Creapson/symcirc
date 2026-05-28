@@ -1,6 +1,7 @@
 import dearpygui.dearpygui as dpg
 from typing import List
-from plyer import filechooser
+import tkinter as tk
+from tkinter import filedialog
 
 
 class Window:
@@ -33,11 +34,27 @@ class Window:
         pass
 
     def open_file_dialog(self, title:str, file_extensions:List[tuple[str, str]], open_mode: bool = True) -> List[str]:
-
+        # Verhindert, dass ein leeres, separates Tkinter-Hauptfenster aufpoppt
+        root = tk.Tk()
+        root.withdraw()
+        
+        root.wm_attributes('-topmost', 1)
+        
         if open_mode:
-            return filechooser.open_file(title=title, filters=file_extensions)
+            paths = filedialog.askopenfilename(
+                title=title,
+                filetypes=file_extensions,
+                multiple=True
+            )
         else:
-            return filechooser.save_file(title=title, filters=file_extensions)
+            paths = filedialog.asksavefilename(
+                title=title,
+                filetypes=file_extensions,
+            )
+
+        
+        root.destroy()
+        return list(paths) if paths else []
 
     def on_close(self, sender, app_data, user_data):
         # sender is the window tag

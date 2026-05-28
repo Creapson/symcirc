@@ -1,6 +1,7 @@
 import dearpygui.dearpygui as dpg
 
 from gui.windows.NodeEditorWindow import NodeEditorWindow
+from pathlib import Path
 
 
 class Application:
@@ -32,13 +33,18 @@ class Application:
 
     def load_library(self):
         # load all small signal model 
-        from os import listdir
-        from os.path import isfile, join
-        bipolar_path = "library/small_signal_models/bipolar_models"
-        mosfet_path = "library/small_signal_models/mosfet_models"
+        base_dir = Path(__file__).resolve().parent
+        
+        bipolar_path = base_dir / "library" / "small_signal_models" / "bipolar_models"
+        mosfet_path = base_dir / "library" / "small_signal_models" / "mosfet_models"
 
-        self.bipolar_models = [f.removesuffix(".json") for f in listdir(bipolar_path) if isfile(join(bipolar_path, f))]
-        self.mosfet_models = [f.removesuffix(".json") for f in listdir(mosfet_path) if isfile(join(mosfet_path, f))]
+        self.bipolar_models = []
+        if bipolar_path.exists():
+            self.bipolar_models = [f.stem for f in bipolar_path.iterdir() if f.is_file() and f.suffix == ".json"]
+
+        self.mosfet_models = []
+        if mosfet_path.exists():
+            self.mosfet_models = [f.stem for f in mosfet_path.iterdir() if f.is_file() and f.suffix == ".json"]
 
         print(self.bipolar_models)
         print(self.mosfet_models)

@@ -2,7 +2,9 @@ import dearpygui.dearpygui as dpg
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Any, Dict, Annotated, Union, Tuple, Literal, List
 from enum import IntEnum
-from plyer import filechooser
+import tkinter as tk
+from tkinter import filedialog
+from typing import List
 
 from gui.components.OutputPin import OutputPin, PinType
 
@@ -169,12 +171,20 @@ class Node(BaseModel):
         print("Connections in Node: ", self.connections)
 
     def open_file_dialog(self, title:str, file_extensions:List[tuple[str, str]]) -> List[str]:
-
-        path = filechooser.open_file(
+        # Verhindert, dass ein leeres, separates Tkinter-Hauptfenster aufpoppt
+        root = tk.Tk()
+        root.withdraw()
+        
+        root.wm_attributes('-topmost', 1)
+        
+        paths = filedialog.askopenfilename(
             title=title,
-            filters=file_extensions
+            filetypes=file_extensions,
+            multiple=True
         )
-        return path
+        
+        root.destroy()
+        return list(paths) if paths else []
 
     def onlink_callback(self):
         if self.do_propagation:

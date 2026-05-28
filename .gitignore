@@ -9,3 +9,6 @@ todo.md
 garbagge.json
 garbagge_2.json
 error.json
+build/*
+dist/*
+main.spec
