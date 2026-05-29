@@ -564,7 +564,8 @@ class Spice:
         text:     the full SPICE-like dump string
         elements: list of elements
         """
-        def _parse_param_block(start_idx: int):
+        def _parse_param_block(start_idx: int, elements: List[Element]):
+            lookup = {(Element.get_normalised_name(el.historical_name)): el for el in elements}
             cur_names = []  # list of transistor names in the current block
             i = start_idx
             while i < n:
@@ -614,13 +615,13 @@ class Spice:
         for line in lines:
             if "BIPOLAR JUNCTION TRANSISTORS" in line:
                 bipol_param_start_index = idx
-            elif "MOSFET JUNCTION TRANSISTOR" in line:
+            elif "MOSFET" in line:
                 mosfet_param_start_index = idx
             else:
                 idx += 1
 
         # Build fast lookup
-        lookup = {(Element.get_normalised_name(el.historical_name)): el for el in elements}
+        
 
         if is_bipol:
             i = bipol_param_start_index
@@ -628,5 +629,5 @@ class Spice:
             i = mosfet_param_start_index
         n = len(lines)
 
-        _parse_param_block(bipol_param_start_index)
-        _parse_param_block(mosfet_param_start_index)
+        _parse_param_block(bipol_param_start_index, elements)
+        _parse_param_block(mosfet_param_start_index, elements)

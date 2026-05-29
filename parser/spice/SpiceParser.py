@@ -7,28 +7,24 @@ from netlist.Circuit import Circuit
 from netlist.Element import Element
 from netlist.Model import Model
 
+
 # Inspired by https://github.com/PySpice-org/PySpice/blob/master/PySpice/Spice/Parser.py
 
 class SpiceParser:
     def __init__(self, path:str = "") -> None:
-        self._path = path
+        self._path = str(Path(path).resolve()) if path else "" 
         self._raw_lines: List[str] = []
         self._libs: List[str] = []
         self.feedback: List[str] = []
 
-        current_file_dir = Path(__file__).resolve().parent
-        project_root = current_file_dir.parent
-
-        target_model = project_root / path
-
         # self.lines
-        if target_model is not None:
+        if self._path:
             try:
-                with open(str(target_model), 'r') as f:
+                with open(self._path, 'r') as f:
                     self._raw_lines = f.readlines()
             except:
-                self.feedback.append(f"Could not load file: {target_model}")
-                print(f"Could not load file: {target_model}")
+                self.feedback.append(f"Could not load file: {self._path}")
+                print(f"Could not load file: {self._path}")
 
         self._add_includes()
 
@@ -60,6 +56,13 @@ class SpiceParser:
 
             if line.lower().startswith(".lib"):
                 try:
+                    import os
+                    lib_path = line.split()[1].strip("\"")
+                    # Convert relative library paths to absolute right away
+                    if not os.path.isabs(lib_path):
+                        lib_path = os.path.join(os.path.dirname(self._path), lib_path)
+                    self._libs.append(lib_path)
+
                     self._libs.append(line.split()[1].strip("\""))
                 except:
                     self.feedback.append(f"Could not get path from lib: {line}")
@@ -133,9 +136,6 @@ class SpiceParser:
                     if element.type == "X":
                         used_subckts.append(element.params.get("ref_cir", ""))
 
-        print("Used Models", used_models)
-        print("Used Suckts", used_subckts)
-
         # get all missing models and subckt from the libs
         for lib in self._libs:
             subcts: Dict[str, Circuit] = {}
@@ -145,7 +145,6 @@ class SpiceParser:
                 lib_ct = parser._parse()
                 subcts = lib_ct.get_subcircuits()
                 models = lib_ct.get_models()
-                print(models)
             except Exception as error:
                 print(error.with_traceback(None))
                 print(f"Could not parse lib: {lib}")
