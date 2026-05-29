@@ -97,9 +97,6 @@ class Circuit(BaseModel):
             if element.type == "M":
                 element.add_param("mosfet_model", self.mosfet_model)
 
-    # def add_param(self, param, value):
-    #     self.params[param] = value
-
     def update_nodes(self):
         for element in self.elements:
             for node in element.connections:
@@ -108,8 +105,15 @@ class Circuit(BaseModel):
     def get_nodes(self) -> List[str]:
         return list(self.nodes)
 
-    def get_elements(self) -> List[Element]:
-        return self.elements
+    def get_elements(self, recursive=False) -> List[Element]:
+        if not recursive:
+            return self.elements
+        else:
+            elements: List[Element] = []
+            elements += self.elements
+            for _, subckt in self.subcircuits.items():
+                elements += subckt.get_elements(recursive=True)
+            return elements
 
     def get_element(self, element_name: str) -> Element | None :
         for element in self.elements:
@@ -182,7 +186,7 @@ class Circuit(BaseModel):
         for element in subct.elements:
             new_ele = element.copy()
             new_ele.name = f"{new_ele.name}{self.separator}{element_name}"
-            new_ele.historical_name = f"{element_name}{self.separator}{new_ele.name}"
+            new_ele.historical_name = f"{element_name}{self.separator}{new_ele.historical_name}"
             new_ele.connections = new_node_ids(element.connections)
 
             if new_ele.type == "Q":
@@ -244,7 +248,7 @@ class Circuit(BaseModel):
             # Expand transistor models
             if (element.type == "Q" or element.type == "M") and flatten_models:
                 model_name = element.params["ref_model"]
-                model = self.models[model_name]
+                model = self.models.get(model_name, Model())
 
                 subct_name = f"{element.name}.{model_name}"
 
@@ -279,7 +283,8 @@ class Circuit(BaseModel):
 
     def remove_unused_models(self):
         used_models = []
-        for element in self.elements:
+        elements: List[Element] = self.get_elements(recursive=True)
+        for element in elements:
             ref_model = element.params.get("ref_model", "None")
             if ref_model != "None":
                 used_models.append(ref_model)

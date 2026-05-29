@@ -47,7 +47,7 @@ class Window:
                 multiple=True
             )
         else:
-            paths = filedialog.asksavefilename(
+            paths = filedialog.asksaveasfilename(
                 title=title,
                 filetypes=file_extensions,
             )

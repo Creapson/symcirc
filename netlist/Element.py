@@ -1,5 +1,7 @@
 from typing import Dict, List
 from pydantic import BaseModel, ConfigDict, Field
+        
+import re
 
 
 class Element(BaseModel):
@@ -20,6 +22,10 @@ class Element(BaseModel):
             self.name = self.name.removeprefix(f"{self.type}_")
         if self.name.startswith(f"{self.type}{self.type}"):
             self.name = self.name.removeprefix(self.type)
+
+    @staticmethod
+    def get_normalised_name(name: str = "") -> str:
+        return re.sub(r"[,_]", ".", name)
 
     def get_symbol(self) -> str:
         if self.symbol == "":
@@ -58,4 +64,4 @@ class Element(BaseModel):
 
     def to_ai_string(self, indent: int):
         param_string = ", ".join(f'"{k}" -> {v}' for k, v in self.params.items())
-        print("\t" * indent, self.name, self.symbol, self.connections, self.type, param_string)
+        print("\t" * indent, self.name, self.historical_name, self.symbol, self.connections, self.type, param_string)

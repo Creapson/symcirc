@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Dict, List
+from pathlib import Path
 
 from netlist.Circuit import Circuit
 from netlist.Element import Element
@@ -15,13 +16,19 @@ class SpiceParser:
         self._libs: List[str] = []
         self.feedback: List[str] = []
 
+        current_file_dir = Path(__file__).resolve().parent
+        project_root = current_file_dir.parent
+
+        target_model = project_root / path
+
         # self.lines
-        if path is not None:
+        if target_model is not None:
             try:
-                with open(str(path), 'r') as f:
+                with open(str(target_model), 'r') as f:
                     self._raw_lines = f.readlines()
             except:
-                self.feedback.append(f"Could not load file: {path}")
+                self.feedback.append(f"Could not load file: {target_model}")
+                print(f"Could not load file: {target_model}")
 
         self._add_includes()
 
@@ -112,9 +119,9 @@ class SpiceParser:
                     pass
 
                 if line_str.startswith(".ac"):
-                    # log_space = self.parse_sweep(index)
-                    # _scope.add_param("sweep", log_space)
-                    pass
+                    log_space = self._parse_sweep(line)
+                    _scope.add_param("sweep", log_space)
+                    print("Added sweep")
 
                 pass
             else:
@@ -126,6 +133,9 @@ class SpiceParser:
                     if element.type == "X":
                         used_subckts.append(element.params.get("ref_cir", ""))
 
+        print("Used Models", used_models)
+        print("Used Suckts", used_subckts)
+
         # get all missing models and subckt from the libs
         for lib in self._libs:
             subcts: Dict[str, Circuit] = {}
@@ -135,6 +145,7 @@ class SpiceParser:
                 lib_ct = parser._parse()
                 subcts = lib_ct.get_subcircuits()
                 models = lib_ct.get_models()
+                print(models)
             except Exception as error:
                 print(error.with_traceback(None))
                 print(f"Could not parse lib: {lib}")
@@ -256,6 +267,7 @@ class SpiceParser:
             case "X":
                 element.connections = line.tokens[1:-1]
                 element.add_param("ref_cir", line.tokens[-1])
+                # Fixme Subcircuits can have Params "PARAMS:"
 
             case _:
                 return Element()
@@ -279,6 +291,48 @@ class SpiceParser:
 
     def _parse_subct(self, line: Line) -> Circuit:
         return Circuit()
+
+    def to_spice_num(self, val : str) -> float:
+        val = val.lower()
+        val = val.removesuffix("hz")
+
+        factors = {
+            "t": 1e12,
+            "meg": 1e6,
+            "g": 1e9,
+            "k": 1e3,
+            "m": 1e-3,
+            "u": 1e-6,
+            "uf": 1e-6,
+            "n": 1e-9,
+            "p": 1e-12,
+            "f": 1e-15
+        }
+
+        for suffix, multiplier in factors.items():
+            if val.endswith(suffix):
+                return float(val.replace(suffix, '')) * multiplier
+        return float(val)
+
+    def _parse_sweep(self, line: Line) -> str: 
+
+        line_splits = line.tokens
+        sweep_type = line_splits[1]
+
+        num_of_points = int(self.to_spice_num(line_splits[2]))
+
+        match sweep_type:
+            case "LIN" | "DEC" | "OCT": 
+                start = self.to_spice_num(line_splits[3])
+                stop = self.to_spice_num(line_splits[4])
+                return sweep_type + " " + str(num_of_points) + " " + str(start) + " " + str(stop)
+
+            case "POI": 
+                points_of_interest = [str(self.to_spice_num(point)) for point in line_splits[3:]]
+                return sweep_type + " ".join(points_of_interest)
+
+            case _:
+                return ""
 
 class Line:
     def __init__(self, line:str = "") -> None:

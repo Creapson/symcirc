@@ -155,7 +155,8 @@ class Spice:
         return circuit 
 
     def to_spice_num(self, val : str) -> float:
-        factors = {'k': 1e3, 'meg': 1e6, 'g': 1e9, 'm': 1e-3, 'u': 1e-6, 'n': 1e-9}
+        factors = {"t": 1e12, "meg": 1e6, "g": 1e9, "k": 1e3, "m": 1e-3, "u": 1e-6, "uf": 1e-6, "n": 1e-9, "p": 1e-12, "f": 1e-15}
+
         val = val.lower()
         for suffix, multiplier in factors.items():
             if val.endswith(suffix):
@@ -558,101 +559,74 @@ class Spice:
 
         return index, model
 
-    def parse_element_params(self, out_filepath : str, elements : list[Element]):
+    def parse_element_params(self, out_filepath : str, elements : list[Element], is_bipol: bool = True):
         """
         text:     the full SPICE-like dump string
         elements: list of elements
         """
+        def _parse_param_block(start_idx: int):
+            cur_names = []  # list of transistor names in the current block
+            i = start_idx
+            while i < n:
+                line = lines[i].strip()
+
+                # Detect "NAME Q201 Q202 ..."
+                if line.startswith("NAME"):
+                    parts = line.split()
+                    cur_names = [Element.get_normalised_name(n) for n in parts[1:]]
+                    i += 1
+                    continue
+
+                # check if the next line start with a Word
+                # This is the name of the param
+                if cur_names and re.match(r"^[A-Za-z0-9]+", line):
+                    parts = line.split()
+                    key = parts[0]
+                    values = parts[1:]
+                    if len(values) == len(cur_names):
+                        for name, raw in zip(cur_names, values):
+                            try:
+                                val = float(raw)
+                            except ValueError:
+                                val = raw
+
+                            if name in lookup:
+                                lookup[name].add_param(key, str(val))
+                            else:
+                                print(f"Warning: element {name} not found in lookup.")
+
+                    i += 1
+                    continue
+
+                if line.strip() == "" or line.startswith("JOB"):
+                    cur_names = []
+
+                i += 1
 
         import re
-        def normalize_name(name: str) -> str:
-            """
-            Normalize element names so different separators map to the same key.
-            Examples:
-                X1.Q1  -> X1.Q1
-                X1_Q1  -> X1.Q1
-                X1,Q1  -> X1.Q1
-            """
-
-            # Replace any separator with a dot
-            name = re.sub(r"[,_]", ".", name)
-
-            type:str = name[0]
-            # remove type_prefix
-            if name.startswith(f"{type}.{type}"):
-                name = name.removeprefix(f"{type}.")
-            if name.startswith(f"{type}{type}"):
-                name = name.removeprefix(type)
-
-            return name.strip()
 
         with open(out_filepath, "r") as file:
             lines = [line.rstrip() for line in file]
 
-        param_start_index = 0
+        idx = 0
+        bipol_param_start_index = 0
+        mosfet_param_start_index = 0
         for line in lines:
-            if any(
-                s in line
-                for s in ("BIPOLAR JUNCTION TRANSISTORS", "BJT MODEL PARAMETERS")
-            ):
-                param_start_index += 1
-                break
+            if "BIPOLAR JUNCTION TRANSISTORS" in line:
+                bipol_param_start_index = idx
+            elif "MOSFET JUNCTION TRANSISTOR" in line:
+                mosfet_param_start_index = idx
             else:
-                param_start_index += 1
+                idx += 1
 
         # Build fast lookup
-        lookup = {normalize_name(el.historical_name): el for el in elements}
-        i = 0
+        lookup = {(Element.get_normalised_name(el.historical_name)): el for el in elements}
+
+        if is_bipol:
+            i = bipol_param_start_index
+        else:
+            i = mosfet_param_start_index
         n = len(lines)
 
-        current_names = []  # list of transistor names in the current block
-
-        while i < n:
-            line = lines[i].strip()
-
-            # Detect "NAME Q201 Q202 ..."
-            if line.startswith("NAME"):
-                parts = line.split()
-                # all device names on that line
-                current_names = [normalize_name(n) for n in parts[1:]]
-                row_index = 0
-                i += 1
-                continue
-
-            # check if the next line start with a Word
-            # This is the name of the param
-            if current_names and re.match(r"^[A-Za-z0-9]+", line):
-                parts = line.split()
-                key = parts[0]
-                values = parts[1:]
-                # each value must have a element to whom
-                # it belongs
-                if len(values) != len(current_names):
-                    # ERROR: mismatched count
-                    print(
-                        f"Warning: key {key} has {len(values)} values but {
-                            len(current_names)
-                        } names."
-                    )
-                else:
-                    # Assign each value to the corresponding element
-                    for name, raw in zip(current_names, values):
-                        # convert str to float
-                        try:
-                            val = float(raw)
-                        except ValueError:
-                            val = raw
-
-                        if name in lookup:
-                            lookup[name].add_param(key, str(val))
-                        else:
-                            print(f"Warning: element {name} not found in lookup.")
-
-                i += 1
-                continue
-
-            # End of block or empty line resets current_names
-            if line.strip() == "" or line.startswith("JOB"):
-                current_names = []
-
-            i += 1
+        _parse_param_block(bipol_param_start_index)
+        _parse_param_block(mosfet_param_start_index)

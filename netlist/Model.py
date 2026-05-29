@@ -39,10 +39,11 @@ class Model(BaseModel):
         elif self.type in ("MOS", "NMOS"):
             sub_path = Path("library/small_signal_models/mosfet_models") / f"{mosfet_model}.json"
         else:
-            print(f"Failed to load model! Type: {param_list['type']} is not known!")
+            print(f"Failed to load model! Type: {self.type} is not known!")
             return None
 
-        target_model = project_root / sub_path
+        # target_model = project_root / sub_path
+        target_model = sub_path
 
         # load small signal model from library
         with open(target_model, "r", encoding="utf-8") as f:
