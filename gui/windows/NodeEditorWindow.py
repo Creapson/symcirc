@@ -45,18 +45,19 @@ class NodeEditorWindow(Window):
     def save_node_editor(self, sender, app_data):
         try:
             file_path = self.open_file_dialog("Open Pipeline", [("JSON File", "*.json")], False)
+            print(file_path)
             if not file_path:
                 print("No file selected")
                 return
 
             # Ensure .json extension
-            if not file_path[0].endswith(".json"):
-                file_path[0] += ".json"
+            if not file_path.endswith(".json"):
+                file_path += ".json"
 
             # save / update chaging variables like the position
             self.node_editor.save()
             # Dump Pydantic object to JSON
-            with open(file_path[0], "w", encoding="utf-8") as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(self.node_editor.model_dump_json(indent=4))
 
             print(f"Saved to {file_path}")
@@ -86,6 +87,7 @@ class NodeEditorWindow(Window):
     def clear_node_editor(self):
         for _, node in self.node_editor.node_dic.items():
             node.delete()
+        self.node_editor.node_dic = {}
 
         dpg.delete_item(self.node_editor_tag, children_only=True)
 

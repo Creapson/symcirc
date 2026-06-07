@@ -4,12 +4,14 @@ from pydantic import Field
 from gui.components.node_editor.nodes.Node import Node, NodeType
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 from typing import Literal, List
+from netlist.Circuit import Circuit
+from Equation_Formulator import EquationFormulator
 
 class TransferFunctionNumeric(Node):
     node_type: Literal[NodeType.TRANSFER_FUNCTION_NUMERIC] = NodeType.TRANSFER_FUNCTION_NUMERIC
 
     mna: ModifiedNodalAnalysis = Field(default=None, exclude=True)
-    sweep: List[float] = Field(default_factory=list, exclude=True)
+    sweep: str = Field(default="None", exclude=True)
 
     def build(self):
         self.add_input_pin("num_results_input_pin", "Connect Circuit here")
@@ -22,11 +24,18 @@ class TransferFunctionNumeric(Node):
                 dpg.add_combo(items=[], tag=self.uuid("output_node"), width=100)
             dpg.add_button(label="Calculate Numeric Values", callback=self.update)
 
+            dpg.add_text("Complexity Estimations", tag=self.uuid("compl_estimate"))
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Edit Sweep")
+                dpg.add_input_text(default_value=self.sweep, tag=self.uuid("sweep"), width=150)
+
         super().build()
 
 
     def onlink_callback(self):
-        self.sweep, self.mna = self.get_input_pin_value("num_results_input_pin", ([], None))
+        self.sweep, self.mna = self.get_input_pin_value("num_results_input_pin", ("None", None))
+        dpg.configure_item(self.uuid("sweep"), default_value=self.sweep)
 
         if self.mna is None:
             nodes = ["Update MNA"]
@@ -49,11 +58,17 @@ class TransferFunctionNumeric(Node):
         super().onlink_callback()
 
     def update(self):
+        # get the sweep data from the ui
+        sweep_str = dpg.get_value(self.uuid("sweep"))
+        print(sweep_str)
+        sweep = Circuit().get_sweep(sweep_str)        
+
         # use the selected nodes
         node_out = dpg.get_value(self.uuid("output_node"))
 
-        H = self.mna.solveNumerical(self.sweep, node_out)
+        H = self.mna.solveNumerical(sweep, node_out)
 
-        self.add_output_pin(tag="h_out", text="H")
-        self.add_output_pin_value("h_out", (H.tolist(), self.sweep), is_persistence=False)
+        if dpg.does_item_exist(self.uuid("h_out")):
+            self.add_output_pin(tag="h_out", text="H")
+        self.add_output_pin_value("h_out", (H.tolist(), sweep), is_persistence=False)
         super().update()

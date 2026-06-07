@@ -40,8 +40,10 @@ class Circuit(BaseModel):
         print("resolve_controlled_sources not implemented yet!")
         pass
 
-    def get_sweep(self):
-        sweep:str = self.params.get("sweep", "None")
+    def get_sweep(self, sweep:str="None"):
+        print(sweep)
+        if sweep == "None":
+            sweep = self.params.get("sweep", "None")
         sweep_split = sweep.split()
 
         if len(sweep_split) == 1:
@@ -52,21 +54,21 @@ class Circuit(BaseModel):
 
         match sweep_type:
             case "LIN": 
-                start = int(sweep_split[2])
-                stop = int(sweep_split[3])
+                start = float(sweep_split[2])
+                stop = float(sweep_split[3])
                 return np.linspace(start=start, stop=stop, num=num_of_points).tolist()
 
             case "DEC": 
-                start = int(float(sweep_split[2]))
-                stop = int(float(sweep_split[3]))
+                start = float(sweep_split[2])
+                stop = float(sweep_split[3])
 
                 num_decades = np.log10(stop) - np.log10(start)
                 total_pts = int(num_of_points * num_decades) + 1
                 return np.logspace(np.log10(start), np.log10(stop), num=total_pts).tolist()
 
             case "OCT": 
-                start = int(sweep_split[2])
-                stop = int(sweep_split[3])
+                start = float(sweep_split[2])
+                stop = float(sweep_split[3])
                 num_octaves = np.log2(stop / start)
                 total_pts = int(num_of_points * num_octaves) + 1
                 return np.logspace(np.log2(start), np.log2(stop), num=total_pts, base=2).tolist()

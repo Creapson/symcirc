@@ -5,6 +5,7 @@ import sympy as sp
 from sympy import init_printing
 init_printing(use_unicode=True)
 
+from netlist.Circuit import Circuit
 from gui.components.node_editor.nodes.Node import Node, NodeType
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 from typing import Literal, List
@@ -13,7 +14,7 @@ class TransferFunctionSymbolic(Node):
     node_type: Literal[NodeType.TRANSFER_FUNCTION_SYMBOLIC] = NodeType.TRANSFER_FUNCTION_SYMBOLIC
 
     mna: ModifiedNodalAnalysis = Field(default=None, exclude=True)
-    sweep: List[float] = Field(default_factory=list, exclude=True)
+    sweep: str = Field(default="None", exclude=True)
 
     def build(self):
         with dpg.value_registry():
@@ -31,13 +32,23 @@ class TransferFunctionSymbolic(Node):
                 dpg.add_combo(items=[], tag=self.uuid("output_node"), width=100)
             dpg.add_button(label="Calculate Numeric Values", callback=self.update)
 
-            dpg.add_input_text(source=self.uuid("sym_tf_output"))
+            dpg.add_text(default_value="Complexity Estimations", tag=self.uuid("compl_estimate"))
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Edit Sweep")
+                dpg.add_input_text(default_value=self.sweep, tag=self.uuid("sweep"), width=200)
+
+            dpg.add_input_text(source=self.uuid("sym_tf_output"), width=200)
 
         super().build()
 
 
     def onlink_callback(self):
-        self.sweep, self.mna = self.get_input_pin_value("num_results_input_pin", ([], None))
+        self.sweep, self.mna = self.get_input_pin_value("num_results_input_pin", ("None", None))
+        dpg.configure_item(self.uuid("sweep"), default_value=self.sweep)
+
+        estimate_num_terms = "Not implemented yet!"
+        dpg.configure_item(self.uuid("compl_estimate"), default_value="Complexity Estimations: " + estimate_num_terms)
 
         if self.mna is None:
             nodes = ["Update MNA"]
@@ -63,6 +74,11 @@ class TransferFunctionSymbolic(Node):
         super().onlink_callback()
 
     def update(self):
+        # get the sweep data from the ui
+        sweep_str = dpg.get_value(self.uuid("sweep"))
+        print(sweep_str)
+        sweep = Circuit().get_sweep(sweep_str)        
+
         # use the selected nodes
         node_out = dpg.get_value(self.uuid("output_node"))
 
@@ -72,8 +88,8 @@ class TransferFunctionSymbolic(Node):
         smpl = sp.simplify(H_sym)
         print(smpl)
         dpg.set_value(self.uuid("sym_tf_output"), sp.latex(smpl))
-        H_num = self.mna.solveNumerical(self.sweep, node_out)
+        H_num = self.mna.solveNumerical(sweep, node_out)
 
         self.add_output_pin(tag="h_out", text="H")
-        self.add_output_pin_value("h_out", (H_num.tolist(), self.sweep), is_persistence=False)
+        self.add_output_pin_value("h_out", (H_num.tolist(), sweep), is_persistence=False)
         super().update()

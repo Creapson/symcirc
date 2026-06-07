@@ -1,3 +1,4 @@
+import re
 import dearpygui.dearpygui as dpg
 from typing import List
 import tkinter as tk
@@ -33,7 +34,7 @@ class Window:
     def update(self):
         pass
 
-    def open_file_dialog(self, title:str, file_extensions:List[tuple[str, str]], open_mode: bool = True) -> List[str]:
+    def open_file_dialog(self, title:str, file_extensions:List[tuple[str, str]], open_mode: bool = True) -> List[str] | str :
         # Verhindert, dass ein leeres, separates Tkinter-Hauptfenster aufpoppt
         root = tk.Tk()
         root.withdraw()
@@ -54,7 +55,8 @@ class Window:
 
         
         root.destroy()
-        return list(paths) if paths else []
+        print(paths)
+        return paths if paths else ""
 
     def on_close(self, sender, app_data, user_data):
         # sender is the window tag

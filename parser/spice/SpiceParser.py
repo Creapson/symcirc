@@ -38,6 +38,7 @@ class SpiceParser:
                 try:
                     import os
                     path = line.split()[1].strip("\"")
+                    if path.endswith(".als"): return
                     dir_path = os.path.dirname(self._path)
                     new_file_path = os.path.join(dir_path, path)
 

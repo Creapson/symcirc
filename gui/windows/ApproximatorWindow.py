@@ -39,15 +39,17 @@ class ApproximatorWindow(Window):
         to_node = dpg.get_value(self.uuid("to_node"))
 
         elimination_method = dpg.get_value(self.uuid("elim_mothod"))
+        rel_error_threshold = dpg.get_value(self.uuid("rel_error_threshold"))
         sorting_method = dpg.get_value(self.uuid("sorting_method"))
+        column = dpg.get_value(self.uuid("column"))
 
         self.mna_approx = ap.approximate(
             to_node,
             self.approximation_points,
             elimination_method,
-            0.6,
+            rel_error_threshold,
             sorting_method,
-            1,
+            column,
         )
 
         numeric_values = self.mna_approx.solveNumerical(self.sweep, to_node)
@@ -94,10 +96,18 @@ class ApproximatorWindow(Window):
             dpg.add_text("Sorting Method")
             dpg.add_combo(items=sort_methods, tag=self.uuid("sorting_method"), default_value=sort_methods[0])
 
+        with dpg.group(horizontal=True):
+            dpg.add_text("Reletive error threshold")
+            dpg.add_input_float(default_value=0.6, tag=self.uuid("rel_error_threshold"))
+
         elim_methods = Approximation.get_Elimination_Methods()
         with dpg.group(horizontal=True):
             dpg.add_text("Elimination Method")
             dpg.add_combo(items=elim_methods, tag=self.uuid("elim_mothod"), default_value=elim_methods[0])
+
+        with dpg.group(horizontal=True):
+            dpg.add_text("Column")
+            dpg.add_input_int(default_value=0, tag=self.uuid("column"))
 
         dpg.add_text(
             default_value="Not Calculated yet!", tag=self.uuid("approx_func_txt")

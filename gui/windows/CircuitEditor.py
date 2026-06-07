@@ -1,9 +1,10 @@
-import json
 import dearpygui.dearpygui as dpg
 from gui.windows.Window import Window
 from netlist.Circuit import Circuit
 from netlist.Element import Element 
 from netlist.Model import Model
+
+from typing import Dict
 
 
 class CircuitEditor(Window):
@@ -80,7 +81,12 @@ class CircuitEditor(Window):
         circuit.netlist_file_path = dpg.get_value(tag + ":filepath")
         circuit.bipolar_model = dpg.get_value(tag + ":bipolar_model")
         circuit.mosfet_model = dpg.get_value(tag + ":mosfet_model")
+        self.save_params(circuit.params, tag + ":params")
         circuit.inner_connecting_nodes = dpg.get_value(tag + ":inner_connecting_nodes").split(",")
+
+    def save_params(self, params: Dict[str, str], tag:str):
+        for key, _ in params.items():
+            params[key] = dpg.get_value(tag + ":" + str(key))
 
     def save_models(self, models:dict[str, Model], tag:str):
         for name, model in models.items():
@@ -113,7 +119,14 @@ class CircuitEditor(Window):
         self.add_text_input("Netlist file path", circuit.netlist_file_path, tag + ":filepath")
         self.add_text_input("bipolar_model", circuit.bipolar_model, tag + ":bipolar_model")
         self.add_text_input("mosfet_model", circuit.mosfet_model, tag + ":mosfet_model")
+        self.show_params(circuit.params, tag + ":params")
         self.add_text_input("Inner connecting nodes", ",".join(circuit.inner_connecting_nodes), tag + ":inner_connecting_nodes")
+
+    def show_params(self, params: Dict[str, str], tag:str):
+        for key, item in params.items():
+            with dpg.group(horizontal=True):
+                dpg.add_text(key)
+                dpg.add_input_text(default_value=item, tag=tag + f":{key}")
 
     def show_elements(self, elements: list[Element], tag:str):
         if len(elements) == 0:
