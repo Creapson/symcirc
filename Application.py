@@ -11,11 +11,24 @@ class Application:
     def start(self):
         self.load_settings()
         self.load_library()
+        self.load_defaults()
         self.start_dpg()
+
+    def load_defaults(self):
         pass
+
+    def load_dpg_defaults(self):
+        try:
+            width, height, _, data = dpg.load_image("gui/gfx/no_texture.png")
+            with dpg.texture_registry():
+                dpg.add_static_texture(width, height, data, tag="no_texture")
+        except:
+            print("Could not laod defualt texture")
 
     def start_dpg(self):
         dpg.create_context()
+
+        self.load_dpg_defaults()
 
         # Viewport
         dpg.create_viewport(title="OOP Node Editor Example", width=1200, height=800)

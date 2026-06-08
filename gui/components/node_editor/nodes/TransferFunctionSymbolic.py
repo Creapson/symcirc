@@ -47,8 +47,10 @@ class TransferFunctionSymbolic(Node):
         self.sweep, self.mna = self.get_input_pin_value("num_results_input_pin", ("None", None))
         dpg.configure_item(self.uuid("sweep"), default_value=self.sweep)
 
-        estimate_num_terms = "Not implemented yet!"
-        dpg.configure_item(self.uuid("compl_estimate"), default_value="Complexity Estimations: " + estimate_num_terms)
+        A, _ = self.mna.get_equation_system()
+        estimate_num_terms = self.mna.estimateTerms(A)
+        print("Estimations: ", estimate_num_terms)
+        dpg.configure_item(self.uuid("compl_estimate"), default_value="Complexity Estimations: " + str(estimate_num_terms))
 
         if self.mna is None:
             nodes = ["Update MNA"]

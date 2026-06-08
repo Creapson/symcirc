@@ -164,6 +164,38 @@ class NodeEditorWindow(Window):
 
         _create_menu_recursive(menu_structure)
 
+    def add_node_image_buttons(self):
+        node_arr = {
+                (ImportCircuit, "gui/gfx/node_editor/import.png"),
+                (NetlistParserNode, ""),
+                (FlattenNode, ""),
+                (TransferFunctionNumeric, ""),
+                (NumericSolver, ""),
+                (TransferFunctionSymbolic, ""),
+                (SymbolicSolver, ""),
+                (BodePlotNode, ""),
+                (ApproximatorNode, ""),
+                (MNA, ""),
+                    }
+
+        for node, image_path in node_arr:
+            try:
+                width, height, channels, data = dpg.load_image(image_path)
+                with dpg.texture_registry():
+                    dpg.add_static_texture(width, height, data, tag=self.uuid(image_path))
+                dpg.add_image_button(
+                        texture_tag=self.uuid(image_path),
+                        callback=self._menu_callback,
+                        user_data=(node, ""),
+                        )
+            except:
+                print("Could not load", image_path)
+                dpg.add_image_button(
+                        texture_tag="no_texture",
+                        callback=self._menu_callback,
+                        user_data=(node, ""),
+                        )
+
     def build(self):
         # ---------- MENU BAR ----------
         with dpg.window(tag=self.uuid("add_node_context_menu"), show=False, popup=True):
@@ -211,13 +243,18 @@ class NodeEditorWindow(Window):
                     label="Metrics", callback=lambda: dpg.show_metrics()
                 )
 
+        with dpg.child_window(height=64+22):
+            with dpg.group(horizontal=True):
+                self.add_node_image_buttons()
+
         # ---------- NODE EDITOR ----------
-        dpg.add_node_editor(
-            tag=self.node_editor_tag,
-            callback=self.onlink_callback,
-            delink_callback=self.delink_callback,
-            minimap=True,
-            minimap_location=dpg.mvNodeMiniMap_Location_BottomRight)
+        with dpg.child_window():
+            dpg.add_node_editor(
+                tag=self.node_editor_tag,
+                callback=self.onlink_callback,
+                delink_callback=self.delink_callback,
+                minimap=True,
+                minimap_location=dpg.mvNodeMiniMap_Location_BottomRight)
 
         with dpg.handler_registry():
             dpg.add_mouse_click_handler(callback=self.handle_click)
