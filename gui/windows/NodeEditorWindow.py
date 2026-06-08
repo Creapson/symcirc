@@ -1,5 +1,5 @@
-from operator import call
 import dearpygui.dearpygui as dpg
+from typing import List, Dict
 
 from gui.components.node_editor.NodeEditor import NodeEditor
 
@@ -28,6 +28,7 @@ class NodeEditorWindow(Window):
         self.node_editor_tag = "node_editor"
         self.application = application
         self.node_editor = NodeEditor(application=self.application)
+        self.node_button_dict: Dict[str, str] = {}
 
         super().__init__(title=self.title)
 
@@ -164,37 +165,50 @@ class NodeEditorWindow(Window):
 
         _create_menu_recursive(menu_structure)
 
-    def add_node_image_buttons(self):
-        node_arr = {
-                (ImportCircuit, "gui/gfx/node_editor/import.png"),
-                (NetlistParserNode, ""),
-                (FlattenNode, ""),
-                (TransferFunctionNumeric, ""),
-                (NumericSolver, ""),
-                (TransferFunctionSymbolic, ""),
-                (SymbolicSolver, ""),
-                (BodePlotNode, ""),
-                (ApproximatorNode, ""),
-                (MNA, ""),
-                    }
+    def change_active_image_buttons(self, active_buttons: List[str]):
+        for btn_tag, btn_id in self.node_button_dict.items():
+            if btn_tag in active_buttons:
+                dpg.configure_item(int(btn_id), enabled=True)
+            else:
+                dpg.configure_item(int(btn_id), enabled=False)
 
-        for node, image_path in node_arr:
+
+    def add_node_image_buttons(self):
+        node_arr = [
+                (ImportCircuit, "Circuit import Node", "gui/gfx/node_editor/import.png", "import"),
+                (NetlistParserNode, "Netlist Parser Node", "", "parser"),
+                (FlattenNode, "Flatten Node", "", "flatten"),
+                (TransferFunctionNumeric, "TransferFunction - Numeric", "", "transfer_numeric"),
+                (NumericSolver, "NumericSolver", "", "solver_numeric"),
+                (TransferFunctionSymbolic, "TransferFunction - Symbolic", "", "transfer_symbolic"),
+                (SymbolicSolver, "SymbolicSolver", "", "solver_symbolic"),
+                (BodePlotNode, "BodePlot Node", "", "bodeplot"),
+                (ApproximatorNode, "Approximate", "", "approx"),
+                (MNA, "MNA Node", "", "mna"),
+                ]
+
+        for node, desc, image_path, tag in node_arr:
+            img_btn_id = 0
             try:
                 width, height, channels, data = dpg.load_image(image_path)
                 with dpg.texture_registry():
                     dpg.add_static_texture(width, height, data, tag=self.uuid(image_path))
-                dpg.add_image_button(
+                img_btn_id = dpg.add_image_button(
                         texture_tag=self.uuid(image_path),
                         callback=self._menu_callback,
-                        user_data=(node, ""),
+                        user_data=(node, desc),
                         )
             except:
                 print("Could not load", image_path)
-                dpg.add_image_button(
+                img_btn_id = dpg.add_image_button(
                         texture_tag="no_texture",
                         callback=self._menu_callback,
-                        user_data=(node, ""),
+                        user_data=(node, desc),
                         )
+            self.node_button_dict[tag] = str(img_btn_id)
+            print("added", img_btn_id)
+
+        self.change_active_image_buttons(["flatten"])
 
     def build(self):
         # ---------- MENU BAR ----------
