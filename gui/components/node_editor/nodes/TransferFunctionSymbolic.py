@@ -94,6 +94,7 @@ class TransferFunctionSymbolic(Node):
         dpg.set_value(self.uuid("sym_tf_output"), sp.latex(smpl))
         H_num = self.mna.solveNumerical(sweep, node_out)
 
-        self.add_output_pin(tag="h_out", text="H")
+        if not dpg.does_item_exist(self.uuid("h_out")):
+            self.add_output_pin(tag="h_out", text="H")
         self.add_output_pin_value("h_out", (H_num.tolist(), sweep), is_persistence=False)
         super().update()

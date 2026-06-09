@@ -70,7 +70,7 @@ class TransferFunctionNumeric(Node):
 
         H = self.mna.solveNumerical(sweep, node_out)
 
-        if dpg.does_item_exist(self.uuid("h_out")):
+        if not dpg.does_item_exist(self.uuid("h_out")):
             self.add_output_pin(tag="h_out", text="H")
         self.add_output_pin_value("h_out", (H.tolist(), sweep), is_persistence=False)
         super().update()
