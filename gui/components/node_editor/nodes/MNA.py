@@ -1,6 +1,6 @@
 import dearpygui.dearpygui as dpg
 from pydantic import Field
-from typing import Literal
+from typing import Literal, List
 
 
 from gui.components.node_editor.nodes.Node import Node, NodeType
@@ -20,6 +20,9 @@ class MNA(Node):
             dpg.add_button(label="Calculate Numeric Values", callback=self.update)
 
         super().build()
+
+    def get_possible_node_connections(self) -> List[str]:
+        return ["transfer_numeric", "transfer_symbolic", "approx"]
 
     def onlink_callback(self):
         circuit_dict = self.get_input_pin_value("circuit_input_pin", Circuit())

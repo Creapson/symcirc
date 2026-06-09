@@ -82,6 +82,9 @@ class NetlistParserNode(Node):
 
         super().build()
 
+    def get_possible_node_connections(self) -> List[str]:
+        return ["flatten"]
+
     def onlink_callback(self):
         filepath = self.get_input_pin_value("file_path_pin", "")
 

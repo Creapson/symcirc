@@ -34,14 +34,21 @@ class NodeEditorWindow(Window):
 
     def add_node(self, node_constructor, label):
         mouse_pos = dpg.get_mouse_pos(local=False)
-        editor_offset = [0, 0]
-        self.node_editor.add_node(
+        new_node = self.node_editor.add_node(
                 node_editor_tag=self.node_editor_tag, 
                 node_constructor=node_constructor, 
                 label=label, 
                 pos=mouse_pos
                 )
         dpg.configure_item(self.uuid("add_node_context_menu"), show=False)
+
+        current_selection = dpg.get_selected_nodes(self.node_editor_tag)
+        if len(current_selection) == 1:
+            from_node = self.node_editor.node_dic.get(current_selection[0], None)
+            output_pin = list(from_node.output_pins.values())[0]
+            input_pin = list(new_node.input_pins.values())[0]
+            if (output_pin.pin_id and input_pin):
+                self.onlink_callback(self.node_editor_tag, (output_pin.pin_id, input_pin))
 
     def save_node_editor(self, sender, app_data):
         try:
@@ -109,6 +116,8 @@ class NodeEditorWindow(Window):
             else:
                 dpg.configure_item(self.uuid("add_node_context_menu"), show=False)
 
+        self.node_selection_callback()
+
     def _menu_callback(self, sender, app_data, user_data):
         # user_data is the (node_class, desc) tuple we passed above
         node_constructor, label = user_data
@@ -168,47 +177,125 @@ class NodeEditorWindow(Window):
     def change_active_image_buttons(self, active_buttons: List[str]):
         for btn_tag, btn_id in self.node_button_dict.items():
             if btn_tag in active_buttons:
-                dpg.configure_item(int(btn_id), enabled=True)
+                dpg.configure_item(int(btn_id), enabled=True, tint_color=[255, 255, 255, 255])
             else:
-                dpg.configure_item(int(btn_id), enabled=False)
+                dpg.configure_item(int(btn_id), enabled=False, tint_color=[100, 100, 100, 255] )
+
+    def node_selection_callback(self):
+        current_selection = dpg.get_selected_nodes(self.node_editor_tag)
+
+        available_buttons = []
+        
+        for node_id in current_selection:
+            node = self.node_editor.node_dic.get(node_id, None)
+            if node == None: continue
+
+            available_buttons += node.get_possible_node_connections()
+
+        self.last_selected_nodes = current_selection
+        if len(available_buttons) == 0:
+            self.change_active_image_buttons(["import"])
+        else:
+            self.change_active_image_buttons(available_buttons)
 
 
     def add_node_image_buttons(self):
         node_arr = [
-                (ImportCircuit, "Circuit import Node", "gui/gfx/node_editor/import.png", "import"),
-                (NetlistParserNode, "Netlist Parser Node", "", "parser"),
-                (FlattenNode, "Flatten Node", "", "flatten"),
-                (TransferFunctionNumeric, "TransferFunction - Numeric", "", "transfer_numeric"),
-                (NumericSolver, "NumericSolver", "", "solver_numeric"),
-                (TransferFunctionSymbolic, "TransferFunction - Symbolic", "", "transfer_symbolic"),
-                (SymbolicSolver, "SymbolicSolver", "", "solver_symbolic"),
-                (BodePlotNode, "BodePlot Node", "", "bodeplot"),
-                (ApproximatorNode, "Approximate", "", "approx"),
-                (MNA, "MNA Node", "", "mna"),
-                ]
+            (
+                ImportCircuit,
+                "Circuit import Node",
+                "gui/gfx/node_editor/import.png",
+                "import",
+                "Import a .cir file",
+            ),
+            (
+                NetlistParserNode,
+                "Netlist Parser Node",
+                "gui/gfx/node_editor/ct_parser.png",
+                "parser",
+                "Parse a .net file",
+            ),
+            (
+                FlattenNode,
+                "Flatten Node",
+                "gui/gfx/node_editor/",
+                "flatten",
+                "Flatten the Subcircuits of the Netlist",
+            ),
+            (
+                TransferFunctionNumeric,
+                "TransferFunction - Numeric",
+                "gui/gfx/node_editor/",
+                "transfer_numeric",
+                "Create a numeric Transfer-Function",
+            ),
+            (
+                NumericSolver,
+                "NumericSolver",
+                "gui/gfx/node_editor/",
+                "solver_numeric",
+                "Solve the transfer-function numerically",
+            ),
+            (
+                TransferFunctionSymbolic,
+                "TransferFunction - Symbolic",
+                "gui/gfx/node_editor/",
+                "transfer_symbolic",
+                "Create a symbolic TransferFunction",
+            ),
+            (
+                SymbolicSolver,
+                "SymbolicSolver",
+                "gui/gfx/node_editor/",
+                "solver_symbolic",
+                "Solve a symbolic transfer-function",
+            ),
+            (
+                BodePlotNode,
+                "BodePlot Node",
+                "gui/gfx/node_editor/bodeplot.png",
+                "bodeplot",
+                "display a TransferFunction",
+            ),
+            (
+                ApproximatorNode,
+                "Approximate",
+                "gui/gfx/node_editor/approx.png",
+                "approx",
+                "Approximate a transfer-function",
+            ),
+            (
+                MNA,
+                "MNA Node",
+                "gui/gfx/node_editor/mna.png",
+                "mna",
+                "Create a equation system",
+            ),
+        ]
 
-        for node, desc, image_path, tag in node_arr:
+        for node, desc, image_path, tag, tooltip in node_arr:
             img_btn_id = 0
+            texture_tag = "no_texture"
             try:
                 width, height, channels, data = dpg.load_image(image_path)
                 with dpg.texture_registry():
                     dpg.add_static_texture(width, height, data, tag=self.uuid(image_path))
-                img_btn_id = dpg.add_image_button(
-                        texture_tag=self.uuid(image_path),
-                        callback=self._menu_callback,
-                        user_data=(node, desc),
-                        )
+                    texture_tag = self.uuid(image_path)
             except:
                 print("Could not load", image_path)
-                img_btn_id = dpg.add_image_button(
-                        texture_tag="no_texture",
-                        callback=self._menu_callback,
-                        user_data=(node, desc),
-                        )
+
+            img_btn_id = dpg.add_image_button(
+                    texture_tag=texture_tag,
+                    callback=self._menu_callback,
+                    user_data=(node, desc),
+                    width=64,
+                    height=64,
+                    )
+            with dpg.tooltip(img_btn_id):
+                dpg.add_text(tooltip)
             self.node_button_dict[tag] = str(img_btn_id)
             print("added", img_btn_id)
 
-        self.change_active_image_buttons(["flatten"])
 
     def build(self):
         # ---------- MENU BAR ----------

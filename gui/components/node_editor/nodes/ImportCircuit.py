@@ -1,7 +1,7 @@
 import dearpygui.dearpygui as dpg
 
 from gui.components.node_editor.nodes.Node import Node, NodeType
-from typing import Literal
+from typing import Literal, List
 
 
 class ImportCircuit(Node):
@@ -30,7 +30,10 @@ class ImportCircuit(Node):
         dpg.set_value(
             self.uuid("file_path_string"),
             f"Loaded file with following Feedback:\n{format_feedback(feedback)}",
-        )
+        )    
+
+    def get_possible_node_connections(self) -> List[str]:
+        return ["parser"]
 
     def build(self):
         with self.add_static_attr():

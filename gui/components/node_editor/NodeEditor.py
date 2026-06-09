@@ -1,6 +1,6 @@
 import dearpygui.dearpygui as dpg
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Any, Dict, Union, Tuple, Annotated
+from typing import Any, Dict, Union, Tuple, Annotated, overload
 
 from gui.components.node_editor.nodes.Node import Node
 from gui.components.node_editor.nodes.BodePlotNode import BodePlotNode
@@ -50,7 +50,7 @@ class NodeEditor(BaseModel):
     def add_node(self, node_editor_tag, node_constructor, label, pos):
         node = node_constructor(editor=self, label=label, position=pos)
 
-        node_id = node.setup(node_editor_tag=node_editor_tag)
+        node_id = node.setup(node_editor_tag)
         self.node_dic[node_id] = node
 
         return node

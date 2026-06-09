@@ -40,3 +40,6 @@ class ApproximatorNode(Node):
         self.add_output_pin("approx_mna", "Approximated MNA")
         self.add_output_pin_value("approx_mna", (self.sweep, self.settings_window.mna_approx), is_persistence=False)
         super().update()
+
+    def get_possible_node_connections(self) -> List[str]:
+        return ["mna"]

@@ -42,6 +42,8 @@ class TransferFunctionSymbolic(Node):
 
         super().build()
 
+    def get_possible_node_connections(self) -> List[str]:
+        return ["solver_symbolic"]
 
     def onlink_callback(self):
         self.sweep, self.mna = self.get_input_pin_value("num_results_input_pin", ("None", None))

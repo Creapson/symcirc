@@ -20,6 +20,9 @@ class NumericSolver(Node):
 
         super().build()
 
+    def get_possible_node_connections(self) -> List[str]:
+        return ["bodeplot"]
+
     def onlink_callback(self):
         self.h, self.sweep = self.get_input_pin_value("h_input_pin", ([], []))
 

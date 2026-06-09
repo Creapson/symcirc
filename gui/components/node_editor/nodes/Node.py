@@ -64,10 +64,12 @@ class Node(BaseModel):
             self.build()
 
         self.id_transition_table[old_id] = self.node_id
-
         dpg.set_item_pos(self.node_id, self.position)
 
         return self.node_id
+
+    def get_possible_node_connections(self) -> List[str]:
+        return []
 
     def delete(self):
         for tag in self.value_registries + self.file_dialogs:

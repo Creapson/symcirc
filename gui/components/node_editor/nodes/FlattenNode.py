@@ -29,6 +29,9 @@ class FlattenNode(Node):
         self.data["out_file_path"] = file_path[0]
         dpg.set_value(self.uuid("out_file_path"), f"Selected {self.data["out_file_path"]}")
 
+    def get_possible_node_connections(self) -> List[str]:
+        return ["mna"]
+
     def build(self):
         with dpg.value_registry():
             dpg.add_string_value(
