@@ -28,15 +28,16 @@ class Element(BaseModel):
         return re.sub(r"[,_]", ".", name)
 
     def get_symbol(self) -> str:
-        if self.symbol == "":
-            return self.name
-        else:
-            return self.symbol
+        return self.name
+        # if self.symbol == "":
+        #     return self.name
+        # else:
+        #     return self.symbol
 
-    def get_name_reversed(self) -> str:
-        parts = self.name.split(".")
+    def get_name_reversed(self, seperator:str = ".") -> str:
+        parts = self.name.split(seperator)
         reversed_parts = [parts[-1]] + parts[:-1]
-        return ".".join(reversed_parts)
+        return seperator.join(reversed_parts)
 
     def add_param(self, paramSymbol: str, value : str):
         self.params[paramSymbol] = value

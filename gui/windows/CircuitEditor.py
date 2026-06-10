@@ -2,6 +2,7 @@ import dearpygui.dearpygui as dpg
 from gui.windows.Window import Window
 from netlist.Circuit import Circuit
 from netlist.Element import Element 
+from gui.components.Table import Table, Widget_Type
 from netlist.Model import Model
 
 from typing import Dict
@@ -10,6 +11,8 @@ from typing import Dict
 class CircuitEditor(Window):
     def __init__(self, circuit : Circuit, parent_tag:str):
         self.circuit = circuit
+
+        self.tables: Dict[str,  Table] = {}
 
         super().__init__(title=str(parent_tag + ":CircuitEditor"), autosize=False)
         pass
@@ -96,14 +99,20 @@ class CircuitEditor(Window):
         model.name = dpg.get_value(tag + ":name")
 
     def save_elements(self, elements:list[Element], tag:str):
-        for i, element in enumerate(elements):
-            self.save_element(element, tag + ":" + str(i))
+        table = self.tables.get(tag, None)
+        if table == None: return
 
-    def save_element(self, element:Element, tag:str):
-        element.name = dpg.get_value(tag + ":name")
-        element.symbol = dpg.get_value(tag + ":symbol")
-        element.type = dpg.get_value(tag + ":type")
-        element.connections = dpg.get_value(tag + ":connections").split(",")
+        for i, element in enumerate(elements):
+            self.save_element(element, table, tag + ":" + str(i))
+
+    def save_element(self, element:Element, table, tag:str):
+        row_index = tag + element.name
+
+        element.name = table.get_value(row_index, "Name", element.name)
+        element.symbol  = table.get_value(row_index, "Symbol", element.symbol)
+        element.historical_name = table.get_value(row_index, "Historical Name", element.historical_name)
+        element.connections = table.get_value(row_index, "Connections", ",".join(element.connections)).split(",")
+        element.type = table.get_value(row_index, "Type", element.type)
 
     def save_subcts(self, subcircuits:dict[str, Circuit], tag:str):
         for name, subct in subcircuits.items():
@@ -131,10 +140,33 @@ class CircuitEditor(Window):
     def show_elements(self, elements: list[Element], tag:str):
         if len(elements) == 0:
             return
+
+        table = Table()
+        table.setup()
+        table.add_column("Name", Widget_Type.INPUT_TEXT)
+        table.add_column("Symbol", Widget_Type.INPUT_TEXT)
+        table.add_column("Historical Name", Widget_Type.INPUT_TEXT)
+        table.add_column("Connections", Widget_Type.INPUT_TEXT)
+        table.add_column("Type", Widget_Type.INPUT_TEXT)
+        table.add_column("Params", Widget_Type.TEXT)
+
         with dpg.child_window(height=300):
             dpg.add_text("Elements:")
             for i, element in enumerate(elements):
-                self.show_element(element, tag + ":" + str(i))
+                self.show_element(element, table, tag + ":" + str(i))
+            table.build()
+        self.tables[tag] = table
+
+    def show_element(self, element: Element, table:Table, tag:str):
+        row_dict = {
+                "Name": element.name,
+                "Symbol": element.symbol,
+                "Historical Name": element.historical_name,
+                "Connections": ",".join(element.connections),
+                "Type": str(element.type),
+                "Params": str(element.params),
+                }
+        table.add_row(tag + element.name, row_dict)
 
     def show_models(self, models: dict[str, Model], tag:str):
         if len(models) == 0:
@@ -158,13 +190,6 @@ class CircuitEditor(Window):
         self.show_elements(circuit.elements, new_tag)
         self.show_models(circuit.models, new_tag)
         self.show_subcts(circuit.subcircuits, new_tag)
-
-    def show_element(self, element: Element, tag:str):
-        with dpg.group(horizontal=True):
-            dpg.add_input_text(default_value=element.name, tag=(tag + ":name"), width=50)
-            dpg.add_input_text(default_value=element.get_symbol(),tag=(tag + ":symbol"), width=50)
-            dpg.add_input_text(default_value=element.type,tag=(tag + ":type"), width=50)
-            self.add_text_input("connections", ",".join(element.connections), tag + ":connections")
 
     def show_model(self, model: Model, name:str, tag:str):
         with dpg.group(horizontal=True):
