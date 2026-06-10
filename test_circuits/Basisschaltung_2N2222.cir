@@ -1,0 +1,27 @@
+* D:\Dokumente\docs\ESS\AI4Python\PSpice\Verstaerker\Basisschaltung_2N2222.sch
+
+* Schematics Version 8.0 - July 1997
+* Wed Jun 10 10:58:04 2026
+
+
+
+** Analysis setup **
+.ac DEC 20 1e3 1e9
+.OP 
+
+
+* From [SCHEMATICS NETLIST] section of msim.ini:
+.lib "D:\MSim_8\lib\ts.lib"
+.lib "D:\MSim_8\lib\nom.lib"
+
+.INC "Basisschaltung_2N2222.net"
+.INC "Basisschaltung_2N2222.als"
+
+
+.probe/CSDF N(ua) 
+.probe/CSDF I(V_Vin) 
+.probe/CSDF N(1) 
+.probe/CSDF N(3) 
+
+
+.END

@@ -1,0 +1,16 @@
+* Schematics Netlist *
+
+
+
+C_CB         5 0 100u 
+C_C2         4 ua 100u 
+R_RL         ua 0 4700
+V_Vin         1 0 DC 0 AC 1 sin( 0V 100mV 1kHz )
+Q_Q1         4 5 3 Q2N2222
+R_R2         5 0 6824.85
+R_RC         6 4 756.345
+R_RS         1 2 100
+C_C1         2 3 100u 
+V_VCC         6 0 DC 16  
+R_R1         5 4 7191.66
+R_RE         3 0 298.975
