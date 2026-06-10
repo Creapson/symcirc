@@ -1,6 +1,7 @@
 import dearpygui.dearpygui as dpg
 
 from Approximate import Approximation
+from netlist.Circuit import Circuit
 from gui.windows.Window import Window
 from gui.components.BodePlot import BodePlot
 
@@ -13,7 +14,7 @@ class ApproximatorWindow(Window):
             self.title = "approx_settings_window"
 
         self.par_node = par_node
-        self.sweep = sweep
+        self.sweep: str = sweep
         self.mna = mna
         self.approximation_points = []
         self.drag_lines = []
@@ -52,7 +53,9 @@ class ApproximatorWindow(Window):
             column,
         )
 
-        numeric_values = self.mna_approx.solveNumerical(self.sweep, to_node)
+        sweep_list = Circuit().get_sweep(self.sweep)
+
+        numeric_values = self.mna_approx.solveNumerical(sweep_list, to_node)
 
         # calculate numeric values and plot them
         freq_log, magnitude_db, phase_deg = self.calculate_numeric_values(numeric_values)
@@ -122,14 +125,14 @@ class ApproximatorWindow(Window):
 
         print(self.sweep)
         print(to_node)
-        h = self.mna.solveNumerical(self.sweep, to_node)
+        h = self.mna.solveNumerical(Circuit().get_sweep(self.sweep), to_node)
 
         freq_log, magnitude_db, phase_deg = self.calculate_numeric_values(h)
         self.add_plot_line(freq_log, magnitude_db, phase_deg, "Numeric Calculation")
 
     def calculate_numeric_values(self, h):
         import numpy as np
-        freq_log = self.sweep
+        freq_log = Circuit().get_sweep(self.sweep)
         magnitude_db = 20 * np.log10(np.abs(h)).flatten().tolist()
         phase_deg = np.unwrap(np.angle(h, deg=True), axis=0).flatten().tolist()
 

@@ -89,9 +89,9 @@ class TransferFunctionSymbolic(Node):
         H_sym = self.mna.solve(node_out)
         # smpl = H_sym
         # smpl = sp.cancel(H_sym)
-        smpl = sp.simplify(H_sym)
-        print(smpl)
-        dpg.set_value(self.uuid("sym_tf_output"), sp.latex(smpl))
+        # smpl = sp.simplify(H_sym)
+        # print(smpl)
+        dpg.set_value(self.uuid("sym_tf_output"), sp.latex(H_sym))
         H_num = self.mna.solveNumerical(sweep, node_out)
 
         if not dpg.does_item_exist(self.uuid("h_out")):

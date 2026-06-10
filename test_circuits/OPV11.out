@@ -1,0 +1,213 @@
+
+**** 06/09/126 14:57:57 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * D:\Dokumente\docs\ESS\AI4Python\PSpice\OPV_Transistor\OPV11.sch
+
+
+ ****     CIRCUIT DESCRIPTION
+
+
+******************************************************************************
+
+
+
+
+* Schematics Version 8.0 - July 1997
+* Tue Jun 09 14:57:56 2026
+
+
+
+** Analysis setup **
+.ac DEC 10 10 1e9
+.OP 
+
+
+* From [SCHEMATICS NETLIST] section of msim.ini:
+.lib "D:\MSim_8\lib\ts.lib"
+.lib "D:\MSim_8\lib\nom.lib"
+
+.INC "OPV11.net"
+
+**** INCLUDING OPV11.net ****
+* Schematics Netlist *
+
+
+
+C_Ck         $N_0002 $N_0001 30p 
+I_Ib1         $N_0003 Ubm DC 1mA
+I_Ib2         $N_0003 Ubm DC 1mA
+V_Ub1         Ubp 0 DC 15V
+V_Ub2         0 Ubm DC 15V
+V_Ue         UP 0 DC 0 AC 1
++ PULSE -1V 1V 0 10ns 10ns {0.5/1MegaHz-10ns} {1/1MegaHz}
+Q_T2         $N_0002 UP $N_0003 [Ubm] N1 1
+Q_T3         $N_0002 $N_0002 Ubp [Ubp] P1 1
+Q_T4         $N_0001 $N_0002 Ubp [Ubp] P1 1
+C_CDC         Uinm 0 1e10 
+Q_T1         Ubp Uinm $N_0003 [Ubm] N1 1
+L_LDC         Uinm Ua 1e10 
+Q_T5         Ubp $N_0001 Ua [Ubm] N1 1
+I_Ib3         $N_0001 Ubm DC 1mA
+I_Ib4         Ua Ubm DC 1mA
+
+**** RESUMING OPV11.cir ****
+.INC "OPV11.als"
+
+
+
+**** INCLUDING OPV11.als ****
+* Schematics Aliases *
+
+.ALIASES/CSDF
+C_Ck            Ck(1=$N_0002 2=$N_0001 )
+I_Ib1           Ib1(e=$N_0003 a=Ubm )
+I_Ib2           Ib2(e=$N_0003 a=Ubm )
+V_Ub1           Ub1(+=Ubp -=0 )
+V_Ub2           Ub2(+=0 -=Ubm )
+V_Ue            Ue(+=UP -=0 )
+Q_T2            T2(c=$N_0002 b=UP e=$N_0003 )
+Q_T3            T3(c=$N_0002 b=$N_0002 e=Ubp )
+Q_T4            T4(c=$N_0001 b=$N_0002 e=Ubp )
+C_CDC           CDC(1=Uinm 2=0 )
+Q_T1            T1(c=Ubp b=Uinm e=$N_0003 )
+L_LDC           LDC(1=Uinm 2=Ua )
+Q_T5            T5(c=Ubp b=$N_0001 e=Ua )
+I_Ib3           Ib3(e=$N_0001 a=Ubm )
+I_Ib4           Ib4(e=Ua a=Ubm )
+_    _(Ubm=Ubm)
+_    _(Ubp=Ubp)
+_    _(UP=UP)
+_    _(Uinm=Uinm)
+_    _(Ua=Ua)
+.ENDALIASES
+
+
+**** RESUMING OPV11.cir ****
+.probe/CSDF N(Ua) 
+
+
+.END
+
+**** 06/09/126 14:57:57 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * D:\Dokumente\docs\ESS\AI4Python\PSpice\OPV_Transistor\OPV11.sch
+
+
+ ****     BJT MODEL PARAMETERS
+
+
+******************************************************************************
+
+
+
+
+               P1              N1              
+               PNP             NPN             
+          IS  500.000000E-18    1.000000E-15 
+          BF   55             110            
+          NF    1               1            
+         VAF   50             100            
+         IKF    5.000000E-03    5.000000E-03 
+         ISE  200.000000E-15  200.000000E-15 
+          NE    2               2            
+          BR   10              10            
+          NR    1               1            
+         VAR    5              10            
+         IKR     .01             .01         
+          RB  200             500            
+         RBM   50             100            
+          RE   10              10            
+          RC  100             100            
+         CJE  100.000000E-15  100.000000E-15 
+         VJE     .8              .8          
+         MJE     .5              .5          
+         CJC  500.000000E-15  200.000000E-15 
+         VJC     .6              .6          
+         MJC     .333            .333        
+         CJS    2.000000E-12    1.000000E-12 
+         VJS     .6              .6          
+         MJS     .333            .333        
+          FC     .8              .8          
+          TF  150.000000E-12  100.000000E-12 
+         VTF    5               5            
+         ITF     .01             .01         
+          TR  500.000000E-12  500.000000E-12 
+
+
+**** 06/09/126 14:57:57 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * D:\Dokumente\docs\ESS\AI4Python\PSpice\OPV_Transistor\OPV11.sch
+
+
+ ****     SMALL SIGNAL BIAS SOLUTION       TEMPERATURE =   27.000 DEG C
+
+
+******************************************************************************
+
+
+
+ NODE   VOLTAGE     NODE   VOLTAGE     NODE   VOLTAGE     NODE   VOLTAGE
+
+
+(   Ua)     .0109  (   UP)    0.0000  (  Ubm)  -15.0000  (  Ubp)   15.0000      
+
+( Uinm)     .0109  ($N_0001)     .7431                   ($N_0002)   14.2520    
+
+($N_0003)    -.7260                   
+
+
+
+
+    VOLTAGE SOURCE CURRENTS
+    NAME         CURRENT
+
+    V_Ub1       -3.991E-03
+    V_Ub2       -4.000E-03
+    V_Ue        -8.756E-06
+
+    TOTAL POWER DISSIPATION   1.20E-01  WATTS
+
+
+**** 06/09/126 14:57:57 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * D:\Dokumente\docs\ESS\AI4Python\PSpice\OPV_Transistor\OPV11.sch
+
+
+ ****     OPERATING POINT INFORMATION      TEMPERATURE =   27.000 DEG C
+
+
+******************************************************************************
+
+
+
+
+
+
+**** BIPOLAR JUNCTION TRANSISTORS
+
+
+NAME         Q_T2        Q_T3        Q_T4        Q_T1        Q_T5      
+MODEL        N1          P1          P1          N1          N1        
+IB           8.76E-06   -2.14E-05   -1.96E-05    1.16E-05    1.03E-05 
+IC           8.67E-04   -8.26E-04   -1.01E-03    1.11E-03    1.00E-03 
+VBE          7.26E-01   -7.48E-01   -7.48E-01    7.37E-01    7.32E-01 
+VBC         -1.43E+01    0.00E+00    1.35E+01   -1.50E+01   -1.43E+01 
+VCE          1.50E+01   -7.48E-01   -1.43E+01    1.57E+01    1.50E+01 
+BETADC       9.91E+01    3.86E+01    5.15E+01    9.63E+01    9.71E+01 
+GM           2.93E-02    2.73E-02    3.37E-02    3.66E-02    3.33E-02 
+RPI          2.99E+03    1.22E+03    1.33E+03    2.26E+03    2.53E+03 
+RX           4.68E+02    1.57E+02    1.93E+02    4.57E+02    4.60E+02 
+RO           1.23E+05    5.15E+04    5.55E+04    9.68E+04    1.07E+05 
+CBE          3.21E-12    4.38E-12    5.35E-12    3.94E-12    3.61E-12 
+CBC          6.88E-14    5.24E-13    1.75E-13    6.78E-14    6.88E-14 
+CJS          2.73E-13    1.56E-12    6.88E-13    2.70E-13    2.70E-13 
+BETAAC       8.77E+01    3.32E+01    4.47E+01    8.27E+01    8.45E+01 
+CBX          0.00E+00    0.00E+00    0.00E+00    0.00E+00    0.00E+00 
+FT           1.42E+09    8.84E+08    9.71E+08    1.45E+09    1.44E+09 
+
+
+
+          JOB CONCLUDED
+
+          TOTAL JOB TIME             .06
+
