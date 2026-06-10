@@ -315,7 +315,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
                 case "L": 
                     self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
-                                              1/s*sp.symbols(symbol))
+                                              1/(s*sp.symbols(symbol)))
                     self.value_dict.update({sp.symbols(symbol): pu.pspice_to_float(element.params["value_dc"])})
 
                 case "C": 
@@ -326,12 +326,12 @@ class ModifiedNodalAnalysis(EquationFormulator):
                 case "V": 
                     self.add_independent_voltage_source(self.node_map[element.connections[0]], # noqa: E701
                         self.node_map[element.connections[1]], sp.symbols(symbol), element.params.get("value_ac", 0))
-                    self.value_dict.update({sp.symbols(symbol): element.params.get("value_ac", 0)})
+                    self.value_dict.update({sp.symbols(symbol): pu.pspice_to_float(element.params.get("value_ac", "0V"))})
 
                 case "I": 
                     self.add_independent_current_source(self.node_map[element.connections[0]], # noqa: E701
                                                 self.node_map[element.connections[1]], sp.symbols(symbol), element.params.get("value_ac", 0))
-                    self.value_dict.update({sp.symbols(symbol): element.params.get("value_ac", 0)})
+                    self.value_dict.update({sp.symbols(symbol): pu.pspice_to_float(element.params.get("value_ac", "0A"))})
             
            
                     
@@ -433,6 +433,16 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
         A_num = self.toNumerical(self.A, self.value_dict)
         z_num = self.toNumerical(z_mod, self.value_dict)
+
+        print("Symbolic A matrix:")
+        sp.pprint(self.A)
+        print("Symbolic z vector:")
+        sp.pprint(z_mod)
+
+        print("Numerical A matrix:")
+        print(A_num)
+        print("Numerical z vector:")
+        print(z_num)
 
         A_num_func = sp.lambdify(sp.symbols("s"), A_num, "numpy")
         z_num_func = sp.lambdify(sp.symbols("s"), z_num, "numpy")

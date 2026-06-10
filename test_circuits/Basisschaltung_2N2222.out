@@ -1,0 +1,200 @@
+
+**** 06/10/126 10:58:05 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * D:\Dokumente\docs\ESS\AI4Python\PSpice\Verstaerker\Basisschaltung_2N2222.sch
+
+
+ ****     CIRCUIT DESCRIPTION
+
+
+******************************************************************************
+
+
+
+
+* Schematics Version 8.0 - July 1997
+* Wed Jun 10 10:58:04 2026
+
+
+
+** Analysis setup **
+.ac DEC 20 1e3 1e9
+.OP 
+
+
+* From [SCHEMATICS NETLIST] section of msim.ini:
+.lib "D:\MSim_8\lib\ts.lib"
+.lib "D:\MSim_8\lib\nom.lib"
+
+.INC "Basisschaltung_2N2222.net"
+
+**** INCLUDING Basisschaltung_2N2222.net ****
+* Schematics Netlist *
+
+
+
+C_CB         5 0 100u 
+C_C2         4 ua 100u 
+R_RL         ua 0 4700
+V_Vin         1 0 DC 0 AC 1 sin( 0V 100mV 1kHz )
+Q_Q1         4 5 3 Q2N2222
+R_R2         5 0 6824.85
+R_RC         6 4 756.345
+R_RS         1 2 100
+C_C1         2 3 100u 
+V_VCC         6 0 DC 16  
+R_R1         5 4 7191.66
+R_RE         3 0 298.975
+
+**** RESUMING Basisschaltung_2N2222.cir ****
+.INC "Basisschaltung_2N2222.als"
+
+
+
+**** INCLUDING Basisschaltung_2N2222.als ****
+* Schematics Aliases *
+
+.ALIASES/CSDF
+C_CB            CB(1=5 2=0 )
+C_C2            C2(1=4 2=ua )
+R_RL            RL(1=ua 2=0 )
+V_Vin           Vin(+=1 -=0 )
+Q_Q1            Q1(c=4 b=5 e=3 )
+R_R2            R2(1=5 2=0 )
+R_RC            RC(1=6 2=4 )
+R_RS            RS(1=1 2=2 )
+C_C1            C1(1=2 2=3 )
+V_VCC           VCC(+=6 -=0 )
+R_R1            R1(1=5 2=4 )
+R_RE            RE(1=3 2=0 )
+_    _(5=5)
+_    _(ua=ua)
+_    _(4=4)
+_    _(1=1)
+_    _(3=3)
+_    _(6=6)
+_    _(2=2)
+.ENDALIASES
+
+
+**** RESUMING Basisschaltung_2N2222.cir ****
+.probe/CSDF N(ua) 
+.probe/CSDF I(V_Vin) 
+.probe/CSDF N(1) 
+.probe/CSDF N(3) 
+
+
+.END
+
+**** 06/10/126 10:58:05 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * D:\Dokumente\docs\ESS\AI4Python\PSpice\Verstaerker\Basisschaltung_2N2222.sch
+
+
+ ****     BJT MODEL PARAMETERS
+
+
+******************************************************************************
+
+
+
+
+               Q2N2222         
+               NPN             
+          IS   14.340000E-15 
+          BF  255.9          
+          NF    1            
+         VAF   74.03         
+         IKF     .2847       
+         ISE   14.340000E-15 
+          NE    1.307        
+          BR    6.092        
+          NR    1            
+          RB   10            
+          RC    1            
+         CJE   22.010000E-12 
+         MJE     .377        
+         CJC    7.306000E-12 
+         MJC     .3416       
+          TF  411.100000E-12 
+         XTF    3            
+         VTF    1.7          
+         ITF     .6          
+          TR   46.910000E-09 
+         XTB    1.5          
+
+
+**** 06/10/126 10:58:05 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * D:\Dokumente\docs\ESS\AI4Python\PSpice\Verstaerker\Basisschaltung_2N2222.sch
+
+
+ ****     SMALL SIGNAL BIAS SOLUTION       TEMPERATURE =   27.000 DEG C
+
+
+******************************************************************************
+
+
+
+ NODE   VOLTAGE     NODE   VOLTAGE     NODE   VOLTAGE     NODE   VOLTAGE
+
+
+(    1)    0.0000  (    2)    0.0000  (    3)    3.0000  (    4)    8.0000      
+
+(    5)    3.7052  (    6)   16.0000  (   ua)    0.0000  
+
+
+
+
+    VOLTAGE SOURCE CURRENTS
+    NAME         CURRENT
+
+    V_Vin        0.000E+00
+    V_VCC       -1.058E-02
+
+    TOTAL POWER DISSIPATION   1.69E-01  WATTS
+
+
+**** 06/10/126 10:58:05 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * D:\Dokumente\docs\ESS\AI4Python\PSpice\Verstaerker\Basisschaltung_2N2222.sch
+
+
+ ****     OPERATING POINT INFORMATION      TEMPERATURE =   27.000 DEG C
+
+
+******************************************************************************
+
+
+
+
+
+
+**** BIPOLAR JUNCTION TRANSISTORS
+
+
+NAME         Q_Q1      
+MODEL        Q2N2222   
+IB           5.43E-05 
+IC           9.98E-03 
+VBE          7.05E-01 
+VBC         -4.29E+00 
+VCE          5.00E+00 
+BETADC       1.84E+02 
+GM           3.74E-01 
+RPI          5.12E+02 
+RX           1.00E+01 
+RO           7.85E+03 
+CBE          1.92E-10 
+CBC          3.81E-12 
+CJS          0.00E+00 
+BETAAC       1.91E+02 
+CBX          0.00E+00 
+FT           3.04E+08 
+
+
+
+          JOB CONCLUDED
+
+          TOTAL JOB TIME             .03
+

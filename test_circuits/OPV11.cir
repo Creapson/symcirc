@@ -1,0 +1,24 @@
+* D:\Dokumente\docs\ESS\AI4Python\PSpice\OPV_Transistor\OPV11.sch
+
+* Schematics Version 8.0 - July 1997
+* Tue Jun 09 14:57:56 2026
+
+
+
+** Analysis setup **
+.ac DEC 10 10 1e9
+.OP 
+
+
+* From [SCHEMATICS NETLIST] section of msim.ini:
+.lib "D:\MSim_8\lib\ts.lib"
+.lib "D:\MSim_8\lib\nom.lib"
+
+.INC "OPV11.net"
+.INC "OPV11.als"
+
+
+.probe/CSDF N(Ua) 
+
+
+.END
