@@ -43,7 +43,10 @@ class Element(BaseModel):
         self.params[paramSymbol] = value
 
     def set_connections(self, connections: List[str]):
-        self.connections = connections
+        new_connections = []
+        for connection in connections:
+            new_connections.append((connection.strip("[]")))
+        self.connections = new_connections
 
     def get_connections(self) -> List[str]:
         return self.connections

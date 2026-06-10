@@ -184,16 +184,16 @@ class SpiceParser:
         match element.type:
             # Admittance
             case "R" | "C" | "L" | "D":
-                element.connections = line.tokens[1:-1]
+                element.set_connections(line.tokens[1:-1])
                 element.add_param("value_dc", line.tokens[-1])
 
             # Sources
             case "V" | "I":
                 if line.token_cnd == 4:
-                    element.connections = line.tokens[1:-1]
+                    element.set_connections(line.tokens[1:-1])
                     element.add_param("value_dc", line.tokens[-1])
                 elif line.token_cnd > 4:
-                    element.connections = line.tokens[1:3]
+                    element.set_connections(line.tokens[1:3])
 
                     # parse all values from this token
                     def parse_token(index, token_str):
@@ -204,7 +204,7 @@ class SpiceParser:
                         index += 1
                         while (
                             index < line.token_cnd
-                            and line.tokens[index].upper() not in token_list
+                            and not line.tokens[index].upper().startswith(tuple(token_list))
                         ):
                             value += line.tokens[index]
                             index += 1
@@ -246,16 +246,16 @@ class SpiceParser:
             # Controlles Sources
             case "E" | "G" | "F" | "H":
                 if line.token_cnd == 6:
-                    element.connections = line.tokens[1:-1]
+                    element.set_connections(line.tokens[1:-1])
                     element.add_param("value", line.tokens[-1])
 
             # Transistors
             case "Q" | "M":
                 if line.token_cnd <= 6:
-                    element.connections = line.tokens[1:-1]
+                    element.set_connections(line.tokens[1:-1])
                     element.add_param("ref_model", line.tokens[-1])
                 else:
-                    element.connections = line.tokens[1:5]
+                    element.set_connections(line.tokens[1:5])
                     element.add_param("ref_model", line.tokens[5])
                     element.add_param("area", line.tokens[6])
                 
@@ -265,7 +265,7 @@ class SpiceParser:
 
             # Subcircuits
             case "X":
-                element.connections = line.tokens[1:-1]
+                element.set_connections(line.tokens[1:-1])
                 element.add_param("ref_cir", line.tokens[-1])
                 # Fixme Subcircuits can have Params "PARAMS:"
 
