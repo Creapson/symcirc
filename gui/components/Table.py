@@ -10,6 +10,7 @@ class Widget_Type(IntEnum):
     BUTTON = 2
     INPUT_INT = 3
     INPUT_FLOAT = 4
+    INPUT_TEXT = 5
 
 
 class Table(BaseModel):
@@ -72,6 +73,8 @@ class Table(BaseModel):
                         continue
                     case Widget_Type.INPUT_FLOAT:
                         continue
+                    case Widget_Type.INPUT_TEXT:
+                        widget_id = dpg.add_input_text(default_value=val_dict.get(column, ""), parent=row, width=-1, callback=self.input_text_callback)
                     case _:
                         continue
                 self.row_ids[index][1][column] = int(widget_id)
@@ -90,6 +93,11 @@ class Table(BaseModel):
         self.row_data[index][column] = dpg.get_value(sender)
 
     def button_callback(self, sender, app_data):
+        pass
+
+    def input_text_callback(self, sender, app_data):
+        index, column = self.find_index_and_column(sender)
+        self.row_data[index][column] = dpg.get_value(sender)
         pass
 
     def setup(self):

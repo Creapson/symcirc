@@ -11,8 +11,8 @@
 
 
 * From [SCHEMATICS NETLIST] section of msim.ini:
-.lib "D:\MSim_8\lib\ts.lib"
-.lib "D:\MSim_8\lib\nom.lib"
+.lib "C:\MSim_8\lib\ts.lib"
+.lib "C:\MSim_8\lib\nom.lib"
 
 .INC "OPV11.net"
 .INC "OPV11.als"
