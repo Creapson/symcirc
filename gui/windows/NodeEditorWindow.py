@@ -330,6 +330,9 @@ class NodeEditorWindow(Window):
                     label="Style Editor", callback=lambda: dpg.show_style_editor()
                 )
                 dpg.add_menu_item(
+                    label="Style Editor Own", callback=lambda: self.application.style_edit_window.setup()
+                )
+                dpg.add_menu_item(
                     label="Font Manager", callback=lambda: dpg.show_font_manager()
                 )
 

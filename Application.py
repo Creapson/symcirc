@@ -1,21 +1,18 @@
 import dearpygui.dearpygui as dpg
 
 from gui.windows.NodeEditorWindow import NodeEditorWindow
+from gui.windows.StyleEditorWindow import StyleEditorWindow
 from pathlib import Path
 
 
 class Application:
     def __init__(self):
-        pass
+        self.style_edit_window = None
 
     def start(self):
         self.load_settings()
         self.load_library()
-        self.load_defaults()
         self.start_dpg()
-
-    def load_defaults(self):
-        pass
 
     def load_dpg_defaults(self):
         try:
@@ -27,6 +24,7 @@ class Application:
 
     def start_dpg(self):
         dpg.create_context()
+        self.style_edit_window = StyleEditorWindow()
 
         self.load_dpg_defaults()
 
