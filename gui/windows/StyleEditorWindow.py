@@ -1,14 +1,14 @@
-from re import split
 import dearpygui.dearpygui as dpg
-from sympy import use
 from gui.windows.Window import Window
+from pathlib import Path
+import json
 
 class StyleEditorWindow(Window):
     def __init__(self):
         self.styles = [
             ("seperator Main", False, [], 0, 0),
-            ("mvStyleVar_WindowPadding", False, [8, 8], 0, 20),
-            ("mvStyleVar_FramePadding", False, [4, 3], 0, 20),
+            ("mvStyleVar_WindowPadding", True, [8, 8], 0, 20),
+            ("mvStyleVar_FramePadding", True, [4, 3], 0, 20),
             ("seperator Boarder", False, [], 0, 0),
             # ("mv_Borader_Test", False, [4], 0, 10),
         ]
@@ -16,15 +16,33 @@ class StyleEditorWindow(Window):
             ("mvThemeCol_Text", (255, 255, 255, 255)),
             ("mvThemeCol_TextDisabled", (151, 151, 151, 255)),
         ]
-
+        self.current_theme = "default"
+        self.default_theme = self.load_theme("default")
+        print("Default theme", self.default_theme)
+        self.saved_themes = []
         self.theme_map = {}
+        self.changed_settings = {}
+        self.load_saved_themes()
         self.setup_theme_engine()
 
         super().__init__(title="Custom Style Editor", autosize=False)
 
+    def load_saved_themes(self):
+        base_dir = Path(__file__).resolve().parent
+        themes_path = base_dir / ".." / "themes"
+
+        self.bipolar_models = []
+        if themes_path.exists():
+            self.saved_themes = [f.stem for f in themes_path.iterdir() if f.is_file() and f.suffix == ".json"]
+        print(self.saved_themes)
+
     def setup_theme_engine(self):
         with dpg.theme() as self.style_theme_id:
             with dpg.theme_component(dpg.mvAll):
+
+                self.theme_map["mvStyleVar_WindowBorderSize"] = dpg.add_theme_style(dpg.mvStyleVar_WindowBorderSize)
+                self.theme_map["mvStyleVar_FrameBorderSize"] = dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
+                self.theme_map["mvStyleVar_PopupBorderSize"] = dpg.add_theme_style(dpg.mvStyleVar_PopupBorderSize)
                 
                 for style_str, _, values, _, _ in self.styles:
                     if style_str.startswith("seperator"):
@@ -56,6 +74,7 @@ class StyleEditorWindow(Window):
             slider_size = dpg.get_item_configuration(sender).get("size", 1)
             cleaned_val = app_data[:slider_size] if isinstance(app_data, list) else [app_data]
             dpg.set_value(theme_element_id, value=cleaned_val)
+            self.changed_settings[user_data] = cleaned_val
         else:
             print(f"Engine Warning: Theme item mapping missing for {user_data}")
 
@@ -65,30 +84,49 @@ class StyleEditorWindow(Window):
             color_255 = [int(channel * 255) for channel in app_data]
 
             dpg.set_value(theme_element_id, color_255)
+            self.changed_settings[user_data] = color_255
         else:
             print(f"Engine Warning: Theme color mapping missing for {user_data}")
 
-    def save_ref(self):
-        print("Save not implemented yet!")
+    def save_ref(self, sender, app_data):
+        theme_name = dpg.get_value(self.uuid("theme_name"))
+        with open(f"gui/themes/{theme_name}.json", "w") as fp:
+            json.dump(self.changed_settings, fp)
+        print("saved theme to disk")
 
+    def load_theme(self, theme_name:str):
+        themes_path = f"gui/themes/{theme_name}.json"
 
-    def revert_ref(self):
-        print("Restore not implemented yet!")
+        json1_file = open(themes_path)
+        json1_str = json1_file.read()
+        return json.loads(json1_str)
+
+    def apply_theme(self, settings_dict):
+        for style_element_id, values in settings_dict.items():
+            theme_element_id = self.theme_map.get(style_element_id)
+            dpg.set_value(theme_element_id, values)
+
+    def revert_ref(self, sender, app_data):
+        self.apply_theme(self.default_theme)
+    
+    def theme_select_callback(self, sender, app_data):
+        self.current_theme = app_data
+        self.apply_theme(self.load_theme(app_data))
 
     def build(self):
-        dpg.add_combo(label="Theme Selector", items=["This", "is", "Currently", "Empty"], default_value="Empty")
+        dpg.add_combo(label="Theme Selector", items=self.saved_themes, default_value=self.current_theme, callback=self.theme_select_callback)
         
         # Border Boolean Checkboxes
         with dpg.group(horizontal=True):
-            dpg.add_checkbox(label="WindowBorder", default_value=True, callback=lambda s, a: self.update_style(s, 1.0 if a else 0.0, "WindowBorderSize"))
-            dpg.add_checkbox(label="FrameBorder", default_value=False, callback=lambda s, a: self.update_style(s, 1.0 if a else 0.0, "FrameBorderSize"))
-            dpg.add_checkbox(label="PopupBorder", default_value=True, callback=lambda s, a: self.update_style(s, 1.0 if a else 0.0, "PopupBorderSize"))
+            dpg.add_checkbox(label="WindowBorder", default_value=True, callback=lambda s, a: self.update_style(s, 1.0 if a else 0.0, "mvStyleVar_WindowBorderSize"))
+            dpg.add_checkbox(label="FrameBorder", default_value=False, callback=lambda s, a: self.update_style(s, 1.0 if a else 0.0, "mvStyleVar_FrameBorderSize"))
+            dpg.add_checkbox(label="PopupBorder", default_value=True, callback=lambda s, a: self.update_style(s, 1.0 if a else 0.0, "mvStyleVar_PopupBorderSize"))
 
         # --- Local Save/Revert Controls ---
         with dpg.group(horizontal=True):
             dpg.add_button(label="Save Settings", callback=self.save_ref)
             dpg.add_button(label="Restore Default", callback=self.revert_ref)
-            dpg.add_input_text(default_value="")
+            dpg.add_input_text(default_value="", tag=self.uuid("theme_name"))
             self.help_marker("Save/Restore the current Settings")
         
         dpg.add_separator()
