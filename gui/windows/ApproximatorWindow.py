@@ -94,23 +94,13 @@ class ApproximatorWindow(Window):
             dpg.add_table_column(label="Error")
         pass
 
-        sort_methods = Approximation.get_Sorting_Methods()
-        with dpg.group(horizontal=True):
-            dpg.add_text("Sorting Method")
-            dpg.add_combo(items=sort_methods, tag=self.uuid("sorting_method"), default_value=sort_methods[0])
-
-        with dpg.group(horizontal=True):
-            dpg.add_text("Reletive error threshold")
-            dpg.add_input_float(default_value=0.6, tag=self.uuid("rel_error_threshold"))
-
-        elim_methods = Approximation.get_Elimination_Methods()
-        with dpg.group(horizontal=True):
-            dpg.add_text("Elimination Method")
-            dpg.add_combo(items=elim_methods, tag=self.uuid("elim_mothod"), default_value=elim_methods[0])
-
-        with dpg.group(horizontal=True):
-            dpg.add_text("Column")
-            dpg.add_input_int(default_value=0, tag=self.uuid("column"))
+        dpg.add_combo(items=Approximation.get_Sorting_Methods(), tag=self.uuid("sorting_method"), default_value=sort_methods[0], label="Sorting Method")
+        dpg.add_input_float(default_value=0.6, tag=self.uuid("rel_error_threshold"), label="Reletive error threshold")
+        dpg.add_combo(items=Approximation.get_Elimination_Methods(), 
+                      tag=self.uuid("elim_mothod"), 
+                      default_value=elim_methods[0], 
+                      label="Elimination Method")
+        dpg.add_input_int(default_value=0, tag=self.uuid("column"), label="Column")
 
         dpg.add_text(
             default_value="Not Calculated yet!", tag=self.uuid("approx_func_txt")

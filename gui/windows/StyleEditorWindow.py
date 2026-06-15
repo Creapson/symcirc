@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 
 class StyleEditorWindow(Window):
-    def __init__(self):
+    def __init__(self, current_theme="Default"):
         self.styles = [
             ("seperator Main", False, [], 0, 0),
             ("mvStyleVar_WindowPadding", True, [8, 8], 0, 20),
@@ -13,13 +13,13 @@ class StyleEditorWindow(Window):
             # ("mv_Borader_Test", False, [4], 0, 10),
         ]
         self.colors = [
-            ("mvThemeCol_Text", (255, 255, 255, 255)),
-            ("mvThemeCol_TextDisabled", (151, 151, 151, 255)),
+            ("mvThemeCol_Text", [255, 255, 255, 255]),
+            ("mvThemeCol_TextDisabled", [151, 151, 151, 255]),
         ]
-        self.current_theme = "default"
-        self.default_theme = self.load_theme("default")
-        print("Default theme", self.default_theme)
+        self.current_theme = current_theme
+        self.default_theme = self.create_default_dict()
         self.saved_themes = []
+        self.saved_themes.append("Default")
         self.theme_map = {}
         self.changed_settings = {}
         self.load_saved_themes()
@@ -27,13 +27,26 @@ class StyleEditorWindow(Window):
 
         super().__init__(title="Custom Style Editor", autosize=False)
 
+    def create_default_dict(self):
+        default_dict = {}
+        default_dict["mvStyleVar_WindowBorderSize"] = [1]
+        default_dict["mvStyleVar_FrameBorderSize"] = [0]
+        default_dict["mvStyleVar_PopupBorderSize"] = [1]
+        for style_str, _, values, _, _ in self.styles:
+            if style_str.startswith("seperator"): continue
+            default_dict[style_str] = values
+        for color_str, color_val in self.colors:
+            default_dict[color_str] = color_val 
+            pass
+        return default_dict
+
     def load_saved_themes(self):
         base_dir = Path(__file__).resolve().parent
         themes_path = base_dir / ".." / "themes"
 
         self.bipolar_models = []
         if themes_path.exists():
-            self.saved_themes = [f.stem for f in themes_path.iterdir() if f.is_file() and f.suffix == ".json"]
+            self.saved_themes += [f.stem for f in themes_path.iterdir() if f.is_file() and f.suffix == ".json"]
         print(self.saved_themes)
 
     def setup_theme_engine(self):
@@ -92,9 +105,13 @@ class StyleEditorWindow(Window):
         theme_name = dpg.get_value(self.uuid("theme_name"))
         with open(f"gui/themes/{theme_name}.json", "w") as fp:
             json.dump(self.changed_settings, fp)
+        dpg.configure_item(self.uuid("theme_selector"), default_value=theme_name)
+        self.saved_themes.append(theme_name)
         print("saved theme to disk")
 
     def load_theme(self, theme_name:str):
+        if theme_name == "Default":
+            return self.default_theme        
         themes_path = f"gui/themes/{theme_name}.json"
 
         json1_file = open(themes_path)
@@ -114,7 +131,7 @@ class StyleEditorWindow(Window):
         self.apply_theme(self.load_theme(app_data))
 
     def build(self):
-        dpg.add_combo(label="Theme Selector", items=self.saved_themes, default_value=self.current_theme, callback=self.theme_select_callback)
+        dpg.add_combo(label="Theme Selector", items=self.saved_themes, default_value=self.current_theme, callback=self.theme_select_callback, tag=self.uuid("theme_selector"))
         
         # Border Boolean Checkboxes
         with dpg.group(horizontal=True):
