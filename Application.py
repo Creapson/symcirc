@@ -3,11 +3,14 @@ import dearpygui.dearpygui as dpg
 from gui.windows.NodeEditorWindow import NodeEditorWindow
 from gui.windows.StyleEditorWindow import StyleEditorWindow
 from pathlib import Path
+from typing import Dict
+import json
 
 
 class Application:
     def __init__(self):
         self.style_edit_window = None
+        self.settings: Dict[str, str] = {}
 
     def start(self):
         self.load_settings()
@@ -24,7 +27,7 @@ class Application:
 
     def start_dpg(self):
         dpg.create_context()
-        self.style_edit_window = StyleEditorWindow()
+        self.style_edit_window = StyleEditorWindow(self, self.settings.get("theme", "Default"))
 
         self.load_dpg_defaults()
 
@@ -60,5 +63,20 @@ class Application:
         print(self.bipolar_models)
         print(self.mosfet_models)
 
+    def get_setting(self, setting:str, default=None) -> str | None:
+        return self.settings.get(setting, default)
+
+    def set_setting(self, setting:str, value:str):
+        self.settings[setting] = value
+        print("set value", setting, "to ", value)
+
+    def save_setting(self):
+        with open("settings.json", "w") as fp:
+            json.dump(self.settings, fp)
+        print("Saved settings")
+
+
     def load_settings(self):
-        pass
+        json1_file = open("settings.json")
+        json1_str = json1_file.read()
+        self.settings = json.loads(json1_str)

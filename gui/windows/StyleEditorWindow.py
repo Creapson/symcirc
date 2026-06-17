@@ -4,7 +4,8 @@ from pathlib import Path
 import json
 
 class StyleEditorWindow(Window):
-    def __init__(self, current_theme="Default"):
+    def __init__(self, application, current_theme="Default"):
+        self.application = application
         self.styles = [
             ("seperator Main", False, [], 0, 0),
             ("mvStyleVar_WindowPadding", True, [8, 8], 0, 20),
@@ -17,6 +18,7 @@ class StyleEditorWindow(Window):
             ("mvThemeCol_TextDisabled", [151, 151, 151, 255]),
         ]
         self.current_theme = current_theme
+
         self.default_theme = self.create_default_dict()
         self.saved_themes = []
         self.saved_themes.append("Default")
@@ -24,6 +26,9 @@ class StyleEditorWindow(Window):
         self.changed_settings = {}
         self.load_saved_themes()
         self.setup_theme_engine()
+
+        # apply current_theme
+        self.apply_theme(self.load_theme(current_theme))
 
         super().__init__(title="Custom Style Editor", autosize=False)
 
@@ -129,6 +134,11 @@ class StyleEditorWindow(Window):
     def theme_select_callback(self, sender, app_data):
         self.current_theme = app_data
         self.apply_theme(self.load_theme(app_data))
+        self.application.set_setting("theme", app_data)
+
+    def on_close(self, sender, app_data, user_data):
+        self.application.save_setting()
+        super().on_close(sender, app_data, user_data)
 
     def build(self):
         dpg.add_combo(label="Theme Selector", items=self.saved_themes, default_value=self.current_theme, callback=self.theme_select_callback, tag=self.uuid("theme_selector"))
