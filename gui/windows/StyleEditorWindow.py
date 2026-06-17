@@ -16,6 +16,13 @@ class StyleEditorWindow(Window):
         self.colors = [
             ("mvThemeCol_Text", [255, 255, 255, 255]),
             ("mvThemeCol_TextDisabled", [151, 151, 151, 255]),
+            ("mvThemeCol_WindowBg", [37, 37, 38, 255]),
+            ("mvThemeCol_ChildBg", [37, 37, 38, 255]),
+            ("mvThemeCol_PopupBg", [37, 37, 38, 255]),
+            ("mvThemeCol_Border", [78, 78, 78, 255]),
+            ("mvThemeCol_BorderShadow", [78, 78, 78, 255]),
+            ("mvThemeCol_FrameBg", [51, 51, 51, 255]),
+            ("mvThemeCol_FrameBgHovered", [29, 151, 236, 103]),
         ]
         self.current_theme = current_theme
 

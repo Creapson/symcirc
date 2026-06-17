@@ -327,6 +327,9 @@ class NodeEditorWindow(Window):
 
             with dpg.menu(label="Settings"):
                 dpg.add_menu_item(
+                    label="Native Style Editor", callback=lambda: dpg.show_style_editor()
+                )
+                dpg.add_menu_item(
                     label="Style Editor", callback=lambda: self.application.style_edit_window.setup()
                 )
                 dpg.add_menu_item(
