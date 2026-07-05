@@ -24,7 +24,19 @@ python -m poetry run python -m unittest discover -s tests
 # What needs work?
 - Theme editor/selector
     - add more settings
-- Small signal models
+- addition of multiple levels of small signal model complexities
 - more test cases / complete the current tests
 - better icons for the node creation image buttons
-
+- addition of LTspice parser
+- sparse tableau implementation
+- block approximation implementation
+- transfer function numerator / denumerator approximation
+- poles / zeros calcultion (numeric + symbolic)
+- poles / zeros output (plot, numeric, symbolic)
+- Jupyter Notebook export
+- node editor zoom solution
+- transfer function output (numeric, symbolic)
+- system of equations output (numeric, symbolic)
+- node settings in seperate window
+- addition of fonts
+- font resolution fix
