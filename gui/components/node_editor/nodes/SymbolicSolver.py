@@ -22,7 +22,7 @@ class SymbolicSolver(Node):
         super().build()
 
     def get_possible_node_connections(self) -> List[str]:
-        return ["bodeplot"]
+        return ["bode_plot"]
 
     def onlink_callback(self):
         self.transfer_function, self.sweep = self.get_input_pin_value("h_input_pin", ([], []))
