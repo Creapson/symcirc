@@ -334,6 +334,80 @@ class SpiceParser:
             case _:
                 return ""
 
+    # this function needs cleanup
+    def parse_element_params(self, out_filepath : str, elements : list[Element], is_bipol: bool = True):
+        """
+        text:     the full SPICE-like dump string
+        elements: list of elements
+        """
+        def _parse_param_block(start_idx: int, elements: List[Element]):
+            lookup = {(Element.get_normalised_name(el.historical_name)): el for el in elements}
+            cur_names = []  # list of transistor names in the current block
+            i = start_idx
+            while i < n:
+                line = lines[i].strip()
+
+                # Detect "NAME Q201 Q202 ..."
+                if line.startswith("NAME"):
+                    parts = line.split()
+                    cur_names = [Element.get_normalised_name(n) for n in parts[1:]]
+                    i += 1
+                    continue
+
+                # check if the next line start with a Word
+                # This is the name of the param
+                if cur_names and re.match(r"^[A-Za-z0-9]+", line):
+                    parts = line.split()
+                    key = parts[0]
+                    values = parts[1:]
+                    if len(values) == len(cur_names):
+                        for name, raw in zip(cur_names, values):
+                            try:
+                                val = float(raw)
+                            except ValueError:
+                                val = raw
+
+                            if name in lookup:
+                                lookup[name].add_param(key, str(val))
+                            else:
+                                print(f"Warning: element {name} not found in lookup.")
+
+                    i += 1
+                    continue
+
+                if line.strip() == "" or line.startswith("JOB"):
+                    cur_names = []
+
+                i += 1
+
+        import re
+
+        with open(out_filepath, "r") as file:
+            lines = [line.rstrip() for line in file]
+
+        idx = 0
+        bipol_param_start_index = 0
+        mosfet_param_start_index = 0
+        for line in lines:
+            if "BIPOLAR JUNCTION TRANSISTORS" in line:
+                bipol_param_start_index = idx
+            elif "MOSFET" in line:
+                mosfet_param_start_index = idx
+            else:
+                idx += 1
+
+        # Build fast lookup
+        
+
+        if is_bipol:
+            i = bipol_param_start_index
+        else:
+            i = mosfet_param_start_index
+        n = len(lines)
+
+        _parse_param_block(bipol_param_start_index, elements)
+        _parse_param_block(mosfet_param_start_index, elements)
+
 class Line:
     def __init__(self, line:str = "") -> None:
         self._text = line.strip()

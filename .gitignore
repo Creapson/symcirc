@@ -1,5 +1,4 @@
 src/*
-tests/*
 poetry.lock
 pyrightconfig.json
 .gitignore

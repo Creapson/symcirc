@@ -17,8 +17,7 @@ def get_circuit_from_file(file_path : str = "") -> Circuit:
     return circuit
 
 def get_element_parameters_from_outfile(file_path : str, elements: list[Element]): 
-    parser = Spice()
-    parser.set_cir_file(file_path)
+    parser = SpiceParser(file_path)
     parser.parse_element_params(file_path, elements)
 
 def get_pre_format_info(file_path : str) -> list[str]:
