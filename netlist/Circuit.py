@@ -12,8 +12,8 @@ from netlist.Model import Model
 class Circuit(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    name: str = ""
-    netlist_file_path: str = ""
+    name: str = Field(default="")
+    netlist_file_path: str = Field(default="")
 
     params: Dict[str, str] = Field(default_factory=dict)
     inner_connecting_nodes: List[str] = Field(default_factory=list)

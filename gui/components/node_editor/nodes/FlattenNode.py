@@ -26,7 +26,8 @@ class FlattenNode(Node):
 
     def callback(self, sender, app_data):
         file_path = self.open_file_dialog("Select Output File", [("Output Files","*.out")])
-        self.data["out_file_path"] = file_path[0]
+        if len(file_path) ==  0:
+            self.data["out_file_path"] = file_path[0]
         dpg.set_value(self.uuid("out_file_path"), f"Selected {self.data["out_file_path"]}")
 
     def get_possible_node_connections(self) -> List[str]:
@@ -43,7 +44,7 @@ class FlattenNode(Node):
                 tag=self.uuid("out_file_path"),
             )
 
-        self.add_input_pin("file_path_pin", "Connect Circuit here! [circuit]")
+        self.add_input_pin("parsed_circuit", "Connect Circuit here! [circuit]")
 
         with self.add_static_attr():
             dpg.add_button(
@@ -68,7 +69,8 @@ class FlattenNode(Node):
         super().build()
 
     def onlink_callback(self):
-        circuit_dict = self.get_input_pin_value("file_path_pin", Circuit())
+        circuit_dict = self.get_input_pin_value("parsed_circuit", None)
+        print("circuit_dict", circuit_dict)
 
         self.circuit = Circuit.model_validate(circuit_dict)
 
@@ -101,8 +103,9 @@ class FlattenNode(Node):
             element.params["mosfet_model"] = mosfet_model
 
         self.flattend_circuit = self.circuit.copy()
-        print(self.data.get("out_file_path", ""))
-        self.flattend_circuit.flatten(True, self.data.get("out_file_path", ""))
+        self.circuit.to_ai_string()
+        default_out_path = self.circuit.netlist_file_path + self.circuit.name + ".out"
+        self.flattend_circuit.flatten(True, self.data.get("out_file_path", default_out_path))
 
 
         self.add_output_pin(

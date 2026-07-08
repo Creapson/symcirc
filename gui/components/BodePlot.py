@@ -40,6 +40,9 @@ class BodePlot(BaseModel):
         pass
 
     def setup(self, width=-1, height=600):
+        if self.id == 0:
+            self.id = int(dpg.generate_uuid())
+
         self.mag_plot_id = int(dpg.generate_uuid())
         self.mag_x_id = int(dpg.generate_uuid()) 
         self.mag_y_id = int(dpg.generate_uuid())
@@ -56,8 +59,9 @@ class BodePlot(BaseModel):
         with dpg.subplots(
             2, 1, label="", link_all_x=True, 
             width=width,
-            height=height
-        ) as self.id:
+            height=height,
+            tag=self.id
+        ):
             # -------- Magnitude Plot --------
             with dpg.plot(label="Betrag (dB)", tag=self.mag_plot_id):
                 dpg.add_plot_legend()

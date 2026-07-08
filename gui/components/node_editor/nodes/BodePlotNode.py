@@ -64,16 +64,16 @@ class BodePlotNode(Node):
         phases_rad = np.angle(values).tolist()
         phases_deg = np.degrees(np.angle(values)).tolist()
 
-        self.populate_plot(freqs, magnitudes, phases_deg)
+        self.populate_plot(freqs, magnitudes, phases_deg, "CSD")
         print(subset)
 
     def onlink_callback(self):
         freq_log, magnitude, phase = self.get_input_pin_value("line_pin", ([], [], []))
-        self.populate_plot(freq_log, magnitude, phase)
+        self.populate_plot(freq_log, magnitude, phase, "SIM")
         super().onlink_callback()
 
-    def populate_plot(self, freq, mag, phase):
-        self.bode_plot.add_line_series("Test",freq, mag, phase)
+    def populate_plot(self, freq, mag, phase, name):
+        self.bode_plot.add_line_series(name,freq, mag, phase)
 
     def update(self):
         super().update()

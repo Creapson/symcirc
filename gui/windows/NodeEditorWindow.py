@@ -1,4 +1,5 @@
 import dearpygui.dearpygui as dpg
+import traceback
 from typing import List, Dict
 
 from gui.components.node_editor.NodeEditor import NodeEditor
@@ -90,7 +91,8 @@ class NodeEditorWindow(Window):
             self.setup_node_editor()
 
         except Exception as e:
-            print(f"Error loading file: {e}")
+            print(f"Error loading the node editor: {e}")
+            traceback.print_exc()
 
     def clear_node_editor(self):
         for _, node in self.node_editor.node_dic.items():

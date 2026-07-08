@@ -435,9 +435,9 @@ class ModifiedNodalAnalysis(EquationFormulator):
         z_num = self.toNumerical(z_mod, self.value_dict)
 
         print("Symbolic A matrix:")
-        sp.pprint(self.A)
+        #sp.pprint(self.A)
         print("Symbolic z vector:")
-        sp.pprint(z_mod)
+        #sp.pprint(z_mod)
 
         print("Numerical A matrix:")
         print(A_num)

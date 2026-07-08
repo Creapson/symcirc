@@ -360,7 +360,7 @@
                 }
             },
             "input_pins": {
-                "file_path_pin": 121
+                "parsed_circuit": 121
             },
             "output_values": {
                 "148": {

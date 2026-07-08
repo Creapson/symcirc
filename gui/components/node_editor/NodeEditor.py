@@ -62,7 +62,7 @@ class NodeEditor(BaseModel):
     def onlink_callback(self, sender, app_data):
         from_pin, to_pin = app_data
         to_node_id = dpg.get_item_parent(to_pin)
-        to_node = self.node_dic[to_node_id]
+        to_node = self.node_dic.get(to_node_id, None)
 
         # you cannot connect multiple outputs to one input
         # check if the input pin already has a connection

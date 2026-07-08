@@ -241,3 +241,4 @@ class Node(BaseModel):
         print("output pins: ", self.output_pins)
         print("id_transition_table", self.id_transition_table)
         print("does propagation", self.do_propagation)
+        print("Data:", self.data)
