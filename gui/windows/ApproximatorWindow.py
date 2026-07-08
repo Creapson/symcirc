@@ -94,9 +94,12 @@ class ApproximatorWindow(Window):
             dpg.add_table_column(label="Error")
         pass
 
-        dpg.add_combo(items=Approximation.get_Sorting_Methods(), tag=self.uuid("sorting_method"), default_value=sort_methods[0], label="Sorting Method")
+        sort_methods = Approximation.get_Sorting_Methods()
+        elim_methods = Approximation.get_Elimination_Methods()
+
+        dpg.add_combo(items=sort_methods, tag=self.uuid("sorting_method"), default_value=sort_methods[0], label="Sorting Method")
         dpg.add_input_float(default_value=0.6, tag=self.uuid("rel_error_threshold"), label="Reletive error threshold")
-        dpg.add_combo(items=Approximation.get_Elimination_Methods(), 
+        dpg.add_combo(items=elim_methods, 
                       tag=self.uuid("elim_mothod"), 
                       default_value=elim_methods[0], 
                       label="Elimination Method")

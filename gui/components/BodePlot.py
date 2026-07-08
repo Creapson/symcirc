@@ -20,6 +20,17 @@ class BodePlot(BaseModel):
     phase_x_log: bool = Field(default=False)
     phase_y_log: bool = Field(default=True)
 
+    # View
+    max_x_mag: float = Field(default=0)
+    min_x_mag: float = Field(default=0)
+    max_y_mag: float = Field(default=0)
+    max_y_mag: float = Field(default=0)
+
+    max_x_phase: float = Field(default=0)
+    min_x_phase: float = Field(default=0)
+    max_y_phase: float = Field(default=0)
+    max_y_phase: float = Field(default=0)
+
     line_dic: Dict[str, Any] = Field(default_factory=dict, exclude=True)
 
     def uuid(self, text: str) -> str:
@@ -51,10 +62,12 @@ class BodePlot(BaseModel):
         self.phase_x_id = int(dpg.generate_uuid()) 
         self.phase_y_id = int(dpg.generate_uuid()) 
         with dpg.tree_node(label="Settings"):
-            dpg.add_checkbox(label="Log mag x", tag=self.uuid("mag_x_log"), default_value=self.mag_x_log, callback=self.apply_settings,user_data=(self.mag_x_id, "log")) 
-            dpg.add_checkbox(label="Log mag y", tag=self.uuid("mag_y_log"), default_value=self.mag_y_log, callback=self.apply_settings, user_data=(self.mag_y_id, "log"))
-            dpg.add_checkbox(label="Log phase x", tag=self.uuid("phase_x_log"), default_value=self.phase_x_log, callback=self.apply_settings, user_data=(self.phase_x_id, "log"))
-            dpg.add_checkbox(label="Log phase y", tag=self.uuid("phase_y_log"), default_value=self.phase_y_log, callback=self.apply_settings, user_data=(self.phase_y_id, "log"))
+            with dpg.group(horizontal=True):
+                dpg.add_checkbox(label="Log mag x", tag=self.uuid("mag_x_log"), default_value=self.mag_x_log, callback=self.apply_settings,user_data=(self.mag_x_id, "log")) 
+                dpg.add_checkbox(label="Log mag y", tag=self.uuid("mag_y_log"), default_value=self.mag_y_log, callback=self.apply_settings, user_data=(self.mag_y_id, "log"))
+                dpg.add_checkbox(label="Log phase x", tag=self.uuid("phase_x_log"), default_value=self.phase_x_log, callback=self.apply_settings, user_data=(self.phase_x_id, "log"))
+                dpg.add_checkbox(label="Log phase y", tag=self.uuid("phase_y_log"), default_value=self.phase_y_log, callback=self.apply_settings, user_data=(self.phase_y_id, "log"))
+            dpg.add_button(label="fit_view", callback=self.fit_view)
 
         with dpg.subplots(
             2, 1, label="", link_all_x=True, 
@@ -82,6 +95,12 @@ class BodePlot(BaseModel):
         dpg.delete_item(self.mag_y_id, children_only=True)
         dpg.delete_item(self.phase_y_id, children_only=True)
 
+    def fit_view(self):
+        dpg.fit_axis_data(self.mag_x_id)
+        dpg.fit_axis_data(self.mag_y_id)
+        dpg.fit_axis_data(self.phase_x_id)
+        dpg.fit_axis_data(self.phase_y_id)
+
     def add_line_series(self, name:str, 
                         freq: list[float] = [], 
                         magnitude: list[float] = [], 
@@ -106,3 +125,5 @@ class BodePlot(BaseModel):
             )
         else:
             dpg.set_value(self.uuid(f"phase_{name}"), [list(freq), list(phase)])
+
+        self.fit_view()
