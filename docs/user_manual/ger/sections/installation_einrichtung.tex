@@ -1,0 +1,26 @@
+\section{Installation und Einrichtung}
+\subsection{Selbst Compilieren}
+\label{chap:compilation}
+Der Quellcode von Symcirc wird auf Github\footnote{\url{https://github.com/Creapson/symcirc}.} gehosted und kann jederzeit abgerufen werden. Das gesamte Projekt ist in Python geschrieben und kann mit mehren Python Compilern Compiliert werden. Im folgenden Beispiel wird \textbf{pyinstaller} verwendet.
+
+\lstinputlisting[
+  caption={Installation Bash Commands},
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  stringstyle=\color{orange},
+  commentstyle=\color{gray},
+  showstringspaces=false,
+  breaklines=true,
+  numbers=left
+]{code/compiling.py}
+
+Die Kompilierte .exe Datei befindet sich nun im Order \textbf{disc} unter dem namen \textbf{main.exe}. Damit das Programm im vollen Umfang funktioneren kann muss die main.exe nurnoch in das selbe Verzeichnis wie der \textbf{library} und der \textbf{gui} verschoben werden.
+
+\subsection{Mit fertigen Installationsdateien}
+Bereits Compilierte Programme können unter dem Releases Tab\footnote{\url{https://github.com/Creapson/symcirc/releases}} vom Github gefunden werden. Dort ist eine Auflistung von allen Versionen des Programms zu finden. Bei den jeweiligen Versionen können unter dem Assets Ausklappmenu die Installationsdateien Herrunter geladen werden.
+\subsubsection{Windows}
+Folgende Dateie müss für Windows heruntergeladen werden: "windows\_release\_*.zip". Die Zip Datei muss nun nurnoch in einem beliebigen Verzeichnis entpackt werden. Das Programm kann nun über die "main.exe" Datei ausgeführt werden.
+
+\subsubsection{Mac / Unix}
+Für Mac OS und Unix Systeme gibt es aktuell keine fertig Compilieren Dateien. Das Programm muss somit selbst Compiliert werden. Hilfestellungen für die Compilation kann unter \autoref{chap:compilation} gefunden werden.

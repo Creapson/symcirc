@@ -1,0 +1,27 @@
+\section{Durchführung von Analysen}
+\subsection{Funktion der Nodes}
+Die einzelnen Rechen/Analysen Schritte des Programms wurden in einzellne Knoten aufgestellt. Diese können beliebig(sinnvoll beliebig) verbunden werden um neue Analysen zu erstellen.
+
+Folgende Knoten gibt es:
+\begin{itemize}
+    \item \textbf{ImportCircuit} Über den ImportCircuit-Node können Netzlisten (*.cir oder *.net) geladen werden. Der Output des Knoten kann mit dem NetlistParser-Knoten verbunden werden.
+    \item \textbf{NetlistPaser} Der NetlistParser-Knoten benötigt eine Netzlisten als Input. Er Parsed die Netzliste und flacht die Teilschaltungen aus. Die Ausgabe ist ein Circuit. Dieser Circucit kann zum Beispiel von dem Flatten-Knoten verwendet werden.
+    \item \textbf{FlattenNode} Der Flatten-Knoten benötigt einen Circuit als Input und ersetzt Elemente wie Transistoren oder Dioden mit einstellbaren Ersatzschaltbildern. Die Ausgabe ist ein Circuit.
+    \item \textbf{MNA} Der MNA-Knote (Modified-Node-Analyses) erstellt ein Gleichungssystem aus einem Circuit. Die Eingabe ist ein Circuit und die Ausgabe ein Gleichungssystem.
+    \item \textbf{ApproximatorNode} Der Approximator-Knoten kann ein Gleichungssystem vereinfachen indem es unrelevante Terme entfernt. Die Ausageb ist ein Gleichungssystem.
+    \item \textbf{TransferFunctionNumeric} Aus der Eingabe des Gleichugssystems erstellt der TransferFunctionNumeric-Knoten eine Übertragungsfunktion über einen ausgewählten Knoten. Er berechnet außerdem die komplexen Lösungen für diesen anhand einer Liste von Frequenzen, welche eingestellt werden können. Die Ausgabe ist eine Liste von komplexen Lösungen für diese Übertragungsfunktion.
+    \item \textbf{NumericSolver} Der NumericSolver-Knoten wandelt die komplexen Ergebnisse des TransferFunctionNumeric-Knoten ein eine Betrags- und Phasendarstellung um. Die Ausgabe sind numerische Werte welche im BodePlot-Knoten dargestellt werden können.
+    \item \textbf{TransferFunctionSymbolic} Aus der Eingabe des Gleichugssystems erstellt der TransferFunctionSymbolic-Knoten eine Übertragungsfunktion über einen ausgewählten Knoten. Er berechnet außerdem die komplexen Lösungen für diesen anhand einer Liste von Frequenzen, welche eingestellt werden können. Außerdem gibt er die Symbolische Übertragungsfunktion im latex format aus. Die Ausgabe ist eine Liste von komplexen Lösungen für diese Übertragungsfunktion.
+    \item \textbf{SymbolicSolver} Der SymbolicSolver-Knoten wandelt die komplexen Ergebnisse des TransferFunctionSymbolic-Knoten ein eine Betrags- und Phasendarstellung um. Die Ausgabe sind numerische Werte welche im BodePlot-Knoten dargestellt werden können.
+    \item \textbf{BodePlotNode} Im BodePlot-Knöten können die Numerischen Werte von dem TransferfunctionNemeric und TRansferfunctionSymbolic-Knoten dargestellt werden. Außerdem können *.csd dateien eingelesen werden um die Simulierten Werte mit den Errechneten zu vergleichen.
+\end{itemize}
+
+\subsection{Laden von Netzlisten}
+
+\subsection{Parsen und Flatten von Schaltungen}
+
+\subsection{Erstellen eines Gleichungssystems}
+
+\subsection{Approximieren}
+
+\subsection{Speichern und Laden von Analysen}
