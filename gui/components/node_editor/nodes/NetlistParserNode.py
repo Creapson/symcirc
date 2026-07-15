@@ -3,6 +3,7 @@ from pydantic import Field
 from typing import List, Dict, Literal
 
 from gui.windows.CircuitEditor import CircuitEditor
+from gui.components.OutputPin import OutputPin, PinType
 
 from gui.components.node_editor.nodes.Node import Node, NodeType
 from gui.components.Table import Table, Widget_Type
@@ -148,6 +149,7 @@ class NetlistParserNode(Node):
         self.add_output_pin(
                 tag="flattend_circuit", 
                 text="Flattend Circuit", 
+                pintype=PinType.CIRCUIT_EDIT,
                 button_callback=self.open_circuit_edit, 
                 button_text="Edit Circuit"
                             )

@@ -4,7 +4,7 @@ from typing import List, Dict, Literal
 from pydantic import Field
 
 from gui.components.node_editor.nodes.Node import Node, NodeType
-from gui.components.OutputPin import OutputPin
+from gui.components.OutputPin import OutputPin, PinType
 from gui.components.Table import Table, Widget_Type
 from gui.windows.CircuitEditor import CircuitEditor
 from netlist.Circuit import Circuit
@@ -111,6 +111,7 @@ class FlattenNode(Node):
         self.add_output_pin(
                 tag="flattend_circuit_out_pin",
                 text="Circuit with flattend Models",
+                pintype=PinType.CIRCUIT_EDIT,
                 button_callback=self.open_circuit_edit,
                 button_text="Edit Circuit"
         )

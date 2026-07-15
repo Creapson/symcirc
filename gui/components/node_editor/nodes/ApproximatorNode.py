@@ -1,7 +1,9 @@
 import dearpygui.dearpygui as dpg
 
+from gui.components.OutputPin import PinType
 from gui.components.node_editor.nodes.Node import Node, NodeType
 from gui.windows.ApproximatorWindow import ApproximatorWindow
+from gui.windows.MNAEditor import MNAEditor
 
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 
@@ -36,8 +38,18 @@ class ApproximatorNode(Node):
 
         super().onlink_callback()
 
+    def open_mna_edit(self):
+        mna_editor = MNAEditor(self.settings_window.mna_approx, self.label)
+        mna_editor.setup()
+
     def update(self):
-        self.add_output_pin("approx_mna", "Approximated MNA")
+        self.add_output_pin(
+                "approx_mna", 
+                "Approximated MNA",
+                pintype=PinType.MNA_EDIT,
+                button_text="Edit MNA",
+                button_callback=self.open_mna_edit
+                            )
         self.add_output_pin_value("approx_mna", (self.sweep, self.settings_window.mna_approx), is_persistence=False)
         super().update()
 

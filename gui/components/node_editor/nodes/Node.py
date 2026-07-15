@@ -134,19 +134,15 @@ class Node(BaseModel):
         print(f"Added output value to {output_pin_tag}")
         #print("Output Values", self.output_values)
 
-    def add_output_pin(self, tag="", text="", button_callback=None, button_text=""):
-        pin_type = PinType.BASE
-
-        if button_callback is not None:
-            pin_type = PinType.CIRCUIT_EDIT
-
+    def add_output_pin(self, tag="", text="", pintype=PinType.BASE, button_callback=None, button_text=""):
         # does pin already exist
         if tag not in self.output_pins:
             out_pin = OutputPin(
                     tag=tag,
                     text=text,
                     button_text=button_text,
-                    pin_type=pin_type
+                    pin_type=pintype,
+                    button_callback=button_callback
                     )
             out_pin.setup_pin(self.node_id, self)
             self.output_pins[tag] = out_pin
