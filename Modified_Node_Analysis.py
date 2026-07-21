@@ -309,28 +309,43 @@ class ModifiedNodalAnalysis(EquationFormulator):
             print(symbol)
             match element.type:
                 case "R": 
-                    self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]],  # noqa: E701
-                                              1/sp.symbols(symbol))
+                    self.add_admittance(
+                        self.node_map[element.connections[0]], 
+                        self.node_map[element.connections[1]],
+                        1/sp.symbols(symbol)
+                    )
                     self.value_dict.update({sp.symbols(symbol): pu.pspice_to_float(element.params["value_dc"])})
 
                 case "L": 
-                    self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
-                                              1/(s*sp.symbols(symbol)))
+                    self.add_admittance(
+                        self.node_map[element.connections[0]], 
+                        self.node_map[element.connections[1]],
+                        1/(s*sp.symbols(symbol))
+                    )
                     self.value_dict.update({sp.symbols(symbol): pu.pspice_to_float(element.params["value_dc"])})
 
                 case "C": 
-                    self.add_admittance(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
-                                              (s*sp.symbols(symbol)))
+                    self.add_admittance(
+                        self.node_map[element.connections[0]], 
+                        self.node_map[element.connections[1]], # noqa: E701
+                        (s*sp.symbols(symbol))
+                    )
                     self.value_dict.update({sp.symbols(symbol): pu.pspice_to_float(element.params["value_dc"])})
 
                 case "V": 
-                    self.add_independent_voltage_source(self.node_map[element.connections[0]], # noqa: E701
-                        self.node_map[element.connections[1]], sp.symbols(symbol), element.params.get("value_ac", 0))
+                    self.add_independent_voltage_source(
+                        self.node_map[element.connections[0]],
+                        self.node_map[element.connections[1]], 
+                        sp.symbols(symbol), element.params.get("value_ac", 0)
+                    )
                     self.value_dict.update({sp.symbols(symbol): pu.pspice_to_float(element.params.get("value_ac", "0V"))})
 
                 case "I": 
-                    self.add_independent_current_source(self.node_map[element.connections[0]], # noqa: E701
-                                                self.node_map[element.connections[1]], sp.symbols(symbol), element.params.get("value_ac", 0))
+                    self.add_independent_current_source(
+                        self.node_map[element.connections[0]],
+                        self.node_map[element.connections[1]], 
+                        sp.symbols(symbol), element.params.get("value_ac", 0)
+                    )
                     self.value_dict.update({sp.symbols(symbol): pu.pspice_to_float(element.params.get("value_ac", "0A"))})
             
            
@@ -341,23 +356,44 @@ class ModifiedNodalAnalysis(EquationFormulator):
             match element.type:
                 
                 case "H": 
-                    self.add_ccvs(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
-                        self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(symbol))
+                    self.add_ccvs(
+                        self.node_map[element.connections[0]], 
+                        self.node_map[element.connections[1]],
+                        self.node_map[element.connections[2]], 
+                        self.node_map[element.connections[3]], 
+                        sp.symbols(symbol)
+                    )
                     self.value_dict.update({sp.symbols(symbol): pu.pspice_to_float(element.params["value"])})
 
                 case "F": 
-                    self.add_cccs(self.node_map[element.connections[0]], self.node_map[element.connections[1]],
-                        self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(symbol), element.name)
+                    self.add_cccs(
+                        self.node_map[element.connections[0]], 
+                        self.node_map[element.connections[1]],
+                        self.node_map[element.connections[2]], 
+                        self.node_map[element.connections[3]], 
+                        sp.symbols(symbol), 
+                        element.name
+                    )
                     self.value_dict.update({sp.symbols(symbol): pu.pspice_to_float(element.params["value"])})
 
                 case "E": 
-                    self.add_vcvs(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
-                        self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(symbol))
+                    self.add_vcvs(
+                        self.node_map[element.connections[0]], 
+                        self.node_map[element.connections[1]],
+                        self.node_map[element.connections[2]], 
+                        self.node_map[element.connections[3]], 
+                        sp.symbols(symbol)
+                    )
                     self.value_dict.update({sp.symbols(symbol): pu.pspice_to_float(element.params["value"])})
 
                 case "G": 
-                    self.add_vccs(self.node_map[element.connections[0]], self.node_map[element.connections[1]], # noqa: E701
-                        self.node_map[element.connections[2]], self.node_map[element.connections[3]], sp.symbols(symbol))
+                    self.add_vccs(
+                        self.node_map[element.connections[0]], 
+                        self.node_map[element.connections[1]],
+                        self.node_map[element.connections[2]], 
+                        self.node_map[element.connections[3]], 
+                        sp.symbols(symbol)
+                    )
                     self.value_dict.update({sp.symbols(symbol): pu.pspice_to_float(element.params["value"])})
 
         print("Finished building equation system!")
