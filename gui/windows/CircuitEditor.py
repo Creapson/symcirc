@@ -150,11 +150,9 @@ class CircuitEditor(Window):
         table.add_column("Type", Widget_Type.INPUT_TEXT)
         table.add_column("Params", Widget_Type.TEXT)
 
-        with dpg.child_window(height=300):
-            dpg.add_text("Elements:")
-            for i, element in enumerate(elements):
-                self.show_element(element, table, tag + ":" + str(i))
-            table.build()
+        for i, element in enumerate(elements):
+            self.show_element(element, table, tag + ":" + str(i))
+        table.build()
         self.tables[tag] = table
 
     def show_element(self, element: Element, table:Table, tag:str):

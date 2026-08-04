@@ -212,7 +212,7 @@ class NodeEditorWindow(Window):
             ),
             (
                 NetlistParserNode,
-                "Netlist Parser Node",
+                "",
                 "gui/gfx/node_editor/ct_parser.png",
                 "parser",
                 "Parse a .net file",
@@ -281,8 +281,8 @@ class NodeEditorWindow(Window):
             try:
                 width, height, channels, data = dpg.load_image(image_path)
                 with dpg.texture_registry():
-                    dpg.add_static_texture(width, height, data, tag=self.uuid(image_path))
-                    texture_tag = self.uuid(image_path)
+                    dpg.add_static_texture(width, height, data, tag=image_path)
+                    texture_tag = image_path
             except:
                 print("Could not load", image_path)
 

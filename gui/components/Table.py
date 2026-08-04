@@ -47,6 +47,9 @@ class Table(BaseModel):
 
     def get_value(self, index:str, column:str, default_value:Any) -> Any:
         return self.row_data.get(index, {}).get(column, default_value)
+    
+    def set_value(self, index:str, column:str, value):
+        self.row_data[index][column] = value
 
     def build(self):
         if self.table_id == 0:  self.setup()
@@ -100,16 +103,28 @@ class Table(BaseModel):
         self.row_data[index][column] = dpg.get_value(sender)
         pass
 
-    def setup(self):
-        self.table_id = int(dpg.add_table(
-            header_row=True,
-            policy=dpg.mvTable_SizingFixedFit,
-            resizable=True,
-            no_host_extendX=True,
-            borders_innerV=True,
-            borders_outerV=True,
-            borders_outerH=True,
-        ))
+    def setup(self, parent=None):
+        if parent is None:
+            self.table_id = int(dpg.add_table(
+                header_row=True,
+                policy=dpg.mvTable_SizingFixedFit,
+                resizable=True,
+                no_host_extendX=True,
+                borders_innerV=True,
+                borders_outerV=True,
+                borders_outerH=True,
+            ))
+        else:
+            self.table_id = int(dpg.add_table(
+                header_row=True,
+                policy=dpg.mvTable_SizingFixedFit,
+                resizable=True,
+                no_host_extendX=True,
+                borders_innerV=True,
+                borders_outerV=True,
+                borders_outerH=True,
+                parent=parent
+            ))
         self.is_setup = True
 
     def clear(self):

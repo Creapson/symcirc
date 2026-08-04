@@ -14,6 +14,10 @@ from netlist.Element import Element
 class FlattenNode(Node):
     node_type: Literal[NodeType.FLATTEN] = NodeType.FLATTEN
 
+    window_id: Circuit = Field(default=0, exclude=True)
+    is_window_build: bool = Field(default=False, exclude=True)
+    is_window_open: bool = Field(default=False, exclude=True)
+
     out_file_path : str = Field(default="")
 
     circuit : Circuit = Field(default=Circuit(), exclude=True)
@@ -34,38 +38,17 @@ class FlattenNode(Node):
         return ["mna"]
 
     def build(self):
-        with dpg.value_registry():
-            dpg.add_string_value(
-                default_value="Circuit is not flattend yet!",
-                tag=self.uuid("flattend_circuit_out"),
-            )
-            dpg.add_string_value(
-                default_value="No .out file currently selected!",
-                tag=self.uuid("out_file_path"),
-            )
-
         self.add_input_pin("parsed_circuit", "Connect Circuit here! [circuit]")
 
         with self.add_static_attr():
-            dpg.add_button(
-                label="Select .out File",
-                callback=self.callback,
-            )
-            dpg.add_text(source=self.uuid("out_file_path"))
-
-            # create table to edit all subcircuits
-            dpg.add_text("Select small signal models for every element")
-
-            self.table.setup()
-            self.table.add_column("Name", Widget_Type.TEXT)
-            self.table.add_column("Bipolar Model", Widget_Type.COMBO, items=self.editor.application.bipolar_models)
-            self.table.add_column("Mosfet Model", Widget_Type.COMBO, items=self.editor.application.mosfet_models)
-            self.table.build()
-
-            dpg.add_text("When nothing is selected the default value will be used!")
-
-            # temperary update button
-            dpg.add_button(label="Flatten Elements", callback=self.update)
+            img_btn_id = dpg.add_image_button(
+                    texture_tag="gui/gfx/node_editor/flatten.png",
+                    callback=self.build_settings_window,
+                    width=64,
+                    height=64,
+                    )
+            with dpg.tooltip(img_btn_id):
+                dpg.add_text("Click to open Settings")
         super().build()
 
     def onlink_callback(self):
@@ -76,6 +59,12 @@ class FlattenNode(Node):
 
         self.circuit.to_ai_string()
 
+        if self.is_window_build:
+            self.update_transistor_table()
+
+        super().onlink_callback()
+
+    def update_transistor_table(self):
         self.table.clear()
         if not self.table.is_setup: self.table.setup()
         for item in self.circuit.get_elements():
@@ -87,8 +76,6 @@ class FlattenNode(Node):
                         }
                 self.table.add_row(item.name, row_dict)
         self.table.build()
-
-        super().onlink_callback()
 
     def delink_callback(self):
         self.table.delete()
@@ -122,4 +109,62 @@ class FlattenNode(Node):
 
     def open_circuit_edit(self):
         ct_editor = CircuitEditor(self.flattend_circuit, self.label)
-        ct_editor.setup()
+        ct_editor.setup()    
+
+    def on_close(self, sender, app_data, user_data):
+            # sender is the window tag
+            if dpg.does_item_exist(sender):
+                dpg.delete_item(sender)
+
+            # clear internal reference
+            self.window_id = ""
+            self.is_window_open = False
+
+    def build_settings_window(self):
+        if self.is_window_open: return
+        with dpg.window(
+            tag=self.uuid("NetlistParserNode"),
+            on_close=self.on_close,
+            menubar=False,
+            autosize=True,
+            ) as self.window_id:
+
+            self.is_window_build = True
+
+            with dpg.value_registry():
+                if not dpg.does_item_exist(self.uuid("flattend_circuit_out")):
+                    dpg.add_string_value(
+                        default_value="Circuit is not flattend yet!",
+                        tag=self.uuid("flattend_circuit_out"),
+                    )
+                if not dpg.does_item_exist(self.uuid("out_file_path")):
+                    dpg.add_string_value(
+                        default_value="No .out file currently selected!",
+                        tag=self.uuid("out_file_path"),
+                    )
+
+            self.add_input_pin("parsed_circuit", "Connect Circuit here! [circuit]")
+
+            dpg.add_button(
+                label="Select .out File",
+                callback=self.callback,
+            )
+            dpg.add_text(source=self.uuid("out_file_path"))
+
+            # create table to edit all subcircuits
+            dpg.add_text("Select small signal models for every element")
+
+            self.table.setup()
+            self.table.add_column("Name", Widget_Type.TEXT)
+            self.table.add_column("Bipolar Model", Widget_Type.COMBO, items=self.editor.application.bipolar_models)
+            self.table.add_column("Mosfet Model", Widget_Type.COMBO, items=self.editor.application.mosfet_models)
+            self.table.build()
+
+            self.onlink_callback()
+
+            dpg.add_text("When nothing is selected the default value will be used!")
+
+            # temperary update button
+            dpg.add_button(label="Flatten Elements", callback=self.update)
+
+            self.is_window_open = True

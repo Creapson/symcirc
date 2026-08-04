@@ -14,19 +14,29 @@ from pydantic import Field
 class ApproximatorNode(Node):
     node_type: Literal[NodeType.APPROXIMATOR] = NodeType.APPROXIMATOR
 
-    mna: ModifiedNodalAnalysis = Field(default=None, exclude=True)
+    mna: ModifiedNodalAnalysis | None  = Field(default=None, exclude=True)
     sweep: List[float] = Field(default_factory=list, exclude=True)
-    settings_window: ApproximatorWindow = Field(default=None, exclude=True)
+    settings_window: ApproximatorWindow | None = Field(default=None, exclude=True)
 
     def build(self):
-        self.add_input_pin("h_input", "Connect h here")
+        self.add_input_pin("h_input", "Connect H")
 
         with self.add_static_attr():
-            dpg.add_button(
-                label="Configure/Settings", callback=self.open_settings_window
-            )
+            img_btn_id = dpg.add_image_button(
+                    texture_tag="gui/gfx/node_editor/approx.png",
+                    callback=self.build_settings_window,
+                    width=64,
+                    height=64,
+                    )
+            with dpg.tooltip(img_btn_id):
+                dpg.add_text("Click to open Settings")
 
         super().build()
+
+    def build_settings_window(self):
+        if self.sweep is not None:
+            self.settings_window = ApproximatorWindow(self.sweep, self.mna, self, self.node_id)
+            self.settings_window.setup()
 
     def open_settings_window(self):
         if self.sweep is not None:
@@ -41,17 +51,17 @@ class ApproximatorNode(Node):
     def open_mna_edit(self):
         mna_editor = MNAEditor(self.settings_window.mna_approx, self.label)
         mna_editor.setup()
-
+        
     def update(self):
         self.add_output_pin(
-                "approx_mna", 
+                "approx_mna",
                 "Approximated MNA",
                 pintype=PinType.MNA_EDIT,
                 button_text="Edit MNA",
                 button_callback=self.open_mna_edit
-                            )
+        )
         self.add_output_pin_value("approx_mna", (self.sweep, self.settings_window.mna_approx), is_persistence=False)
         super().update()
 
     def get_possible_node_connections(self) -> List[str]:
-        return ["mna"]
+        return ["transfer_numeric", "transfer_symbolic", "approx"]
