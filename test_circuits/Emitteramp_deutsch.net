@@ -1,7 +1,6 @@
 * Schematics Netlist +
 
 
-
 Q_Q1         4 3 5 Q2N2222
 Vcc         6 0 DC 15  
 Cin         1 3 100n 
