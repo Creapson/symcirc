@@ -18,8 +18,8 @@ class Circuit(BaseModel):
     params: Dict[str, str] = Field(default_factory=dict)
     inner_connecting_nodes: List[str] = Field(default_factory=list)
 
-    bipolar_model: str = "beta_with_r_be_G"
-    mosfet_model: str = "BSIM"
+    bipolar_model: str = "BJT_BasicModel"
+    mosfet_model: str = "MOSFET_basicmodel"
 
     nodes: List[str] = Field(default_factory=list)
 
@@ -245,7 +245,6 @@ class Circuit(BaseModel):
                 )
 
                 new_elements.extend(subct_elements)
-                continue
 
             # Expand transistor models
             if (element.type == "Q" or element.type == "M") and flatten_models:
@@ -273,7 +272,6 @@ class Circuit(BaseModel):
                 )
 
                 new_elements.extend(subct_elements)
-                continue
 
             # Normal element
             new_elements.append(element)
