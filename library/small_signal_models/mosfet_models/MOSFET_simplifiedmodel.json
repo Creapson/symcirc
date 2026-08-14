@@ -1,0 +1,143 @@
+{
+    "name": "MOSFET_simplifiedmodel",
+    "netlist_file_path": "",
+    "params": {},
+    "inner_connecting_nodes": [
+        "D",
+        "G",
+        "S",
+        "B"
+    ],
+    "nodes": [
+        "D",
+        "G",
+        "S",
+        "B"
+    ],
+    "elements": [
+        {
+            "name": "R_ds",
+            "historical_name": "R_ds",
+            "symbol": "rds",
+            "connections": [
+                "D",
+                "S"
+            ],
+            "type": "R",
+            "params": {
+                "value_dc": "rds"
+            }
+        },
+        {
+            "name": "C_gd",
+            "historical_name": "C_gd",
+            "symbol": "cgd",
+            "connections": [
+                "G",
+                "D"
+            ],
+            "type": "C",
+            "params": {
+                "value_dc": "cgd"
+            }
+        },
+        {
+            "name": "C_gs",
+            "historical_name": "C_gs",
+            "symbol": "cgs",
+            "connections": [
+                "G",
+                "S"
+            ],
+            "type": "C",
+            "params": {
+                "value_dc": "cgs"
+            }
+        },
+        {
+            "name": "C_bd",
+            "historical_name": "C_bd",
+            "symbol": "cbd",
+            "connections": [
+                "D",
+                "B"
+            ],
+            "type": "C",
+            "params": {
+                "value_dc": "cbd"
+            }
+        },
+        {
+            "name": "C_bs",
+            "historical_name": "C_bs",
+            "symbol": "cbs",
+            "connections": [
+                "S",
+                "B"
+            ],
+            "type": "C",
+            "params": {
+                "value_dc": "cbs"
+            }
+        },
+        {
+            "name": "G_m",
+            "historical_name": "G_m",
+            "symbol": "gm",
+            "connections": [
+                "D",
+                "S",
+                "G",
+                "S"
+            ],
+            "type": "G",
+            "params": {
+                "value": "gm"
+            }
+        },
+        {
+            "name": "G_mb",
+            "historical_name": "G_mb",
+            "symbol": "gmb",
+            "connections": [
+                "D",
+                "S",
+                "B",
+                "S"
+            ],
+            "type": "G",
+            "params": {
+                "value": "gmb"
+            }
+        },
+        {
+            "name": "R_bd",
+            "historical_name": "R_bd",
+            "symbol": "rbd",
+            "connections": [
+                "B",
+                "D"
+            ],
+            "type": "R",
+            "params": {
+                "value_dc": "rbd"
+            }
+        },
+        {
+            "name": "R_bs",
+            "historical_name": "R_bs",
+            "symbol": "rbs",
+            "connections": [
+                "B",
+                "S"
+            ],
+            "type": "R",
+            "params": {
+                "value_dc": "rbs"
+            }
+        }
+    ],
+    "models": {},
+    "subcircuits": {},
+    "separator": "_"
+}

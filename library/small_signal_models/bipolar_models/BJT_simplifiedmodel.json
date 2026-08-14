@@ -1,0 +1,97 @@
+{
+    "name": "BJT_simplifiedmodel",
+    "netlist_file_path": "",
+    "params": {},
+    "inner_connecting_nodes": ["C","B","E"],
+
+    "nodes": [
+        "B",
+        "E",
+        "C"
+    ],
+    "elements": [
+        {
+            "name": "RPI",
+            "historical_name": "RPI",
+            "symbol": "rbe",
+            "connections": [
+                "B",
+                "E"
+            ],
+            "type": "R",
+            "params": {
+                "value_dc": "rpi"
+            }
+        },
+        {
+            "name": "RO",
+            "historical_name": "RO",
+            "symbol": "",
+            "connections": [
+                "C",
+                "E"
+            ],
+            "type": "R",
+            "params": {
+                "value_dc": "ro"
+            }
+        },
+        {
+            "name": "CBC",
+            "historical_name": "CBC",
+            "symbol": "",
+            "connections": [
+                "B",
+                "C"
+            ],
+            "type": "C",
+            "params": {
+                "value_dc": "cbc"
+            }
+        },
+        {
+            "name": "CBE",
+            "historical_name": "CBE",
+            "symbol": "",
+            "connections": [
+                "B",
+                "E"
+            ],
+            "type": "C",
+            "params": {
+                "value_dc": "cbe"
+            }
+        },
+        {
+            "name": "G",
+            "historical_name": "G",
+            "symbol": "gm",
+            "connections": [
+                "C",
+                "E",
+                "B",
+                "E"
+            ],
+            "type": "G",
+            "params": {
+                "value": "gm"
+            }
+        },
+        {
+            "name": "CBX",
+            "historical_name": "CBX",
+            "symbol": "",
+            "connections": [
+                "B",
+                "C"
+            ],
+            "type": "C",
+            "params": {
+                "value_dc": "cbx"
+            }
+        }
+    ],
+    "models": {},
+    "subcircuits": {},
+    "separator": "_"
+}
