@@ -13,6 +13,7 @@ class NetlistParserNode(Node):
     node_type: Literal[NodeType.NETLIST_PARSER] = NodeType.NETLIST_PARSER
 
     circuit: Circuit = Field(default=Circuit(), exclude=True)
+    flattend_circuit: Circuit = Field(default=Circuit(), exclude=True)
     table: Table = Field(default=Table())
 
     def build(self):
@@ -142,8 +143,8 @@ class NetlistParserNode(Node):
             subct_obj.set_bipolar_model(bipolar_model)
             subct_obj.set_mosfet_model(mosfet_model)
 
-        flattend_circuit = self.circuit.copy()
-        flattend_circuit.flatten()
+        self.flattend_circuit = self.circuit.copy()
+        self.flattend_circuit.flatten()
 
         # create a output pin for the flattend circuit
         self.add_output_pin(
@@ -153,9 +154,9 @@ class NetlistParserNode(Node):
                 button_callback=self.open_circuit_edit, 
                 button_text="Edit Circuit"
                             )
-        self.add_output_pin_value("flattend_circuit", flattend_circuit)
+        self.add_output_pin_value("flattend_circuit", self.flattend_circuit)
 
-        flattend_circuit.to_ai_string()
+        self.flattend_circuit.to_ai_string()
 
         # apply it to UI
         dpg.set_value(self.uuid("circuit_parser"), "Circuit with flattend Subcircuits")
@@ -170,5 +171,5 @@ class NetlistParserNode(Node):
         super().save()
 
     def open_circuit_edit(self):
-        ct_editor = CircuitEditor(self.circuit, self.label)
+        ct_editor = CircuitEditor(self.flattend_circuit, self.label)
         ct_editor.setup()

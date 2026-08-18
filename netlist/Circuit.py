@@ -152,11 +152,8 @@ class Circuit(BaseModel):
         subcircuit_name: str,
         element_name: str,
         subct_element_connections: List[str],
-        subcircuits: Optional[Dict[str, "Circuit"]] = None,
+        subcircuits: Optional[Dict[str, "Circuit"]] = {},
     ) -> List[Element]:
-
-        if subcircuits is None:
-            subcircuits = {}
 
         combined_subct_list = self.subcircuits | subcircuits
         # print(combined_subct_list)
@@ -208,10 +205,8 @@ class Circuit(BaseModel):
         self,
         flatten_models: bool = False,
         out_file_path: str = "",
-        subcircuits: Optional[Dict[str, "Circuit"]] = None,
+        subcircuits: Optional[Dict[str, "Circuit"]] = {},
     ):
-        if subcircuits is None:
-            subcircuits = {}
 
         # ensure all subcircuits are flattened first
         for subct in self.subcircuits.values():

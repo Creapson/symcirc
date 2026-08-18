@@ -24,7 +24,6 @@ python -m poetry run python -m unittest discover -s tests
 # What needs work?
 - Theme editor/selector
     - add more settings
-- addition of multiple levels of small signal model complexities
 - more test cases / complete the current tests
 - better icons for the node creation image buttons
 - addition of LTspice parser
@@ -40,5 +39,3 @@ python -m poetry run python -m unittest discover -s tests
 - node settings in seperate window
 - addition of fonts
 - font resolution fix
-
-kbjbjghdcdhgcvmnbvn

@@ -4,7 +4,7 @@ import pandas as pd
 from pydantic import Field
 
 from gui.components.node_editor.nodes.Node import Node, NodeType
-from gui.components.BodePlot import BodePlot
+from gui.components.plots.BodePlot import BodePlot
 from typing import Literal, List
 
 

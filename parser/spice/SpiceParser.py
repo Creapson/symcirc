@@ -108,7 +108,6 @@ class SpiceParser:
 
                 if line_str.startswith(".subckt"):
                     tmp_subct = self._parse_subct(line)
-                    tmp_subct.name = line.tokens[1]
                     _scope = tmp_subct
                     pass
 
@@ -290,7 +289,10 @@ class SpiceParser:
         return model
 
     def _parse_subct(self, line: Line) -> Circuit:
-        return Circuit()
+        circuit = Circuit()
+        circuit.name = line.tokens[1]
+        circuit.inner_connecting_nodes = line.tokens[2:-1]
+        return circuit
 
     def to_spice_num(self, val : str) -> float:
         val = val.lower()
