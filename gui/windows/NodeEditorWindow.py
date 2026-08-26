@@ -4,7 +4,6 @@ from typing import List, Dict
 
 from gui.components.node_editor.NodeEditor import NodeEditor
 
-from gui.components.node_editor.nodes.BodePlotNode import BodePlotNode
 
 from gui.components.node_editor.nodes.FlattenNode import FlattenNode
 from gui.components.node_editor.nodes.ImportCircuit import ImportCircuit
@@ -18,6 +17,9 @@ from gui.components.node_editor.nodes.NumericSolver import NumericSolver
 from gui.components.node_editor.nodes.TransferFunctionSymbolic import TransferFunctionSymbolic
 from gui.components.node_editor.nodes.SymbolicSolver import SymbolicSolver
 
+from gui.components.node_editor.nodes.BodePlotNode import BodePlotNode
+from gui.components.plots.PoleZeroPlot import PoleZeroPlot
+
 from gui.components.node_editor.nodes.ApproximatorNode import ApproximatorNode
 
 from gui.windows.Window import Window
@@ -30,6 +32,7 @@ class NodeEditorWindow(Window):
         self.application = application
         self.node_editor = NodeEditor(application=self.application)
         self.node_button_dict: Dict[str, str] = {}
+        self.pole_zero_plot = PoleZeroPlot()
 
         super().__init__(title=self.title)
 
@@ -326,6 +329,8 @@ class NodeEditorWindow(Window):
                 # sub menu (dropdown with all node types
                 with dpg.menu(label="Add Node"):
                     self.build_add_node_menu()
+
+                dpg.add_menu_item(label="PoleZeroPlot", callback=lambda: self.pole_zero_plot.setup())
 
             with dpg.menu(label="Settings"):
                 dpg.add_menu_item(

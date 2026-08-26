@@ -20,17 +20,6 @@ class BodePlot(BaseModel):
     phase_x_log: bool = Field(default=False)
     phase_y_log: bool = Field(default=True)
 
-    # View
-    max_x_mag: float = Field(default=0)
-    min_x_mag: float = Field(default=0)
-    max_y_mag: float = Field(default=0)
-    max_y_mag: float = Field(default=0)
-
-    max_x_phase: float = Field(default=0)
-    min_x_phase: float = Field(default=0)
-    max_y_phase: float = Field(default=0)
-    max_y_phase: float = Field(default=0)
-
     line_dic: Dict[str, Any] = Field(default_factory=dict, exclude=True)
 
     def uuid(self, text: str) -> str:

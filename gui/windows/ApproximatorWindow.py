@@ -3,7 +3,7 @@ import dearpygui.dearpygui as dpg
 from Approximate import Approximation
 from netlist.Circuit import Circuit
 from gui.windows.Window import Window
-from gui.components.BodePlot import BodePlot
+from gui.components.plots.BodePlot import BodePlot
 
 
 class ApproximatorWindow(Window):

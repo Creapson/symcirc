@@ -15,3 +15,4 @@ docs/user_manual/ger/benutzerhandbuch_symcirc.log
 docs/user_manual/ger/benutzerhandbuch_symcirc.out
 docs/user_manual/ger/benutzerhandbuch_symcirc.toc
 docs/user_manual/ger/benutzerhandbuch_symcirc.aux
+netlist/__pycache__/*

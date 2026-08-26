@@ -18,8 +18,8 @@ class Circuit(BaseModel):
     params: Dict[str, str] = Field(default_factory=dict)
     inner_connecting_nodes: List[str] = Field(default_factory=list)
 
-    bipolar_model: str = "beta_with_r_be_G"
-    mosfet_model: str = "BSIM"
+    bipolar_model: str = "BJT_BasicModel"
+    mosfet_model: str = "MOSFET_basicmodel"
 
     nodes: List[str] = Field(default_factory=list)
 
@@ -152,11 +152,8 @@ class Circuit(BaseModel):
         subcircuit_name: str,
         element_name: str,
         subct_element_connections: List[str],
-        subcircuits: Optional[Dict[str, "Circuit"]] = None,
+        subcircuits: Optional[Dict[str, "Circuit"]] = {},
     ) -> List[Element]:
-
-        if subcircuits is None:
-            subcircuits = {}
 
         combined_subct_list = self.subcircuits | subcircuits
         # print(combined_subct_list)
@@ -208,10 +205,8 @@ class Circuit(BaseModel):
         self,
         flatten_models: bool = False,
         out_file_path: str = "",
-        subcircuits: Optional[Dict[str, "Circuit"]] = None,
+        subcircuits: Optional[Dict[str, "Circuit"]] = {},
     ):
-        if subcircuits is None:
-            subcircuits = {}
 
         # ensure all subcircuits are flattened first
         for subct in self.subcircuits.values():
@@ -245,7 +240,6 @@ class Circuit(BaseModel):
                 )
 
                 new_elements.extend(subct_elements)
-                continue
 
             # Expand transistor models
             if (element.type == "Q" or element.type == "M") and flatten_models:
@@ -273,7 +267,6 @@ class Circuit(BaseModel):
                 )
 
                 new_elements.extend(subct_elements)
-                continue
 
             # Normal element
             new_elements.append(element)
