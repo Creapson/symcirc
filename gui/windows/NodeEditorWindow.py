@@ -22,6 +22,8 @@ from gui.components.plots.PoleZeroPlot import PoleZeroPlot
 
 from gui.components.node_editor.nodes.ApproximatorNode import ApproximatorNode
 
+from gui.components.node_editor.nodes.PoleZeroNode import PoleZeroNode
+
 from gui.windows.Window import Window
 
 
@@ -152,6 +154,7 @@ class NodeEditorWindow(Window):
             {
                 "Display": [
                     ("BodeBlot", BodePlotNode, "BodePlot Node"),
+                    ("Pole-Zero Plot", PoleZeroNode, "Pole-Zero Plot Node"),
                 ]
             },
             ("ApproximatorNode", ApproximatorNode, "Approximate"),
@@ -275,6 +278,13 @@ class NodeEditorWindow(Window):
                 "gui/gfx/node_editor/mna.png",
                 "mna",
                 "Create a equation system",
+            ),
+            (
+                PoleZeroNode,
+                "Pole-Zero Plot Node",
+                "gui/gfx/node_editor/bode_plot.png",
+                "pole_zero",
+                "Plot poles and zeros on the s-plane",
             ),
         ]
 

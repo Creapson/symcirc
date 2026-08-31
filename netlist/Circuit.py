@@ -255,6 +255,7 @@ class Circuit(BaseModel):
                     element.params,
                     bipolar_model,
                     mosfet_model,
+                    element.type,
                 )
 
                 if model_subct is not None:

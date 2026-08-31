@@ -24,6 +24,7 @@ class Model(BaseModel):
         element_params: Dict[str, str],
         bipolar_model: str,
         mosfet_model: str,
+        element_type: str = "",
     ) -> Circuit | None:
         # Merge model params and element params
         param_list = {k.lower(): v for k, v in (self.params | element_params).items()}
@@ -33,10 +34,13 @@ class Model(BaseModel):
         current_file_dir = Path(__file__).resolve().parent
         project_root = current_file_dir.parent
 
-        # 3. Choose correct small signal model library sub-path
-        if self.type in ("NPN", "PNP"):
+        # 3. Choose correct small signal model library sub-path.
+        # Fall back to the element kind ("Q" = bipolar, "M" = mosfet) when the
+        # .model card type is unknown - e.g. the model lives in an external
+        # .lib we cannot read, but the .out still carries the small-signal params.
+        if self.type in ("NPN", "PNP") or element_type == "Q":
             sub_path = Path("library/small_signal_models/bipolar_models") / f"{bipolar_model}.json"
-        elif self.type in ("MOS", "NMOS"):
+        elif self.type in ("MOS", "NMOS") or element_type == "M":
             sub_path = Path("library/small_signal_models/mosfet_models") / f"{mosfet_model}.json"
         else:
             print(f"Failed to load model! Type: {self.type} is not known!")

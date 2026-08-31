@@ -15,20 +15,16 @@ class NodeType(IntEnum):
     FLATTEN = 3
     IMPORT_CIRCUIT = 4
     NETLIST_PARSER = 5
-
     MNA = 6
-
     TRANSFER_FUNCTION_NUMERIC = 7
-    NUMERIC_SOLVER= 8
-
-    SYMBOLIC_SOLVER= 9
+    NUMERIC_SOLVER = 8
+    SYMBOLIC_SOLVER = 9
     TRANSFER_FUNCTION_SYMBOLIC = 10
-
+    POLE_ZERO_PLOT = 11
 
 class Node(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    # persistent Data
     label: str
     position: List[int] = [0, 0]
     data: Dict[str, Any] = Field(default_factory=dict)
@@ -40,7 +36,6 @@ class Node(BaseModel):
     input_pins: Dict[str, int] = Field(default_factory=dict)
     output_values: Dict[int, Any] = Field(default_factory=dict)
 
-    # non persistent data
     editor: Any = Field(default=None, exclude=True)
     non_persistent_output_values: Dict[int, Any] = Field(default_factory=dict, exclude=True)
 
@@ -53,7 +48,6 @@ class Node(BaseModel):
     def setup(self, node_editor_tag):
         old_id = self.node_id
         self.node_id = dpg.generate_uuid()
-        print(self.node_id)
 
         with dpg.node(
             label=self.label, 
@@ -65,7 +59,6 @@ class Node(BaseModel):
 
         self.id_transition_table[old_id] = self.node_id
         dpg.set_item_pos(self.node_id, self.position)
-
         return self.node_id
 
     def get_possible_node_connections(self) -> List[str]:
@@ -80,10 +73,7 @@ class Node(BaseModel):
         with self.add_static_attr():
             dpg.add_button(label="Debug Log", callback=self.debug_print)
 
-        # when laoding a pipeline from file
-        # create all missing output_pins
         tmp_dic = self.output_pins
-        # self.output_pins = {}
         for _, output_pin in tmp_dic.items():
             output_pin.setup_pin(self.node_id, self)
             self.id_transition_table.update(output_pin.id_transition_table)
@@ -92,9 +82,7 @@ class Node(BaseModel):
         for pin_tag, attr_id in list(self.output_pins.items()):
             if dpg.does_item_exist(attr_id):
                 dpg.delete_item(attr_id)
-
             self.output_values.pop(attr_id, None)
-
         self.output_pins.clear()
 
     def uuid(self, txt: str):
@@ -111,16 +99,15 @@ class Node(BaseModel):
         )
 
     def add_output_attr(self, tag=0):
-        if tag == 0 :
+        if tag == 0:
             tag = dpg.generate_uuid()
-
         return dpg.node_attribute(
             parent=self.node_id, 
             attribute_type=dpg.mvNode_Attr_Output,
             tag=tag,
         )
 
-    def add_output_pin_value(self, output_pin_tag:str, value:Any, is_persistence:bool=True):
+    def add_output_pin_value(self, output_pin_tag: str, value: Any, is_persistence: bool = True):
         output_pin = self.output_pins.get(output_pin_tag, None)
         if output_pin is None:
             return
@@ -129,21 +116,17 @@ class Node(BaseModel):
         else:
             self.non_persistent_output_values[output_pin.pin_id] = value
 
-
         self.editor.propagate(output_pin)
-        print(f"Added output value to {output_pin_tag}")
-        #print("Output Values", self.output_values)
 
     def add_output_pin(self, tag="", text="", pintype=PinType.BASE, button_callback=None, button_text=""):
-        # does pin already exist
         if tag not in self.output_pins:
             out_pin = OutputPin(
-                    tag=tag,
-                    text=text,
-                    button_text=button_text,
-                    pin_type=pintype,
-                    button_callback=button_callback
-                    )
+                tag=tag,
+                text=text,
+                button_text=button_text,
+                pin_type=pintype,
+                button_callback=button_callback
+            )
             out_pin.setup_pin(self.node_id, self)
             self.output_pins[tag] = out_pin
 
@@ -155,86 +138,56 @@ class Node(BaseModel):
                     default_value=text,
                     tag=self.uuid(tag),
                 )
-
             if tag in self.input_pins:
                 self.id_transition_table[self.input_pins[tag]] = input_pin
-
             self.input_pins[tag] = input_pin
-
-        print("added input pin", input_pin)
         return input_pin
 
     def add_connection(self, pin_id, connected_node):
         self.connections[pin_id] = connected_node
-        print("Connections in Node: ", self.connections)
 
-    def open_file_dialog(self, title:str, file_extensions:List[tuple[str, str]]) -> List[str]:
-        # Verhindert, dass ein leeres, separates Tkinter-Hauptfenster aufpoppt
+    def open_file_dialog(self, title: str, file_extensions: List[tuple[str, str]]) -> List[str]:
         root = tk.Tk()
         root.withdraw()
-        
         root.wm_attributes('-topmost', 1)
-        
         paths = filedialog.askopenfilename(
             title=title,
             filetypes=file_extensions,
             multiple=True
         )
-        
         root.destroy()
         return list(paths) if paths else []
 
     def onlink_callback(self):
         if self.do_propagation:
             self.update()
-        pass
 
     def delink_callback(self):
         pass
 
-    def get_input_pin_value(self, input_pin_tag : str, default_value: Any = None) -> Any:
+    def get_input_pin_value(self, input_pin_tag: str, default_value: Any = None) -> Any:
         if input_pin_tag in self.input_pins:
             input_pin = self.input_pins.get(input_pin_tag, None)
             from_pin = self.connections.get(input_pin, None)
-
             if input_pin is None: return default_value
             if from_pin is None: return default_value
 
-            # traverse the connection to the connected node
-            # and get the object from there
             from_node_id = dpg.get_item_parent(from_pin)
             from_node = self.editor.node_dic[from_node_id]
             output_values = from_node.output_values | from_node.non_persistent_output_values
             return output_values.get(from_pin, default_value)
-
         else:
             return default_value
 
     def update(self):
-        # when the first calculation is done. We assume a change in
-        # inputs doesnt mean a change in the settings
-
-        # exceptions
         if (self.node_type == NodeType.NETLIST_PARSER): return
         if (self.node_type == NodeType.TRANSFER_FUNCTION_NUMERIC): return
         if (self.node_type == NodeType.TRANSFER_FUNCTION_SYMBOLIC): return
         if (self.node_type == NodeType.APPROXIMATOR): return
-
         self.do_propagation = True
 
     def save(self):
         self.position = dpg.get_item_pos(self.node_id)
 
     def debug_print(self):
-        print(f"\n\nDebug Output from Node: {self.label}")
-        print("Label: ", self.label)
-        print("Position: ", self.position)
-        print("NodeID: ", self.node_id)
-        print("Connections: ", self.connections)
-        print("Input Pins", self.input_pins)
-        print("output Values: ", self.output_values)
-        print("non_P output Values: ", self.non_persistent_output_values)
-        print("output pins: ", self.output_pins)
-        print("id_transition_table", self.id_transition_table)
-        print("does propagation", self.do_propagation)
-        print("Data:", self.data)
+        pass
