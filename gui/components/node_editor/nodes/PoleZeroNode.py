@@ -18,6 +18,7 @@ class PoleZeroNode(Node):
     scatter_zeros_tag: str = Field(default="", exclude=True)
     scatter_poles_tag: str = Field(default="", exclude=True)
     exact_mode_tag: str = Field(default="", exclude=True)
+    symbolic_mode_tag: str = Field(default="", exclude=True)
     output_node_tag: str = Field(default="", exclude=True)
 
     def build(self):
@@ -38,6 +39,12 @@ class PoleZeroNode(Node):
             dpg.add_checkbox(label="Exact Precision Calculation (mpmath, 50 dps)",
                              tag=self.exact_mode_tag, default_value=False)
             dpg.add_text("Yavas ama tam; float64 QZ ile karsilastirmak icin.",
+                         color=[150, 150, 150])
+
+            self.symbolic_mode_tag = self.uuid("symbolic_mode")
+            dpg.add_checkbox(label="Symbolic Solve (exact N(s)/D(s), like Analog Insydes)",
+                             tag=self.symbolic_mode_tag, default_value=False)
+            dpg.add_text("H(s)=det(A_out)/det(A) tam rasyonel; s=0 sifirlari tam.",
                          color=[150, 150, 150])
             dpg.add_separator()
             
@@ -733,6 +740,94 @@ class PoleZeroNode(Node):
 
         return {"zeros": zeros_num, "poles": poles_num}
 
+    # ------------------------------------------------------------------
+    # Sembolik cozum: H(s) = det(A_out(s)) / det(A(s)) tam rasyonel olarak
+    # ------------------------------------------------------------------
+    def _to_exact(self, v):
+        """float -> tam rasyonel (yazdirilan basamak kadar kesin)."""
+        try:
+            return sp.Rational(repr(float(v)))
+        except (ValueError, TypeError):
+            return sp.nsimplify(v, rational=True)
+
+    def _roots_of_exact_poly(self, poly, s):
+        """Tam katsayili polinomun kokleri. s=0 kokleri TAM; gerisi 25 basamak."""
+        if poly is None or poly.total_degree() < 1:
+            return []
+        coeffs = poly.all_coeffs()  # en yuksek dereceden dusuge
+        mult0 = 0
+        for c in reversed(coeffs):
+            if c == 0:
+                mult0 += 1
+            else:
+                break
+        out = [complex(0.0, 0.0)] * mult0
+        rest = coeffs[:len(coeffs) - mult0] if mult0 else coeffs
+        if len(rest) >= 2:
+            deflated = sp.Poly(rest, s)
+            # once tam carpanlar (rasyonel kokler, katlilik), sonra sayisal
+            try:
+                rd = sp.roots(deflated)
+                if rd and sum(rd.values()) == deflated.degree():
+                    for r, mult in rd.items():
+                        out.extend([complex(r)] * mult)
+                    return out
+            except Exception:
+                pass
+            for r in deflated.nroots(n=25, maxsteps=500):
+                out.append(complex(r))
+        return out
+
+    def _calculate_symbolic_poles_zeros(self, mna_data, unknown_variable: str):
+        """
+        Analog Insydes tarzi kapali-form cozum.
+
+        Cramer kurali ile:  V_out(s) / U_in(s) = det(A_out(s)) / det(A(s))
+        - A_out = A'nin cikis sutunu z (kaynak vektoru) ile degistirilmis hali
+        - KUTUPLAR = det(A) = 0 kokleri
+        - SIFIRLAR = det(A_out) = 0 kokleri (ortak carpanlar sadelestikten sonra)
+
+        Eleman degerleri tam rasyonele cevrilir; determinantlar bolme
+        kullanmayan Berkowitz yontemiyle alinir. s=0'daki sifirlar (kuplaj
+        kondansatorleri) pay'da tam s^k carpani olarak cikar - sayisal
+        QZ'deki "≈1e-8" tozu olmaz.
+        """
+        s = sp.symbols('s')
+        x_syms = [str(u) for u in mna_data.get_unknowns()]
+        if unknown_variable not in x_syms:
+            raise ValueError(f"'{unknown_variable}' bilinmeyenler arasinda yok.")
+        idx_out = x_syms.index(unknown_variable)
+
+        vd = {k: self._to_exact(v) for k, v in mna_data.value_dict.items()}
+        A = sp.Matrix(mna_data.A.subs(vd))
+        z = sp.Matrix(mna_data.z.subs(vd))
+        n = A.shape[0]
+        if n > 24:
+            print(f"UYARI: {n}x{n} sembolik determinant - bu biraz surebilir.",
+                  flush=True)
+
+        A_out = A.copy()
+        A_out[:, idx_out] = z
+
+        D = sp.expand(A.det(method="berkowitz"))
+        N = sp.expand(A_out.det(method="berkowitz"))
+
+        # ortak (s-bagimli) carpanlari sadelestir
+        H = sp.cancel(sp.together(N / D)) if D != 0 else sp.nan
+        N2, D2 = sp.fraction(H)
+
+        p_poly = sp.Poly(sp.expand(D2), s)
+        z_poly = sp.Poly(sp.expand(N2), s)
+
+        poles = sorted(self._roots_of_exact_poly(p_poly, s),
+                       key=lambda v: (abs(v), v.real, v.imag))
+        zeros = sorted(self._roots_of_exact_poly(z_poly, s),
+                       key=lambda v: (abs(v), v.real, v.imag))
+
+        print(f"Sembolik: pay derecesi {z_poly.degree()}, "
+              f"payda derecesi {p_poly.degree()}.", flush=True)
+        return {"zeros": zeros, "poles": poles}
+
     def calculate_callback(self, sender, app_data, user_data=None):
         mna_data = self.get_input_pin_value("mna_pin")
         
@@ -807,9 +902,24 @@ class PoleZeroNode(Node):
             exact_mode = (dpg.get_value(self.exact_mode_tag)
                           if self.exact_mode_tag and dpg.does_item_exist(self.exact_mode_tag)
                           else False)
+            symbolic_mode = (dpg.get_value(self.symbolic_mode_tag)
+                             if self.symbolic_mode_tag and dpg.does_item_exist(self.symbolic_mode_tag)
+                             else False)
 
             pz_results = None
-            if exact_mode:
+            if symbolic_mode:
+                print("Symbolic Solve secili; H(s) tam rasyonel olarak "
+                      "cozuluyor (buyuk devrelerde yavas olabilir)...", flush=True)
+                try:
+                    pz_results = self._calculate_symbolic_poles_zeros(
+                        mna_data, target_node)
+                except Exception as e:
+                    import traceback
+                    traceback.print_exc()
+                    print(f"Sembolik cozum basarisiz ({e}); sayisal QZ yoluna "
+                          f"donuluyor.", flush=True)
+
+            if pz_results is None and exact_mode:
                 print("Exact Precision Calculation (mpmath) secili; bignum yolu "
                       "deneniyor...", flush=True)
                 s_sym = sp.symbols('s')
