@@ -58,6 +58,51 @@ class Model(BaseModel):
         for element in circuit.elements:
             element.remap_values(param_list)
 
+        # Small-signal templates often reference parameters the PSpice .OP
+        # section does not emit (rc, gmu, cxs, ...) or reports as 0 (cbx,
+        # cjs). Any element whose value did not resolve to a number - or
+        # resolved to 0 - is negligible for this operating point:
+        #   * capacitor            -> open  -> drop
+        #   * controlled source    -> drop
+        #   * series resistor      (port <-> internal node) -> short: merge nodes
+        #   * shunt/leak resistor  (internal <-> internal) -> open  -> drop
+        # All decisions are taken from the *original* template topology and
+        # then applied together, so one merge cannot make another element
+        # look like something it is not.
+        inner = set(circuit.inner_connecting_nodes)
+
+        def _num(v):
+            try:
+                return float(v)
+            except (ValueError, TypeError):
+                return None
+
+        merges: Dict[str, str] = {}
+        survivors = []
+        for element in circuit.elements:
+            vkey = "value" if element.type in ("E", "G", "F", "H") else "value_dc"
+            val = _num(element.params.get(vkey))
+            if val is not None and val != 0.0:
+                survivors.append(element)
+                continue
+            if element.type == "R" and len(element.connections) == 2:
+                a, b = element.connections
+                a_port, b_port = a in inner, b in inner
+                if a_port != b_port:                      # series R -> short
+                    drop_n, keep_n = (a, b) if not a_port else (b, a)
+                    merges[drop_n] = keep_n
+                # else: shunt/leak R (internal<->internal) -> just drop
+
+        def canon(node: str) -> str:
+            seen = set()
+            while node in merges and node not in seen:
+                seen.add(node)
+                node = merges[node]
+            return node
+
+        for element in survivors:
+            element.connections = [canon(n) for n in element.connections]
+        circuit.elements = survivors
         return circuit
 
     def to_ai_string(self, indent: int):

@@ -875,59 +875,73 @@ class PoleZeroNode(Node):
         return (f"H(s) = {k_str} * {group(zeros)}\n"
                 f"       / [ {group(poles)} ]")
 
+    def _extract_mna(self, raw, build_from_circuit: bool = True):
+        """Girdi pininden gelen ham veriyi ('(log_space, mna)' tuple'i, MNA
+        node objesi, ya da dogrudan bir Circuit) A/z matrisleri olan bir MNA
+        nesnesine cevirir. Bulunamazsa None."""
+        data = raw
+        if isinstance(data, tuple):
+            picked = None
+            for item in data:
+                if hasattr(item, "mna"):
+                    picked = item.mna
+                    break
+                if hasattr(item, "A") and hasattr(item, "z"):
+                    picked = item
+                    break
+            data = picked if picked is not None else (data[0] if data else None)
+        if hasattr(data, "mna"):
+            data = data.mna
+        if (build_from_circuit and data is not None and not hasattr(data, "A")
+                and hasattr(data, "elements")):
+            from Modified_Node_Analysis import ModifiedNodalAnalysis
+            mna = ModifiedNodalAnalysis(data)
+            mna.buildEquationsSystem()
+            data = mna
+        if data is not None and hasattr(data, "A") and hasattr(data, "z"):
+            return data
+        return None
+
+    def _populate_output_nodes(self, mna_data):
+        """Cikis dugumu combo'sunu MNA'nin bilinmeyenleriyle doldurur."""
+        if not (self.output_node_tag and dpg.does_item_exist(self.output_node_tag)):
+            return
+        try:
+            names = [str(u) for u in mna_data.get_unknowns()]
+        except Exception:
+            return
+        current = dpg.get_value(self.output_node_tag)
+        dpg.configure_item(self.output_node_tag, items=names)
+        if current not in names and names:
+            pref = [n for n in names if n.lower().lstrip("v_").startswith(
+                ("out", "vout", "ua", "aus"))]
+            dpg.set_value(self.output_node_tag, pref[0] if pref else names[-1])
+
+    def onlink_callback(self):
+        # MNA (veya Circuit) baglaninca / hesaplaninca cikis dugumu listesini
+        # simdiden doldur ki kullanici 'Calculate' oncesi secebilsin.
+        try:
+            mna_data = self._extract_mna(self.get_input_pin_value("mna_pin"))
+            if mna_data is not None:
+                self._populate_output_nodes(mna_data)
+        except Exception as e:
+            print(f"Cikis dugumu listesi doldurulamadi: {e}", flush=True)
+        super().onlink_callback()
+
     def calculate_callback(self, sender, app_data, user_data=None):
-        mna_data = self.get_input_pin_value("mna_pin")
-        
+        raw = self.get_input_pin_value("mna_pin")
+
         print("\n--- POLE/ZERO HESAPLAMA TETİKLENDİ ---", flush=True)
-        print(f"Kablodan Gelen İlk Veri Tipi: {type(mna_data)}", flush=True)
-        
-        # --- TUPLE ÇÖZÜCÜ (UNWRAPPER) ---
-        # Eğer gelen veri bir paketse (tuple), içini tarayıp aradığımız objeyi buluyoruz
-        if isinstance(mna_data, tuple):
-            print(f"Tuple içeriği ({len(mna_data)} elemanlı) taranıyor...", flush=True)
-            for i, item in enumerate(mna_data):
-                print(f"  [{i}] İçerik Tipi: {type(item)}", flush=True)
-                
-                # Seçenek 1: Bu eleman bir GUI düğümüyse ve içinde 'mna' barındırıyorsa
-                if hasattr(item, 'mna'):
-                    print("  -> MNA objesi GUI düğümü içinde bulundu!", flush=True)
-                    mna_data = item.mna
-                    break
-                # Seçenek 2: Doğrudan 'A' ve 'z' barındıran asıl matematik objesiyse
-                elif hasattr(item, 'A') and hasattr(item, 'z'):
-                    print("  -> Matematiksel MNA objesi doğrudan bulundu!", flush=True)
-                    mna_data = item
-                    break
-            else:
-                # Döngü kırılmazsa (aradığımızı bulamazsak) ilk elemanı almayı deneriz
-                if len(mna_data) > 0:
-                    mna_data = mna_data[0]
+        print(f"Kablodan Gelen İlk Veri Tipi: {type(raw)}", flush=True)
 
-        # --- YEDEK KONTROL ---
-        # Tuple dışındayken, GUI Düğümü gelmişse (MNA Node)
-        if hasattr(mna_data, 'mna'):
-            print("MNA objesi doğrudan çıkarıldı!", flush=True)
-            mna_data = mna_data.mna
-
-        # --- CIRCUIT -> MNA (kolaylik) ---
-        # Kullanici FlattenNode'un cikisini (Circuit) dogrudan baglamis olabilir.
-        # Bu durumda MNA denklem sistemini burada kuruyoruz; ayri bir MNA node'a
-        # gerek kalmiyor.
-        if (mna_data is not None and not hasattr(mna_data, 'A')
-                and hasattr(mna_data, 'elements')):
-            print("Circuit alindi; MNA denklem sistemi otomatik kuruluyor...",
-                  flush=True)
-            try:
-                from Modified_Node_Analysis import ModifiedNodalAnalysis
-                _mna = ModifiedNodalAnalysis(mna_data)
-                _mna.buildEquationsSystem()
-                mna_data = _mna
-            except Exception as e:
-                import traceback
-                traceback.print_exc()
-                dpg.set_value(self.text_zeros_tag, "MNA kurulamadi!")
-                dpg.set_value(self.text_poles_tag, str(e))
-                return
+        try:
+            mna_data = self._extract_mna(raw)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            dpg.set_value(self.text_zeros_tag, "MNA kurulamadi!")
+            dpg.set_value(self.text_poles_tag, str(e))
+            return
 
         # --- FİNAL VERİ DOĞRULAMA ---
         if not mna_data or not hasattr(mna_data, 'A') or not hasattr(mna_data, 'z'):
