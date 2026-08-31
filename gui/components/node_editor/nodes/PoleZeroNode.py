@@ -258,7 +258,7 @@ class PoleZeroNode(Node):
         P_coeffs[0][n, :n] = C_out
         return P_coeffs, m, k
 
-    def _solve_polynomial_eigenproblem(self, A_coeffs, n, k, gamma, abs_mag_limit=1e15):
+    def _solve_polynomial_eigenproblem(self, A_coeffs, n, k, gamma, abs_mag_limit=1e18):
         """
         P(s) = sum_i s^i * A_coeffs[i] (derece k) icin companion linearization
         ile kn x kn boyutlu bir GEVP kurup scipy.linalg.eig ile cozer. k=1
@@ -749,10 +749,13 @@ class PoleZeroNode(Node):
     # ------------------------------------------------------------------
     def _to_exact(self, v):
         """float -> tam rasyonel (yazdirilan basamak kadar kesin)."""
+        f = float(v)
+        if f != f or f in (float("inf"), float("-inf")):
+            raise ValueError(f"deger sonlu degil: {v!r}")
         try:
-            return sp.Rational(repr(float(v)))
+            return sp.Rational(repr(f))
         except (ValueError, TypeError):
-            return sp.nsimplify(v, rational=True)
+            return sp.nsimplify(f, rational=True)
 
     def _roots_of_exact_poly(self, poly, s):
         """Tam katsayili polinomun kokleri. s=0 kokleri TAM; gerisi 25 basamak."""
@@ -810,14 +813,25 @@ class PoleZeroNode(Node):
             print(f"UYARI: {n}x{n} sembolik determinant - bu biraz surebilir.",
                   flush=True)
 
+        # A yalnizca s'e bagli olmali; cozulememis bir eleman sembolu kalmissa
+        # sembolik yol anlamli sonuc veremez -> sayisal QZ'ye don.
+        extra = A.free_symbols - {s}
+        if extra:
+            raise ValueError(f"MNA matrisinde cozulememis sembol(ler): "
+                             f"{', '.join(map(str, extra))}")
+
         A_out = A.copy()
         A_out[:, idx_out] = z
 
         D = sp.expand(A.det(method="berkowitz"))
         N = sp.expand(A_out.det(method="berkowitz"))
 
+        if D == 0 or D.has(sp.nan, sp.zoo, sp.oo) or N.has(sp.nan, sp.zoo, sp.oo):
+            raise ValueError("sembolik determinant tekil / tanimsiz "
+                             "(D=0 veya nan) - sayisal yola donuluyor")
+
         # ortak (s-bagimli) carpanlari sadelestir
-        H = sp.cancel(sp.together(N / D)) if D != 0 else sp.nan
+        H = sp.cancel(sp.together(N / D))
         N2, D2 = sp.fraction(H)
 
         p_poly = sp.Poly(sp.expand(D2), s)
