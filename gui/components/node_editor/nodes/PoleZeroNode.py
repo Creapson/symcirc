@@ -19,6 +19,7 @@ class PoleZeroNode(Node):
     scatter_poles_tag: str = Field(default="", exclude=True)
     exact_mode_tag: str = Field(default="", exclude=True)
     symbolic_mode_tag: str = Field(default="", exclude=True)
+    symbolic_tf_tag: str = Field(default="", exclude=True)
     output_node_tag: str = Field(default="", exclude=True)
 
     def build(self):
@@ -53,9 +54,12 @@ class PoleZeroNode(Node):
 
             dpg.add_text("Zeros:", color=[100, 100, 255])
             dpg.add_text("N/A", tag=self.text_zeros_tag)
-            
+
             dpg.add_text("Poles:", color=[255, 100, 100])
             dpg.add_text("N/A", tag=self.text_poles_tag)
+
+            self.symbolic_tf_tag = self.uuid("symbolic_tf")
+            dpg.add_text("", tag=self.symbolic_tf_tag, color=[160, 200, 160], wrap=340)
             dpg.add_separator()
 
             with dpg.plot(label="S-Plane Map", width=350, height=350):
@@ -824,9 +828,52 @@ class PoleZeroNode(Node):
         zeros = sorted(self._roots_of_exact_poly(z_poly, s),
                        key=lambda v: (abs(v), v.real, v.imag))
 
+        tf_string = self._factored_tf_string(zeros, poles, z_poly, p_poly, s)
         print(f"Sembolik: pay derecesi {z_poly.degree()}, "
               f"payda derecesi {p_poly.degree()}.", flush=True)
-        return {"zeros": zeros, "poles": poles}
+        print(tf_string, flush=True)
+        return {"zeros": zeros, "poles": poles, "tf_string": tf_string}
+
+    def _factored_tf_string(self, zeros, poles, z_poly, p_poly, s) -> str:
+        """H(s)'i carpanlarina ayrilmis, okunabilir biçimde yazar:
+           H(s) = K * s^2 (s + a)(s^2 + b s + c) / [ (s + p1)(s + p2) ... ]
+        Sembolik yolun s=0 kokleri TAM 0 oldugu icin s^k carpani net gorunur."""
+        def group(roots):
+            origin = sum(1 for r in roots if r == 0)
+            rest = [r for r in roots if r != 0]
+            parts = []
+            if origin:
+                parts.append("s" if origin == 1 else f"s^{origin}")
+            used = [False] * len(rest)
+            for i, r in enumerate(rest):
+                if used[i]:
+                    continue
+                if abs(r.imag) <= 1e-6 * abs(r.real):
+                    # kok r -> carpan (s - r)
+                    sign = "-" if r.real >= 0 else "+"
+                    parts.append(f"(s {sign} {abs(r.real):.4g})")
+                    used[i] = True
+                    continue
+                for j in range(i + 1, len(rest)):
+                    if not used[j] and abs(rest[j] - r.conjugate()) <= 1e-6 * abs(r):
+                        used[i] = used[j] = True
+                        b, c = -2.0 * r.real, abs(r) ** 2
+                        bs = "+" if b >= 0 else "-"
+                        parts.append(f"(s^2 {bs} {abs(b):.4g} s + {c:.4g})")
+                        break
+                else:
+                    used[i] = True
+                    parts.append(f"(s - ({r.real:.4g}{r.imag:+.4g}j))")
+            return " ".join(parts) if parts else "1"
+
+        try:
+            K = complex(z_poly.LC()) / complex(p_poly.LC())
+            k_str = (f"{K.real:.4g}" if abs(K.imag) <= 1e-9 * abs(K.real)
+                     else f"{K:.4g}")
+        except Exception:
+            k_str = "K"
+        return (f"H(s) = {k_str} * {group(zeros)}\n"
+                f"       / [ {group(poles)} ]")
 
     def calculate_callback(self, sender, app_data, user_data=None):
         mna_data = self.get_input_pin_value("mna_pin")
@@ -943,7 +990,10 @@ class PoleZeroNode(Node):
             
             dpg.set_value(self.text_zeros_tag, z_str)
             dpg.set_value(self.text_poles_tag, p_str)
-            
+
+            if self.symbolic_tf_tag and dpg.does_item_exist(self.symbolic_tf_tag):
+                dpg.set_value(self.symbolic_tf_tag, pz_results.get("tf_string", ""))
+
             z_real = [float(z.real) for z in self.zeros]
             z_imag = [float(z.imag) for z in self.zeros]
             p_real = [float(p.real) for p in self.poles]
