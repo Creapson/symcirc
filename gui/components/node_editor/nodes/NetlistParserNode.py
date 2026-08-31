@@ -143,7 +143,7 @@ class NetlistParserNode(Node):
             subct_obj.set_bipolar_model(bipolar_model)
             subct_obj.set_mosfet_model(mosfet_model)
 
-        self.flattend_circuit = self.circuit.copy()
+        self.flattend_circuit = self.circuit.model_copy(deep=True)
         self.flattend_circuit.flatten()
 
         # create a output pin for the flattend circuit

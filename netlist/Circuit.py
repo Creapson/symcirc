@@ -183,7 +183,7 @@ class Circuit(BaseModel):
         subct_elements: List[Element] = []
 
         for element in subct.elements:
-            new_ele = element.copy()
+            new_ele = element.model_copy(deep=True)
             new_ele.name = f"{new_ele.name}{self.separator}{element_name}"
             new_ele.historical_name = f"{element_name}{self.separator}{new_ele.historical_name}"
             new_ele.connections = new_node_ids(element.connections)

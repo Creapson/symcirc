@@ -102,7 +102,7 @@ class FlattenNode(Node):
             element.params["bipolar_model"] = bipolar_model
             element.params["mosfet_model"] = mosfet_model
 
-        self.flattend_circuit = self.circuit.copy()
+        self.flattend_circuit = self.circuit.model_copy(deep=True)
         self.circuit.to_ai_string()
         default_out_path = self.circuit.netlist_file_path + self.circuit.name + ".out"
         self.flattend_circuit.flatten(True, self.data.get("out_file_path", default_out_path))
