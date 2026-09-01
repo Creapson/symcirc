@@ -415,24 +415,40 @@ class SpiceParser:
 
     def _parse_device_model_params(self, lines: List[str], elements: List[Element],
                                    header_marker: str):
-        """Read a "<device> MODEL PARAMETERS" table from a PSpice .out.
+        """[TR] Bir PSpice .out dosyasindaki "<cihaz> MODEL PARAMETERS"
+               tablosunu okur.
 
-        The OPERATING POINT section only lists the bias-dependent small-signal
-        quantities (GM, GDS/RO, CBD/CBE, ...). The ohmic parasitics - RD/RS for
-        MOSFETs, RC/RE for BJTs - and AREA live in this separate model-card
-        table, keyed by model name. Analog Insydes' DoMOSFETSmallSignal /
-        DoBJTSmallSignal need them to decide whether to insert the series
-        RD/RS / RC/RE resistors, so attach them to every element that references
-        the model. Bias-dependent keys already parsed from the OPERATING POINT
-        block are left untouched.
+               OPERATING POINT bolumu yalniz bias'a bagli kucuk-sinyal
+               buyuklukleri listeler (GM, GDS/RO, CBD/CBE, ...). Ohmik
+               parazitikler - MOSFET icin RD/RS, BJT icin RC/RE - ve AREA bu
+               ayri model-karti tablosunda, model adiyla anahtarlanmis olarak
+               durur. Analog Insydes'in DoMOSFETSmallSignal / DoBJTSmallSignal
+               fonksiyonlari, seri RD/RS ya da RC/RE dirençlerini ekleyip
+               eklememeye bu degerlere gore karar verir; bu yuzden onlari
+               modele atifta bulunan her elemana ekleriz. OPERATING POINT
+               bolumunden zaten okunmus bias'a bagli anahtarlara dokunulmaz.
+
+        [EN] Read a "<device> MODEL PARAMETERS" table from a PSpice .out.
+
+             The OPERATING POINT section only lists the bias-dependent
+             small-signal quantities (GM, GDS/RO, CBD/CBE, ...). The ohmic
+             parasitics - RD/RS for MOSFETs, RC/RE for BJTs - and AREA live in
+             this separate model-card table, keyed by model name. Analog
+             Insydes' DoMOSFETSmallSignal / DoBJTSmallSignal need them to decide
+             whether to insert the series RD/RS / RC/RE resistors, so attach
+             them to every element that references the model. Bias-dependent
+             keys already parsed from the OPERATING POINT block are left
+             untouched.
         """
         import re
 
+        # [TR] Tablonun baslik satirini bul. [EN] Locate the table's header line.
         header = next((i for i, ln in enumerate(lines)
                        if header_marker in ln), None)
         if header is None:
             return
 
+        # [TR] model adi -> {PARAM: deger}. [EN] model name -> {PARAM: value}.
         model_params: Dict[str, Dict[str, str]] = {}
         polarity = {"NMOS", "PMOS", "NPN", "PNP", "LPNP", "NJF", "PJF"}
 
@@ -442,25 +458,37 @@ class SpiceParser:
         while i < n:
             line = lines[i].strip()
             i += 1
+            # [TR] Bos satir ve yildiz ayirici satirlarini atla.
+            # [EN] Skip blank lines and star separator lines.
             if not line or set(line) <= {"*"}:
                 continue
+            # [TR] "****" ile baslayan satir bir sonraki rapor bolumudur -> dur.
+            # [EN] A line starting with "****" is the next report section -> stop.
             if line.startswith("****"):
-                break  # next report section (date banner / "SMALL SIGNAL BIAS ...")
+                break
             parts = line.split()
-            if parts[0] in polarity:                    # device polarity line
+            # [TR] Polarite satiri (NMOS/NPN/...) parametre degil.
+            # [EN] A polarity line (NMOS/NPN/...) is not a parameter.
+            if parts[0] in polarity:
                 continue
-            if len(parts) == 1:                         # a bare model name
+            # [TR] Tek kelimelik satir = model adi. [EN] A single-token line = model name.
+            if len(parts) == 1:
                 current_model = Element.get_normalised_name(parts[0])
                 model_params.setdefault(current_model, {})
                 continue
             if current_model is None:
                 continue
+            # [TR] "PARAM  deger" ciftini kaydet. [EN] Record the "PARAM value" pair.
             if len(parts) == 2 and re.match(r"^[A-Za-z][A-Za-z0-9]*$", parts[0]):
                 model_params[current_model][parts[0]] = parts[1]
 
         if not model_params:
             return
 
+        # [TR] Bulunan parametreleri, ilgili modeli kullanan her elemana ekle;
+        #      OPERATING POINT'ten gelen bias degerinin uzerine YAZMA (setdefault).
+        # [EN] Attach the parsed params to every element that uses the model;
+        #      do NOT overwrite a bias value from OPERATING POINT (setdefault).
         for el in elements:
             ref = Element.get_normalised_name(el.params.get("ref_model", ""))
             if ref in model_params:

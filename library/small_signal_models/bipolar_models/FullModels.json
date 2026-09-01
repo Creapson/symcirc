@@ -1,5 +1,7 @@
 {
     "name": "FullModels",
+    "_comment_tr": "BJT hibrit-pi kucuk-sinyal sablonu - Full seviye (Analog Insydes FullBJTSmallSignal, simp==0). Simplified + rx (BS), rc (CS), re (ES), r_mu (GMU). rx/rc/re != 0 ise BS/CS/ES ic dugumleri gercek olur; 0 ise temizleme kisaltir. rc/re parser'da .out MODEL PARAMETERS bolumunden okunur; degerler netlist/Model.py._bjt_ac_param_values icinde cozulur.",
+    "_comment_en": "BJT hybrid-pi small-signal template - Full level (Analog Insydes FullBJTSmallSignal, simp==0). Simplified + rx (BS), rc (CS), re (ES), r_mu (GMU). When rx/rc/re != 0 the BS/CS/ES internal nodes materialise; when 0 the cleanup shorts them. rc/re are read from the .out MODEL PARAMETERS table by the parser; values are resolved in netlist/Model.py._bjt_ac_param_values.",
     "netlist_file_path": "",
     "params": {},
     "inner_connecting_nodes": ["C", "B", "E"],

@@ -1,5 +1,7 @@
 {
     "name": "BasicMOSFETModels",
+    "_comment_tr": "MOSFET kucuk-sinyal sablonu - Basic seviye (Analog Insydes BasicMOSFETSmallSignal, simp==2). Topoloji: g_ds, C_gs, C_gd, C_bd, C_bs, gm. Sembol degerleri (cgd=CGD+CGDOV toplami, rds=1/GDS, ...) netlist/Model.py._mosfet_ac_param_values icinde AI'nin DoMOSFETSmallSignal formulleriyle cozulur.",
+    "_comment_en": "MOSFET small-signal template - Basic level (Analog Insydes BasicMOSFETSmallSignal, simp==2). Topology: g_ds, C_gs, C_gd, C_bd, C_bs, gm. Symbol values (cgd = CGD+CGDOV sum, rds = 1/GDS, ...) are resolved in netlist/Model.py._mosfet_ac_param_values using AI's DoMOSFETSmallSignal formulas.",
     "netlist_file_path": "",
     "params": {},
     "inner_connecting_nodes": ["D", "G", "S", "B"],

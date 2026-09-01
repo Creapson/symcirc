@@ -1,3 +1,42 @@
+"""
+[TR] Pol-Nullstellen (kutup/sifir) dugumu.
+
+Bir TransferFunction dugumune baglanir, ondan gelen MNA sistemini (A, z)
+ve secilen cikis dugumunu alir ve transfer fonksiyonu H(s)'in kutup ve
+sifirlarini hesaplar; sonuclari s-duzleminde cizer.
+
+Iki hesap yolu:
+  * Sayisal: descriptor (DAE) formulasyonu, A(s) = G + s*C_dyn. Kutuplar
+    eig(G, -C_dyn); sifirlar Analog Insydes'in ZerosByQZ yontemiyle
+    (cikis sutununu z ile degistirip sonlu ozdegerler). Buyuk/pF-uF
+    olcek farki icin gamma-olcekleme + satir/sutun dengeleme.
+  * Sembolik: H(s) = det(A_out) / det(A) tam rasyonel olarak (Berkowitz,
+    bolmesiz determinant). s=0 kutuplari/sifirlari TAM cikar; sonuc
+    carpanlarina ayrilmis H(s) metni olarak da gosterilir.
+
+Mod (sayisal/sembolik) ve cikis dugumu bagli TransferFunction dugumunden
+gelir - bu dugumde secilmez (arayuz akisi: MNA -> TF -> PoleZero).
+
+[EN] Pole-Zero node.
+
+Connects to a TransferFunction node, takes its MNA system (A, z) and the
+selected output node, and computes the poles and zeros of the transfer
+function H(s); plots them on the s-plane.
+
+Two calculation paths:
+  * Numeric: descriptor (DAE) form, A(s) = G + s*C_dyn. Poles from
+    eig(G, -C_dyn); zeros via Analog Insydes' ZerosByQZ method (replace
+    the output column with z, keep the finite eigenvalues). gamma scaling
+    + row/column equilibration to cope with the pF-vs-uF spread.
+  * Symbolic: H(s) = det(A_out) / det(A) as an exact rational (Berkowitz,
+    division-free determinant). Poles/zeros at s=0 come out EXACT; the
+    result is also shown as a factored H(s) string.
+
+The mode (numeric/symbolic) and the output node come from the connected
+TransferFunction node - they are not chosen here (UI flow: MNA -> TF ->
+PoleZero).
+"""
+
 import dearpygui.dearpygui as dpg
 import numpy as np
 import sympy as sp
@@ -20,11 +59,14 @@ class PoleZeroNode(Node):
     symbolic_tf_tag: str = Field(default="", exclude=True)
     source_info_tag: str = Field(default="", exclude=True)
 
-    # Bir TransferFunction dugumunden gelen baglam (link aninda doldurulur).
+    # [TR] Bagli TransferFunction dugumunden gelen baglam (link aninda doldurulur).
+    # [EN] Context from the connected TransferFunction node (filled on link).
     src_mode: str = Field(default="", exclude=True)          # "numeric" | "symbolic"
     src_output_node: str = Field(default="", exclude=True)
 
     def build(self):
+        # [TR] Tek giris pini; bir TransferFunction dugumunun cikisina baglanir.
+        # [EN] Single input pin; wired to a TransferFunction node's output.
         self.add_input_pin("mna_pin", "Connect a TransferFunction node here!")
 
         with self.add_static_attr():
@@ -76,7 +118,12 @@ class PoleZeroNode(Node):
         return theme
 
     def get_possible_node_connections(self) -> List[str]:
-        # Terminal goruntuleme dugumu: kendisinden sonra baska dugum gelmez.
+        # [TR] Terminal goruntuleme dugumu: kendisinden sonra baska dugum gelmez,
+        #      bu yuzden downstream ikon etiketi yok. (Bu dugumun ikonu, TF
+        #      dugumleri "pole_zero" dondurdugu icin aktiflesir.)
+        # [EN] Terminal display node: nothing comes after it, so no downstream
+        #      icon tag. (This node's own icon lights up because the TF nodes
+        #      return "pole_zero".)
         return []
 
     # ------------------------------------------------------------------
@@ -589,16 +636,20 @@ class PoleZeroNode(Node):
 
 
     def _resolve_output_node(self, mna_data):
-        """Cikis dugumunu belirler.
-
-        Cikis dugumu artik bu node'da SECILMEZ: bagli olan TransferFunction
-        dugumunde secilir ve link uzerinden (`src_output_node`) buraya gelir.
-        KUTUPLAR cikis dugumunden bagimsizdir ama SIFIRLAR dogrudan ona
-        baglidir; bu yuzden referans bir araca karsi karsilastirma yaparken
-        AYNI cikis dugumunun secili olmasi onemlidir.
-
-        `src_output_node` gecerliyse onu kullanir; degilse (or. dogrudan MNA
-        baglanmis) son bilinmeyene duser ve uyarir.
+        """[TR] Cikis dugumunu belirler. Bu dugumde SECILMEZ - bagli
+               TransferFunction dugumunde secilir ve `src_output_node` ile
+               buraya gelir. KUTUPLAR cikis dugumunden bagimsizdir ama
+               SIFIRLAR dogrudan ona baglidir; bu yuzden referans bir araca
+               karsi karsilastirirken AYNI dugumun secili olmasi onemlidir.
+               `src_output_node` gecersizse (or. dogrudan MNA baglanmis) son
+               bilinmeyene duser ve uyarir.
+        [EN] Determine the output node. It is NOT chosen here - it is chosen on
+             the connected TransferFunction node and arrives via
+             `src_output_node`. POLES are independent of the output node but
+             ZEROS depend on it directly, so when comparing against a reference
+             tool the SAME node must be selected on both. Falls back to the last
+             unknown (with a warning) if `src_output_node` is not usable
+             (e.g. a direct MNA link).
         """
         try:
             names = [str(u) for u in mna_data.get_unknowns()]
@@ -619,6 +670,19 @@ class PoleZeroNode(Node):
 
     def _calculate_robust_poles_zeros(self, mna_data, unknown_variable: str):
         """
+        [EN] NUMERIC path. Descriptor (DAE) state-space form: standard MNA is
+             exactly affine in s, A(s) = G + s*C_dyn (G, C_dyn from the value
+             at s=0 and the analytic derivative - no finite differences, no
+             approximation). Poles solve det(G + s*C_dyn) = 0, i.e. the
+             generalized eigenproblem eig(G, -C_dyn) (companion-linearized PEP
+             for k>1). Zeros use Analog Insydes' exact ZerosByQZ method: replace
+             the output column of the pencil with the source vector z and keep
+             all finite eigenvalues. gamma scaling + row/column equilibration
+             handle the pF-vs-uF magnitude spread. Returns
+             {"zeros": [...], "poles": [...]} sorted by magnitude.
+
+        --- Turkce aciklama / Turkish explanation ---
+
         Descriptor durum-uzayi (DAE) formulasyonu ile TAM kutup/sifir cozumu.
 
         Standart MNA'da endüktans dallari ayri bir akim degiskeniyle temsil
@@ -785,6 +849,18 @@ class PoleZeroNode(Node):
 
     def _calculate_symbolic_poles_zeros(self, mna_data, unknown_variable: str):
         """
+        [EN] SYMBOLIC path (Analog-Insydes style closed form). By Cramer's rule
+             V_out(s)/U_in(s) = det(A_out(s)) / det(A(s)), where A_out is A with
+             the output column replaced by the source vector z. POLES = roots of
+             det(A) = 0; ZEROS = roots of det(A_out) = 0 after common factors
+             cancel. Element values are converted to exact rationals; the
+             determinants use the division-free Berkowitz method. Zeros/poles at
+             s=0 (coupling caps) appear as an exact s^k factor in the numerator -
+             no "~1e-8" dust like the numeric QZ path. Also returns a factored
+             H(s) string. Falls back to the numeric path on failure.
+
+        --- Turkce aciklama / Turkish explanation ---
+
         Analog Insydes tarzi kapali-form cozum.
 
         Cramer kurali ile:  V_out(s) / U_in(s) = det(A_out(s)) / det(A(s))
@@ -888,9 +964,13 @@ class PoleZeroNode(Node):
                 f"       / [ {group(poles)} ]")
 
     def _extract_mna(self, raw, build_from_circuit: bool = True):
-        """Girdi pininden gelen ham veriyi ('(log_space, mna)' tuple'i, MNA
-        node objesi, ya da dogrudan bir Circuit) A/z matrisleri olan bir MNA
-        nesnesine cevirir. Bulunamazsa None."""
+        """[TR] Giris pininden gelen ham veriyi ('(log_space, mna)' tuple'i,
+               bir MNA node objesi ya da dogrudan bir Circuit) A/z matrisleri
+               olan bir MNA nesnesine cevirir. Bulunamazsa None.
+        [EN] Normalize whatever comes off the input pin (a '(log_space, mna)'
+             tuple, an MNA node object, or a raw Circuit) into an MNA object
+             that has A/z matrices. Returns None if none is found.
+        """
         data = raw
         if isinstance(data, tuple):
             picked = None
@@ -915,16 +995,27 @@ class PoleZeroNode(Node):
         return None
 
     def _read_link_context(self, raw):
-        """Girdi pininden gelen TransferFunction payload'unu cozer.
+        """[TR] Giris pininden gelen TransferFunction yukunu cozer.
 
-        TransferFunction dugumleri `h_out` pininde su tuple'i yayinliyor:
-            (H_list, sweep, mna, mode, output_node)
-        `mode` "numeric" | "symbolic"; hesap yolu bununla secilir.
-        `output_node` TransferFunction dugumunde secilen cikis dugumudur.
+               TransferFunction dugumleri `h_out` pininde su tuple'i yayinliyor:
+                   (H_list, sweep, mna, mode, output_node)
+               `mode` "numeric" | "symbolic" - hesap yolu bununla secilir.
+               `output_node` TransferFunction dugumunde secilen cikis dugumudur.
 
-        Geriye donuk / dogrudan-MNA baglantilari icin (2'li tuple, MNA node,
-        Circuit) mode/output_node bos kalir ve _extract_mna / _resolve_output_node
-        devreye girer.
+               Geriye donuk / dogrudan-MNA baglantilarinda (2'li tuple, MNA
+               node, Circuit) mode/output_node bos kalir; _extract_mna ve
+               _resolve_output_node devreye girer.
+
+        [EN] Decode the TransferFunction payload arriving on the input pin.
+
+             TF nodes publish this tuple on the `h_out` pin:
+                 (H_list, sweep, mna, mode, output_node)
+             `mode` is "numeric" | "symbolic" and selects the calculation path.
+             `output_node` is the output node chosen on the TF node.
+
+             For backward-compatible / direct-MNA links (2-tuple, MNA node,
+             Circuit) mode/output_node stay empty and _extract_mna /
+             _resolve_output_node take over.
         """
         mode, out_node = "", ""
         if (isinstance(raw, (tuple, list)) and len(raw) >= 5
@@ -937,6 +1028,8 @@ class PoleZeroNode(Node):
         return self._extract_mna(raw), mode, out_node
 
     def _update_source_info(self):
+        # [TR] Arayuzdeki "Kaynak: ..." satirini bagli TF dugumune gore gunceller.
+        # [EN] Update the "Kaynak: ..." (source) status line from the linked TF node.
         if not (self.source_info_tag and dpg.does_item_exist(self.source_info_tag)):
             return
         if self.src_mode:
@@ -952,8 +1045,12 @@ class PoleZeroNode(Node):
                           "(veya dogrudan MNA).")
 
     def onlink_callback(self):
-        # Bagli TransferFunction dugumunun modunu / cikis dugumunu al ki
-        # 'Calculate & Plot' oncesi kullanici ne olacagini gorsun.
+        # [TR] Bir link kurulunca: bagli TransferFunction dugumunun modunu ve
+        #      cikis dugumunu oku ki kullanici 'Calculate & Plot' oncesi ne
+        #      olacagini gorsun.
+        # [EN] On link: read the connected TransferFunction node's mode and
+        #      output node so the user sees what will happen before pressing
+        #      'Calculate & Plot'.
         try:
             raw = self.get_input_pin_value("mna_pin")
             _, mode, out_node = self._read_link_context(raw)
@@ -965,6 +1062,17 @@ class PoleZeroNode(Node):
         super().onlink_callback()
 
     def calculate_callback(self, sender, app_data, user_data=None):
+        """[TR] 'Calculate & Plot' dugmesi. Bagli TF dugumunden MNA + mod +
+               cikis dugumunu al; mod sembolikse _calculate_symbolic_poles_zeros
+               (basarisizsa sayisala don), degilse _calculate_robust_poles_zeros
+               calistir; sonuclari metin, carpanli H(s) ve s-duzlemi grafigine yaz.
+        [EN] The 'Calculate & Plot' button. Take MNA + mode + output node from
+             the linked TF node; if the mode is symbolic run
+             _calculate_symbolic_poles_zeros (falling back to numeric on
+             failure), otherwise _calculate_robust_poles_zeros; write the
+             results into the text fields, the factored H(s), and the s-plane
+             scatter plot.
+        """
         raw = self.get_input_pin_value("mna_pin")
 
         print("\n--- POLE/ZERO HESAPLAMA TETİKLENDİ ---", flush=True)
