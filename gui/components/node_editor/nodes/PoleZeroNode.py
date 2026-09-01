@@ -43,7 +43,6 @@ import sympy as sp
 from pydantic import Field
 from typing import Literal, List
 import scipy.linalg as scipy
-import mpmath
 from gui.components.node_editor.nodes.Node import Node, NodeType
 
 class PoleZeroNode(Node):
@@ -127,12 +126,27 @@ class PoleZeroNode(Node):
         return []
 
     # ------------------------------------------------------------------
-    # Yardimci fonksiyonlar: Descriptor (DAE) durum-uzayi / Rosenbrock
-    # sistem matrisi tabanli Polinom Ozdeger Problemi (PEP) cozucusu
+    # [TR] Yardimci fonksiyonlar: Descriptor (DAE) durum-uzayi / Rosenbrock
+    #      sistem matrisi tabanli Polinom Ozdeger Problemi (PEP) cozucusu.
+    # [EN] Helpers for the NUMERIC path: descriptor (DAE) state-space form and
+    #      the Rosenbrock-system-matrix polynomial eigenvalue problem (PEP).
     # ------------------------------------------------------------------
 
     def _extract_poly_coeffs(self, A_mat, s):
         """
+        [EN] Extract the EXACT polynomial coefficient matrices of A(s) in s:
+             A(s) = A_0 + s*A_1 (+ higher orders s^2*A_2, ... if present).
+             Standard MNA stamps inductor/capacitor branches as s*L / s*C (not
+             1/(sL)), so A(s) is exactly affine: A(s) = G + s*C_dyn, and G, C_dyn
+             are read off as the value at s=0 and the analytic s-derivative - no
+             finite differences, no truncation. If some entry is rational in s
+             (an upstream symbolic node reduction), the whole matrix is first
+             cleared by its least common denominator and the denominator roots
+             are returned so _filter_spurious_roots can drop them.
+             Returns (list_of_np_coeff_matrices, max_degree, denom_lcm).
+
+        --- Turkce aciklama / Turkish explanation ---
+
         A(s) matrisinin s'e gore TAM polinom katsayi matrislerini cikarir:
         A(s) = G + s*C_dyn (+ olasi daha yuksek dereceler: s^2*A_2, ...)
 
@@ -157,6 +171,23 @@ class PoleZeroNode(Node):
         isaretlenip _filter_spurious_roots ile sonuclardan cikarilir.
         """
         n, m = A_mat.shape
+
+        # [TR] Hizli yol: standart MNA'da A(s) neredeyse her zaman s'de afindir
+        #      (A_0 + s*A_1). Bunu tek bir turev + s=0 degeriyle test et; tutuyorsa
+        #      pahali eleman-bazli Poly/is_polynomial taramasini tamamen atla.
+        # [EN] Fast path: for standard MNA A(s) is almost always affine in s
+        #      (A_0 + s*A_1). Test that with one derivative + the value at s=0;
+        #      if it holds, skip the per-entry Poly / is_polynomial scan entirely.
+        try:
+            A0 = A_mat.subs(s, 0)
+            A1 = A_mat.diff(s)
+            if (A_mat - A0 - s * A1).applyfunc(sp.expand).is_zero_matrix:
+                G_arr = np.array(A0, dtype=complex)
+                if A1.is_zero_matrix:            # purely resistive: degree 0
+                    return [G_arr], 0, sp.Integer(1)
+                return [G_arr, np.array(A1, dtype=complex)], 1, sp.Integer(1)
+        except Exception:
+            pass
 
         non_poly_found = any(
             A_mat[i, j] != 0 and not A_mat[i, j].is_polynomial(s)
@@ -218,6 +249,15 @@ class PoleZeroNode(Node):
 
     def _compute_pencil_scaling(self, A_coeffs, k):
         """
+        [EN] Scale factor gamma for the substitution s = gamma * s_hat, so that
+             the constant term G (resistor / low-frequency scale) and the
+             highest-order term (junction-capacitance / high-frequency scale)
+             become comparable near s_hat ~ O(1):
+                 gamma = (||A_0|| / ||A_k||)^(1/k)   (||G||/||C_dyn|| for k=1).
+             This conditions the pencil before the QZ step.
+
+        --- Turkce aciklama / Turkish explanation ---
+
         s = gamma * s_hat donusumu icin olcekleme katsayisini hesaplar, oyle ki
         G (dusuk frekans/direnc mertebesi) ve en yuksek dereceli katsayi
         (yuksek frekans/jonksiyon kapasitesi mertebesi) terimleri s_hat~O(1)
@@ -234,6 +274,15 @@ class PoleZeroNode(Node):
 
     def _equilibrate_pencil(self, A, B, iterations=2):
         """
+        [EN] Balance the matrix pencil (A, B) by two-sided diagonal scaling.
+             This does NOT change the eigenvalues: it is D*A*E and D*B*E with D,
+             E diagonal invertible, and eigenvectors map as v -> E^-1 v. It only
+             improves the numerical stability of scipy's QZ when pF-range
+             junction caps and uF-range coupling caps sit in the same pencil
+             (large cond(G)).
+
+        --- Turkce aciklama / Turkish explanation ---
+
         (A, B) pencil'ini satir/sutun bazinda kosegen olcekleme ile dengeler.
 
         Bu islem OZDEGERLERI DEGISTIRMEZ: D*A*E ve D*B*E seklinde iki tarafli
@@ -262,6 +311,18 @@ class PoleZeroNode(Node):
 
     def _build_rosenbrock_coeffs(self, A_coeffs, B_coeffs, C_out, n):
         """
+        [EN] Build the generalized Rosenbrock system-matrix polynomial
+             P(s) = [[A(s), -B(s)], [C_out, 0]]  (size (n+1) x (n+1)),
+             coefficient-wise:
+                 P_0 = [[G, -B_0], [C_out, 0]],   P_i = [[A_i, -B_i], [0, 0]].
+             B(s) is treated as a full polynomial too (Norton source transforms
+             can make z depend on s). By the Schur-complement identity
+             det(P(s)) = det(A(s)) * (C_out A(s)^-1 B(s)) equals the Cramer
+             numerator (the transmission-zero numerator) exactly, but is solved
+             by a single GEVP that never needs A(s) to be invertible.
+
+        --- Turkce aciklama / Turkish explanation ---
+
         A(s) = sum_i s^i * A_coeffs[i] (n x n) ve B(s) = sum_i s^i * B_coeffs[i]
         (n x 1), C_out (1 x n) icin genellestirilmis ROSENBROCK SISTEM MATRISI
         polinomunu ((n+1) x (n+1)) kurar:
@@ -297,6 +358,19 @@ class PoleZeroNode(Node):
 
     def _solve_polynomial_eigenproblem(self, A_coeffs, n, k, gamma, abs_mag_limit=1e18):
         """
+        [EN] Solve the degree-k matrix polynomial P(s) = sum_i s^i * A_coeffs[i]
+             by companion linearization into a kn x kn GEVP, then scipy.linalg.eig
+             (LAPACK ggev = the QZ algorithm). For k=1 this is exactly the pencil
+             eig(A_0, -A_1). Infinite / spurious eigenvalues are filtered in two
+             stages: (1) a RELATIVE beta threshold max|beta|*1e-10 - because
+             LAPACK's (alpha, beta) scale with the absolute size of the input
+             pencil, a fixed threshold would be wrong after gamma scaling +
+             equilibration; (2) an ABSOLUTE magnitude cap on the physical
+             (gamma-undone) value - no real circuit pole/zero exceeds it.
+             Returns the finite eigenvalues (physical units), unsorted.
+
+        --- Turkce aciklama / Turkish explanation ---
+
         P(s) = sum_i s^i * A_coeffs[i] (derece k) icin companion linearization
         ile kn x kn boyutlu bir GEVP kurup scipy.linalg.eig ile cozer. k=1
         durumunda bu dogrudan G + s*C_dyn pencil'ine (eig(G,-C_dyn)) esittir.
@@ -359,6 +433,14 @@ class PoleZeroNode(Node):
 
     def _filter_spurious_roots(self, roots, denom_list, s, rel_tol=1e-6):
         """
+        [EN] Remove the common-denominator roots introduced by the rational-entry
+             clearing step (if any). Takes a LIST of denominators because A(s)
+             and z(s) may each be rational. When every denominator is 1 (both
+             were pure polynomials - the normal case) this is a no-op and the
+             input list is returned unchanged.
+
+        --- Turkce aciklama / Turkish explanation ---
+
         Rasyonel eleman temizleme adiminda (varsa) eklenen ortak payda
         koklerini gercek sonuclardan cikarir. A(s) ve z(s) ayri ayri paydali
         olabilecegi icin bir payda LISTESI alir. Tum paydalar 1 oldugunda
@@ -381,258 +463,6 @@ class PoleZeroNode(Node):
                 clean.append(r)
         return clean
 
-
-    # ------------------------------------------------------------------
-    # Keyfi hassasiyetli (bignum) cozucu: mpmath, DAE indeks indirgeme
-    # ------------------------------------------------------------------
-
-    def _hp_rationalize(self, M):
-        """float64 girdileri AMACLANAN ondalik degere geri cevirir.
-
-        Bu adim sanildigindan cok daha kritiktir. Ornek: kondansatorleri
-        toprakla baglantisi olmayan bir alt agda (yuzen kondansatorler),
-        C_dyn'in TAM rank'i n-1'dir cunku "tum dugumler birlikte kayar"
-        vektoru cekirdektedir. Ancak degerler float64'e cevrildiginde satir
-        toplamlari tam sifir olmaz ve rank YAPAY OLARAK 1 artar. 50 basamakta
-        calismak bu gurultuyu sinyal gibi cozumleyip SAHTE bir kutup uretir.
-        Yani yuksek hassasiyet, girdide zaten kaybolmus bilgiyi geri
-        getirmez - onu once burada kurtarmak gerekir.
-
-        repr(float) round-trip eden en kisa ondaligi verdigi icin
-        Rational(repr(x)) amaclanan degeri tam yakalar (2e-11 -> 1/50000000000)
-        ve nsimplify'dan ~1000 kat hizlidir.
-        """
-        def f(e):
-            if e.is_number and not e.is_Integer and not e.is_Rational:
-                try:
-                    return sp.Rational(repr(float(e)))
-                except Exception:
-                    return e
-            return e
-        return M.applyfunc(f)
-
-    def _hp_num(self, e):
-        """Sympy sayisi -> mpmath, TAM calisma hassasiyetinde.
-
-        complex() uzerinden gecmek float64'e yuvarlar ve bir onceki adimda
-        yapilan rasyonellestirmeyi cope atardi - yani bu yolun var olma
-        sebebini ortadan kaldirirdi.
-        """
-        re_, im_ = sp.re(e), sp.im(e)
-        if re_.is_rational and im_.is_rational:
-            r, i = sp.Rational(re_), sp.Rational(im_)
-            return mpmath.mpc(mpmath.mpf(r.p) / mpmath.mpf(r.q),
-                              mpmath.mpf(i.p) / mpmath.mpf(i.q))
-        return mpmath.mpmathify(complex(e))
-
-    def _hp_mat(self, M):
-        R = mpmath.matrix(M.rows, M.cols)
-        for i in range(M.rows):
-            for j in range(M.cols):
-                R[i, j] = self._hp_num(M[i, j])
-        return R
-
-    def _hp_ctrans(self, M):
-        R = mpmath.matrix(M.cols, M.rows)
-        for i in range(M.rows):
-            for j in range(M.cols):
-                R[j, i] = mpmath.conj(M[i, j])
-        return R
-
-    def _hp_cols(self, M, a, b):
-        R = mpmath.matrix(M.rows, b - a)
-        for i in range(M.rows):
-            for j in range(a, b):
-                R[i, j - a] = M[i, j]
-        return R
-
-    def _hp_dae_reduce(self, G, C, B, Cout, rank_tol, max_steps=8):
-        """DAE indeks indirgeme: tekil demeti (G, C) duzenli hale getirir.
-
-        C'nin SVD'siyle dinamik alt uzay (sifirdan farkli tekil degerler) ile
-        cebirsel kisitlar ayrilir, ardindan Schur tumleyeni uygulanir:
-
-            G~ = G11 - G12 * G22^-1 * G21
-            C~ = Sigma_r
-            B~ = B1  - G12 * G22^-1 * B2
-            C~out = Cv1 - Cv2 * G22^-1 * G21
-            D~ = Cv2 * G22^-1 * B2        (ileri besleme terimi)
-
-        NOT: Sadece "kondansatorsuz dugumler" seklinde YAPISAL bir ayirma
-        YETMEZ - toprakla baglantisi olmayan bir kondansator alt agi, hicbir
-        satiri yapisal olarak sifir olmadigi halde C[dyn,dyn]'i rank eksik
-        birakir. SVD gercek rank'i verdigi icin bu durum da dogru islenir.
-        Rank eksikligi tek adimda gitmezse (yuksek DAE indeksi) dongu tekrar
-        eder; cozulmezse None doner ve cagiran taraf QZ'ye geri duser.
-
-        rank_tol MAKINE EPSILON'A GORE DEGIL, FIZIKSEL olarak secilmelidir
-        (varsayilan 1e-12): float64 girdi gurultusunun (~1e-16 bagil) uzerinde,
-        gercek yapinin altinda.
-        """
-        D = mpmath.matrix(1, 1)
-        for _ in range(max_steps):
-            n = C.rows
-            U, S, Vh = mpmath.svd_c(C.copy())
-            smax = max((abs(S[i]) for i in range(len(S))), default=mpmath.mpf(0))
-            if smax == 0:
-                return None
-            r = sum(1 for i in range(len(S)) if abs(S[i]) > smax * rank_tol)
-            if r == n:
-                return G, C, B, Cout, D
-            if r == 0:
-                return None
-            V = self._hp_ctrans(Vh)
-            U1, U2 = self._hp_cols(U, 0, r), self._hp_cols(U, r, n)
-            V1, V2 = self._hp_cols(V, 0, r), self._hp_cols(V, r, n)
-            U1H, U2H = self._hp_ctrans(U1), self._hp_ctrans(U2)
-            G11, G12 = U1H * G * V1, U1H * G * V2
-            G21, G22 = U2H * G * V1, U2H * G * V2
-            Sr = mpmath.matrix(r, r)
-            for i in range(r):
-                Sr[i, i] = S[i]
-            B1, B2 = U1H * B, U2H * B
-            Cv1, Cv2 = Cout * V1, Cout * V2
-            try:
-                G22inv = G22 ** -1
-            except Exception:
-                return None
-            X, Y = G22inv * G21, G22inv * B2
-            G, C, B, Cout, D = (G11 - G12 * X, Sr, B1 - G12 * Y,
-                                Cv1 - Cv2 * X, D + Cv2 * Y)
-        return None
-
-    def _hp_poly_on_circle(self, evalfn, deg, gamma):
-        """Derece `deg` polinomunu, yaricapi gamma olan bir CEMBER uzerinde
-        ornekleyerek cikarir.
-
-        Spec Vandermonde onerdi; ancak Vandermonde matrisi klasik olarak kotu
-        kosullanmistir (Wilkinson) - kotu kosullanmayi duzeltmek icin kotu
-        kosullanmis bir yontem kullanmak olurdu. Birim cemberin koklerinde
-        ornekleme yapildiginda Vandermonde matrisi bir DFT matrisine donusur
-        ve kosul sayisi TAM OLARAK 1 olur; boylece bu sorun tamamen ortadan
-        kalkar. Katsayilar ters DFT ile elde edilir.
-        """
-        N = deg + 1
-        vals = [evalfn(gamma * mpmath.exp(2j * mpmath.pi * j / N)) for j in range(N)]
-        out = []
-        for m in range(N):
-            acc = mpmath.mpc(0)
-            for j in range(N):
-                acc += vals[j] * mpmath.exp(-2j * mpmath.pi * j * m / N)
-            out.append(acc / N / (gamma ** m))
-        return out
-
-    def _hp_solve_once(self, A_sym, z_sym, idx_out, dps, rank_tol):
-        s = sp.symbols('s')
-        A_r = self._hp_rationalize(A_sym)
-        z_r = self._hp_rationalize(z_sym)
-        n = A_r.shape[0]
-
-        G = self._hp_mat(A_r.subs(s, 0))
-        C = self._hp_mat(sp.diff(A_r, s).subs(s, 0))
-        B = self._hp_mat(z_r.subs(s, 0))
-        co = sp.zeros(1, n)
-        co[0, idx_out] = 1
-        Cout = self._hp_mat(co)
-
-        red = self._hp_dae_reduce(G, C, B, Cout, mpmath.mpf(rank_tol))
-        if red is None:
-            return None
-        Gt, Ct, Bt, Cto, Dt = red
-        nt = Gt.rows
-
-        # Indirgemeden sonra C~ TERSINIRDIR, yani problem STANDART ozdeger
-        # problemine doner: s = eig(-C~^-1 G~). mpmath'ta genellestirilmis
-        # (QZ) cozucu yok ama standart cozucu (mp.eig) var; bu yuzden
-        # polinom katsayisi cikarmaya hic gerek kalmaz.
-        E, _ = mpmath.mp.eig(-(Ct ** -1) * Gt)
-        poles = list(E)
-
-        # Sifirlar: indirgenmis koordinatlarda Rosenbrock determinanti.
-        gam = mpmath.mpf(max([abs(p) for p in poles] + [mpmath.mpf(1)]))
-
-        def rosen_det(sv):
-            P = mpmath.matrix(nt + 1, nt + 1)
-            for i in range(nt):
-                for j in range(nt):
-                    P[i, j] = Gt[i, j] + sv * Ct[i, j]
-                P[i, nt] = -Bt[i, 0]
-                P[nt, i] = Cto[0, i]
-            P[nt, nt] = Dt[0, 0]
-            return mpmath.det(P)
-
-        coeffs = self._hp_poly_on_circle(rosen_det, nt, gam)
-        mx = max((abs(c) for c in coeffs), default=mpmath.mpf(0))
-        while len(coeffs) > 1 and abs(coeffs[-1]) < mx * mpmath.mpf('1e-25'):
-            coeffs.pop()
-        if len(coeffs) > 1:
-            zeros = list(mpmath.polyroots(list(reversed(coeffs)),
-                                          maxsteps=500, extraprec=40 * dps))
-        else:
-            zeros = []
-        return poles, zeros
-
-    def _calculate_high_precision_roots(self, A_sym, z_sym, idx_out,
-                                        dps=50, rank_tol='1e-12', verify=True):
-        """Keyfi hassasiyetli (bignum) kutup/sifir cozucusu.
-
-        scipy.linalg HIC kullanilmaz. Basarisizlikta None doner; cagiran taraf
-        float64 QZ yoluna geri duser.
-
-        `verify=True` iken hesap dps ve 2*dps'te iki kez yapilir ve sonuclar
-        karsilastirilir. Bunun sebebi olculmustur: sifir yolu (determinant
-        tabanli) bu devrelerde ~28 HANE kaybediyor - dps=30'da sifirlarin
-        bagil hatasi 1.5e-2 iken dps=50'de 1.8e-12, dps=80'de 1.6e-27 oluyor.
-        Yani tek bir sabit dps degeri her devre icin guvenli DEGILDIR; iki
-        kosum uyusmazsa hassasiyet yetersizdir ve uyari verilir.
-        (Kutup yolu ozdeger tabanli oldugu icin bu kayiptan etkilenmiyor.)
-        """
-        old_dps = mpmath.mp.dps
-        try:
-            mpmath.mp.dps = dps
-            first = self._hp_solve_once(A_sym, z_sym, idx_out, dps, rank_tol)
-            if first is None:
-                print("[Bignum] DAE indirgeme basarisiz (yuksek indeks olabilir); "
-                      "float64 QZ yoluna donuluyor.", flush=True)
-                return None
-
-            if verify:
-                mpmath.mp.dps = 2 * dps
-                second = self._hp_solve_once(A_sym, z_sym, idx_out, 2 * dps, rank_tol)
-                if second is not None:
-                    worst = 0.0
-                    for a_list, b_list in zip(first, second):
-                        if len(a_list) != len(b_list):
-                            worst = float('inf')
-                            break
-                        rem = list(range(len(a_list)))
-                        for b in b_list:
-                            j = min(rem, key=lambda i: abs(a_list[i] - b))
-                            rem.remove(j)
-                            denom = max(mpmath.mpf(1), abs(b))
-                            worst = max(worst, float(abs(a_list[j] - b) / denom))
-                    if worst > 1e-20:
-                        print(f"[Bignum] dps={dps} bu devre icin YETERSIZDI "
-                              f"(dps={2*dps} ile {worst:.2e} bagil fark). "
-                              f"dps={2*dps} sonucu kullaniliyor; daha da emin olmak "
-                              f"icin dps degerini artirip tekrar calistirin.",
-                              flush=True)
-                    else:
-                        print(f"[Bignum] dps={dps} ve dps={2*dps} uyusuyor "
-                              f"(bagil fark {worst:.2e}) - sonuc yakinsamis.",
-                              flush=True)
-                    first = second
-
-            poles, zeros = first
-            # float64'e indirgeme SADECE burada, GUI uyumlulugu icin.
-            key = lambda v: (abs(v), v.real, v.imag)
-            return {"zeros": sorted([complex(z) for z in zeros], key=key),
-                    "poles": sorted([complex(p) for p in poles], key=key)}
-        except Exception as e:
-            print(f"[Bignum] Hata: {e} -- float64 QZ yoluna donuluyor.", flush=True)
-            return None
-        finally:
-            mpmath.mp.dps = old_dps
 
 
     def _resolve_output_node(self, mna_data):
@@ -807,10 +637,17 @@ class PoleZeroNode(Node):
         return {"zeros": zeros_num, "poles": poles_num}
 
     # ------------------------------------------------------------------
-    # Sembolik cozum: H(s) = det(A_out(s)) / det(A(s)) tam rasyonel olarak
+    # [TR] Sembolik cozum: H(s) = det(A_out(s)) / det(A(s)) tam rasyonel olarak.
+    # [EN] Symbolic path: H(s) = det(A_out(s)) / det(A(s)) as an exact rational.
     # ------------------------------------------------------------------
     def _to_exact(self, v):
-        """float -> tam rasyonel (yazdirilan basamak kadar kesin)."""
+        """[TR] float -> tam rasyonel (yazdirilan ondalik basamak kadar kesin).
+               repr(float) round-trip eden en kisa ondaligi verdigi icin
+               Rational(repr(x)) amaclanan degeri tam yakalar.
+        [EN] float -> exact rational (as precise as the printed decimal).
+             repr(float) gives the shortest round-tripping decimal, so
+             Rational(repr(x)) captures the intended value exactly.
+        """
         f = float(v)
         if f != f or f in (float("inf"), float("-inf")):
             raise ValueError(f"deger sonlu degil: {v!r}")
@@ -820,7 +657,14 @@ class PoleZeroNode(Node):
             return sp.nsimplify(f, rational=True)
 
     def _roots_of_exact_poly(self, poly, s):
-        """Tam katsayili polinomun kokleri. s=0 kokleri TAM; gerisi 25 basamak."""
+        """[TR] Tam katsayili polinomun kokleri. Once sondaki sifir katsayilar
+               sayilarak s=0 kokleri TAM alinir; sonra rasyonel/kat kokler
+               (sp.roots), en son sayisal kokler (nroots, 25 basamak).
+        [EN] Roots of an exact-coefficient polynomial. First the trailing zero
+             coefficients are counted to take the roots at s=0 EXACTLY, then
+             rational / repeated roots (sp.roots), then the rest numerically
+             (nroots, 25 digits).
+        """
         if poly is None or poly.total_degree() < 1:
             return []
         coeffs = poly.all_coeffs()  # en yuksek dereceden dusuge
@@ -879,9 +723,15 @@ class PoleZeroNode(Node):
             raise ValueError(f"'{unknown_variable}' bilinmeyenler arasinda yok.")
         idx_out = x_syms.index(unknown_variable)
 
+        # [TR] Eleman degerlerini tam rasyonele cevir. `.subs` yerine `.xreplace`:
+        #      sembol->sayi degisimi icin yapisal, alt-ifade degerlendirmesi
+        #      yapmayan ve belirgin sekilde daha hizli bir yol.
+        # [EN] Convert element values to exact rationals. Use `.xreplace` instead
+        #      of `.subs`: a structural symbol->value swap that does not
+        #      re-evaluate subexpressions and is noticeably faster.
         vd = {k: self._to_exact(v) for k, v in mna_data.value_dict.items()}
-        A = sp.Matrix(mna_data.A.subs(vd))
-        z = sp.Matrix(mna_data.z.subs(vd))
+        A = sp.Matrix(mna_data.A).xreplace(vd)
+        z = sp.Matrix(mna_data.z).xreplace(vd)
         n = A.shape[0]
         if n > 24:
             print(f"UYARI: {n}x{n} sembolik determinant - bu biraz surebilir.",
@@ -897,19 +747,32 @@ class PoleZeroNode(Node):
         A_out = A.copy()
         A_out[:, idx_out] = z
 
-        D = sp.expand(A.det(method="berkowitz"))
-        N = sp.expand(A_out.det(method="berkowitz"))
+        # [TR] Determinantlari dogrudan Poly'ye ver: Poly kurulumu, ham ifade
+        #      uzerinde `sp.expand` cagirmaktan daha verimli olarak polinom
+        #      halkasi icinde acilim yapar.
+        # [EN] Feed the determinants straight to Poly: Poly construction expands
+        #      inside the polynomial ring, which is more efficient than calling
+        #      `sp.expand` on the raw expression.
+        try:
+            p_poly = sp.Poly(A.det(method="berkowitz"), s)
+            z_poly = sp.Poly(A_out.det(method="berkowitz"), s)
+        except sp.PolynomialError as e:
+            raise ValueError(f"determinant s'de polinom degil ({e}) - "
+                             f"sayisal yola donuluyor")
 
-        if D == 0 or D.has(sp.nan, sp.zoo, sp.oo) or N.has(sp.nan, sp.zoo, sp.oo):
+        all_c = p_poly.all_coeffs() + z_poly.all_coeffs()
+        if p_poly.is_zero or any(getattr(c, "is_finite", True) is False for c in all_c):
             raise ValueError("sembolik determinant tekil / tanimsiz "
                              "(D=0 veya nan) - sayisal yola donuluyor")
 
-        # ortak (s-bagimli) carpanlari sadelestir
-        H = sp.cancel(sp.together(N / D))
-        N2, D2 = sp.fraction(H)
-
-        p_poly = sp.Poly(sp.expand(D2), s)
-        z_poly = sp.Poly(sp.expand(N2), s)
+        # [TR] Ortak (s-bagimli) carpanlari Poly-halkasi GCD'siyle sadelestir -
+        #      `sp.cancel(sp.together(N/D))`'den daha dogrudan.
+        # [EN] Cancel common (s-dependent) factors via a polynomial-ring GCD -
+        #      more direct than `sp.cancel(sp.together(N/D))`.
+        g = sp.gcd(z_poly, p_poly)
+        if g.degree() > 0:
+            z_poly = sp.Poly(sp.quo(z_poly, g), s)
+            p_poly = sp.Poly(sp.quo(p_poly, g), s)
 
         poles = sorted(self._roots_of_exact_poly(p_poly, s),
                        key=lambda v: (abs(v), v.real, v.imag))
@@ -923,9 +786,17 @@ class PoleZeroNode(Node):
         return {"zeros": zeros, "poles": poles, "tf_string": tf_string}
 
     def _factored_tf_string(self, zeros, poles, z_poly, p_poly, s) -> str:
-        """H(s)'i carpanlarina ayrilmis, okunabilir biçimde yazar:
-           H(s) = K * s^2 (s + a)(s^2 + b s + c) / [ (s + p1)(s + p2) ... ]
-        Sembolik yolun s=0 kokleri TAM 0 oldugu icin s^k carpani net gorunur."""
+        """[TR] H(s)'i carpanlarina ayrilmis, okunabilir bicimde yazar:
+                 H(s) = K * s^k (s + a)(s^2 + b s + c) / [ (s + p1)(s + p2) ... ]
+               Sembolik yolun s=0 kokleri TAM 0 oldugu icin s^k carpani net
+               gorunur; eslenik ciftler (s^2 + b s + c) olarak toplanir; kazanc
+               K = z_poly.LC() / p_poly.LC().
+        [EN] Render H(s) in a readable factored form:
+                 H(s) = K * s^k (s + a)(s^2 + b s + c) / [ (s + p1)(s + p2) ... ]
+             The symbolic path's s=0 roots are exactly 0 so the s^k factor is
+             clean; conjugate pairs are grouped as (s^2 + b s + c); the gain is
+             K = z_poly.LC() / p_poly.LC().
+        """
         def group(roots):
             origin = sum(1 for r in roots if r == 0)
             rest = [r for r in roots if r != 0]
