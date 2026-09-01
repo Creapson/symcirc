@@ -18,7 +18,7 @@ class Circuit(BaseModel):
     params: Dict[str, str] = Field(default_factory=dict)
     inner_connecting_nodes: List[str] = Field(default_factory=list)
 
-    bipolar_model: str = "BJT_BasicModel"
+    bipolar_model: str = "BasicModels"
     mosfet_model: str = "MOSFET_basicmodel"
 
     nodes: List[str] = Field(default_factory=list)

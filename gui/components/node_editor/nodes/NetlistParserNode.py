@@ -30,7 +30,7 @@ class NetlistParserNode(Node):
             )
 
             dpg.add_string_value(
-                default_value=self.data.get("bipolar_model", "BJT_BasicModel"), 
+                default_value=self.data.get("bipolar_model", "BasicModels"), 
                 tag=self.uuid("bipolar_model")
             )
 
@@ -137,7 +137,7 @@ class NetlistParserNode(Node):
         # apply settings from the table
         subct_list = self.circuit.get_subcircuits()
         for subct_name, subct_obj in subct_list.items():
-            bipolar_model = self.table.get_value(subct_name, "bipolar_model", "BJT_BasicModel")
+            bipolar_model = self.table.get_value(subct_name, "bipolar_model", "BasicModels")
             mosfet_model = self.table.get_value(subct_name, "mosfet_model", "MOSFET_basicmodel")
 
             subct_obj.set_bipolar_model(bipolar_model)
