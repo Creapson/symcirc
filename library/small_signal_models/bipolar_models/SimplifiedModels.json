@@ -3,21 +3,13 @@
     "netlist_file_path": "",
     "params": {},
     "inner_connecting_nodes": ["C", "B", "E"],
-    "nodes": ["B", "E", "C", "BS"],
+    "nodes": ["B", "E", "C"],
     "elements": [
-        {
-            "name": "RX",
-            "historical_name": "RX",
-            "symbol": "rx",
-            "connections": ["B", "BS"],
-            "type": "R",
-            "params": { "value_dc": "rx" }
-        },
         {
             "name": "RPI",
             "historical_name": "RPI",
             "symbol": "rbe",
-            "connections": ["BS", "E"],
+            "connections": ["B", "E"],
             "type": "R",
             "params": { "value_dc": "rpi" }
         },
@@ -30,26 +22,34 @@
             "params": { "value_dc": "ro" }
         },
         {
+            "name": "CBE",
+            "historical_name": "CBE",
+            "symbol": "cbe",
+            "connections": ["B", "E"],
+            "type": "C",
+            "params": { "value_dc": "cbe" }
+        },
+        {
             "name": "CBC",
             "historical_name": "CBC",
             "symbol": "cbc",
-            "connections": ["BS", "C"],
+            "connections": ["B", "C"],
             "type": "C",
             "params": { "value_dc": "cbc" }
         },
         {
-            "name": "CBE",
-            "historical_name": "CBE",
-            "symbol": "cbe",
-            "connections": ["BS", "E"],
+            "name": "CBX",
+            "historical_name": "CBX",
+            "symbol": "cbx",
+            "connections": ["B", "C"],
             "type": "C",
-            "params": { "value_dc": "cbe" }
+            "params": { "value_dc": "cbx" }
         },
         {
             "name": "G",
             "historical_name": "G",
             "symbol": "gm",
-            "connections": ["C", "E", "BS", "E"],
+            "connections": ["C", "E", "B", "E"],
             "type": "G",
             "params": { "value": "gm" }
         }
