@@ -410,6 +410,60 @@ class SpiceParser:
         _parse_param_block(bipol_param_start_index, elements)
         _parse_param_block(mosfet_param_start_index, elements)
 
+        self._parse_mosfet_model_params(lines, elements)
+
+    def _parse_mosfet_model_params(self, lines: List[str], elements: List[Element]):
+        """Read the "MOSFET MODEL PARAMETERS" table from a PSpice .out.
+
+        The OPERATING POINT section only lists the bias-dependent small-signal
+        quantities (GM, GDS, CBD, ...). The ohmic parasitics RD, RS (and RSH,
+        NRD, NRS) live in this separate model-card table, keyed by model name.
+        Analog Insydes' DoMOSFETSmallSignal needs them to decide whether to
+        insert the series RD/RS resistors, so attach them to every element that
+        references the model. Bias-dependent keys already parsed from the
+        OPERATING POINT block are left untouched.
+        """
+        import re
+
+        header = next((i for i, ln in enumerate(lines)
+                       if "MOSFET MODEL PARAMETERS" in ln), None)
+        if header is None:
+            return
+
+        by_model: Dict[str, Element] = {}
+        model_params: Dict[str, Dict[str, str]] = {}
+
+        i = header + 1
+        n = len(lines)
+        current_model = None
+        while i < n:
+            line = lines[i].strip()
+            i += 1
+            if not line or set(line) <= {"*"}:
+                continue
+            if line.startswith("****"):
+                break  # next report section (date banner / "SMALL SIGNAL BIAS ...")
+            parts = line.split()
+            if parts[0] in ("NMOS", "PMOS"):            # device polarity line
+                continue
+            if len(parts) == 1:                         # a bare model name
+                current_model = Element.get_normalised_name(parts[0])
+                model_params.setdefault(current_model, {})
+                continue
+            if current_model is None:
+                continue
+            if len(parts) == 2 and re.match(r"^[A-Za-z][A-Za-z0-9]*$", parts[0]):
+                model_params[current_model][parts[0]] = parts[1]
+
+        if not model_params:
+            return
+
+        for el in elements:
+            ref = Element.get_normalised_name(el.params.get("ref_model", ""))
+            if ref in model_params:
+                for k, v in model_params[ref].items():
+                    el.params.setdefault(k, v)
+
 class Line:
     def __init__(self, line:str = "") -> None:
         self._text = line.strip()

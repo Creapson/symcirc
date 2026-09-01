@@ -26,29 +26,14 @@
             "params": { "value_dc": "cgd" }
         },
         {
-            "name": "C_gdov", "historical_name": "C_gdov", "symbol": "cgdov",
-            "connections": ["G", "DS"], "type": "C",
-            "params": { "value_dc": "cgdov" }
-        },
-        {
             "name": "C_gs", "historical_name": "C_gs", "symbol": "cgs",
             "connections": ["G", "SS"], "type": "C",
             "params": { "value_dc": "cgs" }
         },
         {
-            "name": "C_gsov", "historical_name": "C_gsov", "symbol": "cgsov",
-            "connections": ["G", "SS"], "type": "C",
-            "params": { "value_dc": "cgsov" }
-        },
-        {
             "name": "C_gb", "historical_name": "C_gb", "symbol": "cgb",
             "connections": ["G", "B"], "type": "C",
             "params": { "value_dc": "cgb" }
-        },
-        {
-            "name": "C_gbov", "historical_name": "C_gbov", "symbol": "cgbov",
-            "connections": ["G", "B"], "type": "C",
-            "params": { "value_dc": "cgbov" }
         },
         {
             "name": "C_bd", "historical_name": "C_bd", "symbol": "cbd",

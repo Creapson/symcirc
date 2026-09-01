@@ -29,6 +29,9 @@ class Model(BaseModel):
         # Merge model params and element params
         param_list = {k.lower(): v for k, v in (self.params | element_params).items()}
 
+        if self.type in ("MOS", "NMOS") or element_type == "M":
+            param_list = self._mosfet_ac_param_values(param_list)
+
         from netlist.Circuit import Circuit
 
         current_file_dir = Path(__file__).resolve().parent
@@ -104,6 +107,66 @@ class Model(BaseModel):
             element.connections = [canon(n) for n in element.connections]
         circuit.elements = survivors
         return circuit
+
+    @staticmethod
+    def _mosfet_ac_param_values(param_list: Dict[str, str]) -> Dict[str, str]:
+        """Resolve the MOSFET small-signal symbols the way Analog Insydes'
+        DoMOSFETSmallSignal (AC, Level 1-3) does, so the JSON templates stay
+        thin and the numbers come out identical.
+
+        ModelSupport.m references:
+          * gate caps are the SUM of the bias term and the overlap term:
+              Cgd = CGD$ac + CGDOV$ac,  Cgs = CGS$ac + CGSOV$ac,
+              Cgb = CGB$ac + CGBOV$ac
+          * the drain-source element is the small-signal conductance GDS$ac
+            (our template models it as a resistor, so store 1/GDS$ac)
+          * ohmic RD/RS come from the model card; if both are 0 they may be
+            derived from the sheet resistance:  RD = NRD*RSH,  RS = NRS*RSH
+        Only keys that resolve to a finite non-zero value are written; anything
+        else is left untouched so the degeneracy cleanup opens / shorts it.
+        """
+        p = dict(param_list)
+
+        def num(key):
+            try:
+                return float(p[key])
+            except (KeyError, ValueError, TypeError):
+                return None
+
+        def put(key, value):
+            if value is not None and value == value and value not in (
+                    float("inf"), float("-inf")) and value != 0.0:
+                p[key] = repr(value)
+
+        cgd = (num("cgd") or 0.0) + (num("cgdov") or 0.0)
+        cgs = (num("cgs") or 0.0) + (num("cgsov") or 0.0)
+        cgb = (num("cgb") or 0.0) + (num("cgbov") or 0.0)
+        put("cgd", cgd)
+        put("cgs", cgs)
+        put("cgb", cgb)
+
+        gds = num("gds")
+        if gds:
+            put("rds", 1.0 / gds)
+
+        gbd, gbs = num("gbd"), num("gbs")
+        if gbd:
+            put("rbd", 1.0 / gbd)
+        if gbs:
+            put("rbs", 1.0 / gbs)
+
+        rd = num("rd") or 0.0
+        rs = num("rs") or 0.0
+        if rd == 0.0 and rs == 0.0:
+            nrd, nrs, rsh = num("nrd") or 0.0, num("nrs") or 0.0, num("rsh") or 0.0
+            if nrd > 0.0:
+                rd = nrd * rsh
+            if nrs > 0.0:
+                rs = nrs * rsh
+        put("rd", rd)
+        put("rs", rs)
+
+        return p
 
     def to_ai_string(self, indent: int):
         param_string = ", ".join(f'"{k}" -> {v}' for k, v in self.params.items())
