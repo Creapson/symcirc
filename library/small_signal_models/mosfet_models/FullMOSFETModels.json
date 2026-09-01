@@ -1,5 +1,5 @@
 {
-    "name": "MOSFET_simplifiedmodel",
+    "name": "FullMOSFETModels",
     "netlist_file_path": "",
     "params": {},
     "inner_connecting_nodes": [
@@ -12,16 +12,44 @@
         "D",
         "G",
         "S",
-        "B"
+        "B",
+        "DS",
+        "SS"
     ],
     "elements": [
+        {
+            "name": "R_d",
+            "historical_name": "R_d",
+            "symbol": "rd",
+            "connections": [
+                "D",
+                "DS"
+            ],
+            "type": "R",
+            "params": {
+                "value_dc": "rd"
+            }
+        },
+        {
+            "name": "R_s",
+            "historical_name": "R_s",
+            "symbol": "rs",
+            "connections": [
+                "S",
+                "SS"
+            ],
+            "type": "R",
+            "params": {
+                "value_dc": "rs"
+            }
+        },
         {
             "name": "R_ds",
             "historical_name": "R_ds",
             "symbol": "rds",
             "connections": [
-                "D",
-                "S"
+                "DS",
+                "SS"
             ],
             "type": "R",
             "params": {
@@ -34,7 +62,7 @@
             "symbol": "cgd",
             "connections": [
                 "G",
-                "D"
+                "DS"
             ],
             "type": "C",
             "params": {
@@ -47,7 +75,7 @@
             "symbol": "cgs",
             "connections": [
                 "G",
-                "S"
+                "SS"
             ],
             "type": "C",
             "params": {
@@ -55,11 +83,24 @@
             }
         },
         {
+            "name": "C_gb",
+            "historical_name": "C_gb",
+            "symbol": "cgb",
+            "connections": [
+                "G",
+                "B"
+            ],
+            "type": "C",
+            "params": {
+                "value_dc": "cgb"
+            }
+        },
+        {
             "name": "C_bd",
             "historical_name": "C_bd",
             "symbol": "cbd",
             "connections": [
-                "D",
+                "DS",
                 "B"
             ],
             "type": "C",
@@ -72,7 +113,7 @@
             "historical_name": "C_bs",
             "symbol": "cbs",
             "connections": [
-                "S",
+                "SS",
                 "B"
             ],
             "type": "C",
@@ -85,10 +126,10 @@
             "historical_name": "G_m",
             "symbol": "gm",
             "connections": [
-                "D",
-                "S",
+                "DS",
+                "SS",
                 "G",
-                "S"
+                "SS"
             ],
             "type": "G",
             "params": {
@@ -100,10 +141,10 @@
             "historical_name": "G_mb",
             "symbol": "gmb",
             "connections": [
-                "D",
-                "S",
+                "DS",
+                "SS",
                 "B",
-                "S"
+                "SS"
             ],
             "type": "G",
             "params": {
@@ -116,7 +157,7 @@
             "symbol": "rbd",
             "connections": [
                 "B",
-                "D"
+                "DS"
             ],
             "type": "R",
             "params": {
@@ -129,7 +170,7 @@
             "symbol": "rbs",
             "connections": [
                 "B",
-                "S"
+                "SS"
             ],
             "type": "R",
             "params": {

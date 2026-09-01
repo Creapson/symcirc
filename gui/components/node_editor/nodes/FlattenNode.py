@@ -83,7 +83,7 @@ class FlattenNode(Node):
                 row_dict = {
                         "Name": item.name,
                         "Bipolar Model": item.params.get("bipolar_model", "BasicModels"),
-                        "Mosfet Model": item.params.get("mosfet_model", "MOSFET_basicmodel"),
+                        "Mosfet Model": item.params.get("mosfet_model", "BasicMOSFETModels"),
                         }
                 self.table.add_row(item.name, row_dict)
         self.table.build()
@@ -98,7 +98,7 @@ class FlattenNode(Node):
         # apply the changed small signal models to all elements
         for element in self.element_list:
             bipolar_model = self.table.get_value(element.name, "Bipolar Model", "BasicModels")
-            mosfet_model = self.table.get_value(element.name, "Mosfet Model", "MOSFET_basicmodel")
+            mosfet_model = self.table.get_value(element.name, "Mosfet Model", "BasicMOSFETModels")
             element.params["bipolar_model"] = bipolar_model
             element.params["mosfet_model"] = mosfet_model
 

@@ -1,5 +1,5 @@
 {
-    "name": "MOSFET_basicmodel",
+    "name": "BasicMOSFETModels",
     "netlist_file_path": "",
     "params": {},
     "inner_connecting_nodes": [

@@ -19,7 +19,7 @@ class Circuit(BaseModel):
     inner_connecting_nodes: List[str] = Field(default_factory=list)
 
     bipolar_model: str = "BasicModels"
-    mosfet_model: str = "MOSFET_basicmodel"
+    mosfet_model: str = "BasicMOSFETModels"
 
     nodes: List[str] = Field(default_factory=list)
 
