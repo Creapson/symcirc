@@ -691,6 +691,41 @@ class PoleZeroNode(Node):
                 out.append(complex(r))
         return out
 
+    def _det_poly(self, M, s):
+        """[TR] det(M(s))'i s cinsinden TAM bir ifade olarak dondurur.
+
+               R/C devrelerinde M'nin girdileri s'de afindir, dolayisiyla
+               det(M) en fazla n. dereceden bir POLINOMDUR. Sembolik acilim
+               (berkowitz, n=11'de ~8 s) yerine: M'yi n+1 farkli tam rasyonel s
+               degerinde degerlendir (her biri bolmesiz, saf rasyonel bir
+               determinant - hizli), sonra Lagrange ile geri kur (~0.2 s).
+               Fazladan bir noktada dogrulanir; tutmazsa (or. enduktansli
+               devrelerde det(M) s'de RASYONELdir, polinom degil) berkowitz +
+               sp.cancel'e doner. Tum aritmetik tam rasyoneldir.
+
+        [EN] Return det(M(s)) as an EXACT expression in s.
+
+             For R/C circuits M's entries are affine in s, so det(M) is a
+             POLYNOMIAL of degree <= n. Instead of a symbolic expansion
+             (berkowitz, ~8 s at n=11): evaluate M at n+1 distinct exact
+             rational values of s (each a fraction-free, pure-rational
+             determinant - fast), then rebuild by Lagrange interpolation
+             (~0.2 s). Verified at one extra point; on mismatch (e.g. with
+             inductors det(M) is RATIONAL in s, not polynomial) it falls back
+             to berkowitz + sp.cancel. All arithmetic is exact rational.
+        """
+        n = M.shape[0]
+        try:
+            pts = [sp.Rational(2 * i + 1, 7) for i in range(n + 1)]  # distinct, plain
+            ys = [M.xreplace({s: p}).det(method="bareiss") for p in pts]
+            cand = sp.Poly(sp.interpolate(list(zip(pts, ys)), s), s)
+            check = sp.Rational(3, 5)
+            if M.xreplace({s: check}).det(method="bareiss") == cand.eval(check):
+                return cand.as_expr()
+        except Exception:
+            pass
+        return sp.cancel(M.det(method="berkowitz"))
+
     def _calculate_symbolic_poles_zeros(self, mna_data, unknown_variable: str):
         """
         [EN] SYMBOLIC path (Analog-Insydes style closed form). By Cramer's rule
@@ -698,7 +733,8 @@ class PoleZeroNode(Node):
              the output column replaced by the source vector z. POLES = roots of
              det(A) = 0; ZEROS = roots of det(A_out) = 0 after common factors
              cancel. Element values are converted to exact rationals; the
-             determinants use the division-free Berkowitz method. Zeros/poles at
+             determinant polynomials are built by exact interpolation
+             (see _det_poly). Zeros/poles at
              s=0 (coupling caps) appear as an exact s^k factor in the numerator -
              no "~1e-8" dust like the numeric QZ path. Also returns a factored
              H(s) string. Falls back to the numeric path on failure.
@@ -747,32 +783,35 @@ class PoleZeroNode(Node):
         A_out = A.copy()
         A_out[:, idx_out] = z
 
-        # [TR] Determinantlari dogrudan Poly'ye ver: Poly kurulumu, ham ifade
-        #      uzerinde `sp.expand` cagirmaktan daha verimli olarak polinom
-        #      halkasi icinde acilim yapar.
-        # [EN] Feed the determinants straight to Poly: Poly construction expands
-        #      inside the polynomial ring, which is more efficient than calling
-        #      `sp.expand` on the raw expression.
-        try:
-            p_poly = sp.Poly(A.det(method="berkowitz"), s)
-            z_poly = sp.Poly(A_out.det(method="berkowitz"), s)
-        except sp.PolynomialError as e:
-            raise ValueError(f"determinant s'de polinom degil ({e}) - "
-                             f"sayisal yola donuluyor")
+        # [TR] det(G + s*C) s'de en fazla n. dereceden bir polinomdur. Onu
+        #      berkowitz ile sembolik acmak yerine (n=11'de ~8 s) n+1 tam
+        #      rasyonel noktada degerlendirip (her biri hizli, bolmesiz bir
+        #      sayisal determinant) Lagrange ile geri kur (~0.2 s, tam ayni
+        #      sonuc). _det_poly, dogrulanamadigi durumda berkowitz'e doner.
+        # [EN] det(G + s*C) is a polynomial in s of degree <= n. Instead of
+        #      expanding it symbolically with berkowitz (~8 s at n=11), evaluate
+        #      it at n+1 exact rational points (each a fast, fraction-free
+        #      numeric determinant) and rebuild it by Lagrange interpolation
+        #      (~0.2 s, identical result). _det_poly falls back to berkowitz if
+        #      the interpolant does not verify.
+        D_expr = self._det_poly(A, s)
+        N_expr = self._det_poly(A_out, s)
 
-        all_c = p_poly.all_coeffs() + z_poly.all_coeffs()
-        if p_poly.is_zero or any(getattr(c, "is_finite", True) is False for c in all_c):
+        if D_expr == 0 or D_expr.has(sp.nan, sp.zoo, sp.oo) \
+                or N_expr.has(sp.nan, sp.zoo, sp.oo):
             raise ValueError("sembolik determinant tekil / tanimsiz "
                              "(D=0 veya nan) - sayisal yola donuluyor")
 
-        # [TR] Ortak (s-bagimli) carpanlari Poly-halkasi GCD'siyle sadelestir -
-        #      `sp.cancel(sp.together(N/D))`'den daha dogrudan.
-        # [EN] Cancel common (s-dependent) factors via a polynomial-ring GCD -
-        #      more direct than `sp.cancel(sp.together(N/D))`.
-        g = sp.gcd(z_poly, p_poly)
-        if g.degree() > 0:
-            z_poly = sp.Poly(sp.quo(z_poly, g), s)
-            p_poly = sp.Poly(sp.quo(p_poly, g), s)
+        # [TR] Ortak (s-bagimli) carpanlari sadelestir. det'ler enduktansli
+        #      devrelerde rasyonel olabilecegi icin once together/cancel, sonra
+        #      pay ve paydayi ayir.
+        # [EN] Cancel common (s-dependent) factors. The determinants can be
+        #      rational (inductor circuits), so together/cancel first, then
+        #      split numerator and denominator.
+        H = sp.cancel(sp.together(N_expr / D_expr))
+        N2, D2 = sp.fraction(H)
+        p_poly = sp.Poly(D2, s)
+        z_poly = sp.Poly(N2, s)
 
         poles = sorted(self._roots_of_exact_poly(p_poly, s),
                        key=lambda v: (abs(v), v.real, v.imag))
