@@ -727,13 +727,32 @@ class PoleZeroNode(Node):
             # (a+bj, a-bj) icin BELIRSIZ sira uretir - ayni buyukluktedirler.
             poles_num = sorted(poles_num, key=lambda v: (abs(v), v.real, v.imag))
 
-            # 4) Sifirlar: Rosenbrock sistem matrisi P(s) = [[A(s),-B(s)],[C_out,0]].
-            #    P kendi katsayilarina sahip oldugundan (ve B(s) derecesi A(s)
-            #    derecesini asabileceginden) olcegi P uzerinden AYRICA hesaplanir.
-            P_coeffs, m, k_P = self._build_rosenbrock_coeffs(A_coeffs, B_coeffs, C_out, n)
-            gamma_P = self._compute_pencil_scaling(P_coeffs, k_P)
-            P_scaled = [(gamma_P ** i) * P_coeffs[i] for i in range(k_P + 1)]
-            zeros_num = self._solve_polynomial_eigenproblem(P_scaled, m, k_P, gamma_P)
+            # 4) Sifirlar.
+            if k == 1 and k_z <= 1:
+                # Analog Insydes ZerosByQZ ile AYNI yontem: A'nin cikis
+                # sutununu kaynak vektoru z ile degistir (Cramer payi
+                # det(A_out(s))); (G_z, C_z) descriptor pencil'inin SONLU
+                # ozdegerleri = sifirlar. scipy.linalg.eig dogrudan
+                # cagrilir - AI'nin QZ.exe'si gibi TUM sonlu ozdegerleri
+                # tutar (goreceli beta esigi uygulanmaz), boylece Rosenbrock
+                # yolunda kaybolan cok-yuksek-frekans sifirlari da gelir.
+                Gz = A_coeffs[0].copy()
+                Cz = A_coeffs[1].copy()
+                Gz[:, idx_out] = B_coeffs[0][:, 0]
+                Cz[:, idx_out] = B_coeffs[1][:, 0] if k_z >= 1 else 0.0
+                Gz_eq, Cz_eq = self._equilibrate_pencil(Gz, -Cz)
+                ev = scipy.eig(Gz_eq, Cz_eq, right=False)
+                zeros_num = [complex(e) for e in ev
+                             if np.isfinite(e.real) and np.isfinite(e.imag)]
+            else:
+                # Yuksek dereceli / s'e bagli kaynak: Rosenbrock sistem
+                # matrisi P(s) = [[A(s),-B(s)],[C_out,0]].
+                P_coeffs, m, k_P = self._build_rosenbrock_coeffs(
+                    A_coeffs, B_coeffs, C_out, n)
+                gamma_P = self._compute_pencil_scaling(P_coeffs, k_P)
+                P_scaled = [(gamma_P ** i) * P_coeffs[i] for i in range(k_P + 1)]
+                zeros_num = self._solve_polynomial_eigenproblem(P_scaled, m, k_P, gamma_P)
+
             zeros_num = self._filter_spurious_roots(zeros_num, [denom_lcm, denom_lcm_z], s)
             zeros_num = sorted(zeros_num, key=lambda v: (abs(v), v.real, v.imag))
 
