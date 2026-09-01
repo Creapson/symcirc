@@ -17,38 +17,27 @@ class PoleZeroNode(Node):
     text_poles_tag: str = Field(default="", exclude=True)
     scatter_zeros_tag: str = Field(default="", exclude=True)
     scatter_poles_tag: str = Field(default="", exclude=True)
-    exact_mode_tag: str = Field(default="", exclude=True)
-    symbolic_mode_tag: str = Field(default="", exclude=True)
     symbolic_tf_tag: str = Field(default="", exclude=True)
-    output_node_tag: str = Field(default="", exclude=True)
+    source_info_tag: str = Field(default="", exclude=True)
+
+    # Bir TransferFunction dugumunden gelen baglam (link aninda doldurulur).
+    src_mode: str = Field(default="", exclude=True)          # "numeric" | "symbolic"
+    src_output_node: str = Field(default="", exclude=True)
 
     def build(self):
-        self.add_input_pin("mna_pin", "Connect MNA/Solver here!")
+        self.add_input_pin("mna_pin", "Connect a TransferFunction node here!")
 
         with self.add_static_attr():
             dpg.add_button(label="Calculate & Plot", callback=self.calculate_callback)
 
-            self.output_node_tag = self.uuid("output_node")
-            dpg.add_text("Output node (transfer function):")
-            dpg.add_combo([], tag=self.output_node_tag, width=200,
-                          default_value="")
-            dpg.add_text("MNA baglandiktan sonra doldurulur.",
-                         color=[150, 150, 150])
+            self.source_info_tag = self.uuid("source_info")
+            dpg.add_text("Kaynak: bir TransferFunction dugumu baglayin.",
+                         tag=self.source_info_tag, color=[150, 150, 150], wrap=340)
+            dpg.add_text("Cikis dugumu ve sembolik/sayisal secimi bagli olan "
+                         "TransferFunction dugumunden alinir.", color=[150, 150, 150],
+                         wrap=340)
             dpg.add_separator()
 
-            self.exact_mode_tag = self.uuid("exact_mode")
-            dpg.add_checkbox(label="Exact Precision Calculation (mpmath, 50 dps)",
-                             tag=self.exact_mode_tag, default_value=False)
-            dpg.add_text("Yavas ama tam; float64 QZ ile karsilastirmak icin.",
-                         color=[150, 150, 150])
-
-            self.symbolic_mode_tag = self.uuid("symbolic_mode")
-            dpg.add_checkbox(label="Symbolic Solve (exact N(s)/D(s), like Analog Insydes)",
-                             tag=self.symbolic_mode_tag, default_value=False)
-            dpg.add_text("H(s)=det(A_out)/det(A) tam rasyonel; s=0 sifirlari tam.",
-                         color=[150, 150, 150])
-            dpg.add_separator()
-            
             self.text_zeros_tag = self.uuid("zeros_text")
             self.text_poles_tag = self.uuid("poles_text")
 
@@ -87,7 +76,8 @@ class PoleZeroNode(Node):
         return theme
 
     def get_possible_node_connections(self) -> List[str]:
-        return ["solver_numeric", "solver_symbolic", "mna"]
+        # Terminal goruntuleme dugumu: kendisinden sonra baska dugum gelmez.
+        return []
 
     # ------------------------------------------------------------------
     # Yardimci fonksiyonlar: Descriptor (DAE) durum-uzayi / Rosenbrock
@@ -599,19 +589,16 @@ class PoleZeroNode(Node):
 
 
     def _resolve_output_node(self, mna_data):
-        """Cikis dugumunu belirler ve combo'yu mevcut bilinmeyenlerle doldurur.
+        """Cikis dugumunu belirler.
 
-        Bu eskiden `target_node = "V_2"` seklinde SABIT KODLUYDU. Genel amacli
-        bir arac icin bu bir hatadir: KUTUPLAR cikis dugumunden bagimsizdir ama
-        SIFIRLAR dogrudan ona baglidir. Yanlis dugum secilirse sifirlar baska
-        bir transfer fonksiyonuna ait cikar ve baska bir aracla karsilastirma
-        anlamsizlasir.
+        Cikis dugumu artik bu node'da SECILMEZ: bagli olan TransferFunction
+        dugumunde secilir ve link uzerinden (`src_output_node`) buraya gelir.
+        KUTUPLAR cikis dugumunden bagimsizdir ama SIFIRLAR dogrudan ona
+        baglidir; bu yuzden referans bir araca karsi karsilastirma yaparken
+        AYNI cikis dugumunun secili olmasi onemlidir.
 
-        Teshis ipucu: dogru cikis dugumunde, kuplaj kondansatoru iceren bir
-        yukseltecte ORIJINDE sifir(lar) beklenir (DC'de kuplaj kondansatoru
-        sinyali bloklar). Sifirlarin bir kismi KUTUPLARLA cakisiyorsa ve
-        orijinde hic sifir yoksa, secili dugum buyuk olasilikla sinyal
-        yolunun disinda (or. kaynak dugumu) kalmistir.
+        `src_output_node` gecerliyse onu kullanir; degilse (or. dogrudan MNA
+        baglanmis) son bilinmeyene duser ve uyarir.
         """
         try:
             names = [str(u) for u in mna_data.get_unknowns()]
@@ -619,22 +606,14 @@ class PoleZeroNode(Node):
             print(f"Bilinmeyenler okunamadi: {e}", flush=True)
             return None
 
-        if self.output_node_tag and dpg.does_item_exist(self.output_node_tag):
-            dpg.configure_item(self.output_node_tag, items=names)
-            current = dpg.get_value(self.output_node_tag)
-        else:
-            current = ""
-
-        if current in names:
-            return current
+        if self.src_output_node and self.src_output_node in names:
+            return self.src_output_node
 
         chosen = names[-1] if names else None
-        if self.output_node_tag and dpg.does_item_exist(self.output_node_tag) and chosen:
-            dpg.set_value(self.output_node_tag, chosen)
-        print(f"Cikis dugumu secilmemisti; gecici olarak '{chosen}' kullaniliyor.",
-              flush=True)
+        print(f"Cikis dugumu TransferFunction dugumunden alinamadi; gecici "
+              f"olarak '{chosen}' kullaniliyor.", flush=True)
         print(f"Mevcut dugumler: {names}", flush=True)
-        print("Karsilastirma yapiyorsaniz, referans araciyla AYNI dugumu secin.",
+        print("TransferFunction dugumunde cikis dugumunu secip Calculate'e basin.",
               flush=True)
         return chosen
 
@@ -935,30 +914,54 @@ class PoleZeroNode(Node):
             return data
         return None
 
-    def _populate_output_nodes(self, mna_data):
-        """Cikis dugumu combo'sunu MNA'nin bilinmeyenleriyle doldurur."""
-        if not (self.output_node_tag and dpg.does_item_exist(self.output_node_tag)):
+    def _read_link_context(self, raw):
+        """Girdi pininden gelen TransferFunction payload'unu cozer.
+
+        TransferFunction dugumleri `h_out` pininde su tuple'i yayinliyor:
+            (H_list, sweep, mna, mode, output_node)
+        `mode` "numeric" | "symbolic"; hesap yolu bununla secilir.
+        `output_node` TransferFunction dugumunde secilen cikis dugumudur.
+
+        Geriye donuk / dogrudan-MNA baglantilari icin (2'li tuple, MNA node,
+        Circuit) mode/output_node bos kalir ve _extract_mna / _resolve_output_node
+        devreye girer.
+        """
+        mode, out_node = "", ""
+        if (isinstance(raw, (tuple, list)) and len(raw) >= 5
+                and hasattr(raw[2], "A") and hasattr(raw[2], "z")):
+            m, on = raw[3], raw[4]
+            if isinstance(m, str):
+                mode = m
+            if isinstance(on, str):
+                out_node = on
+        return self._extract_mna(raw), mode, out_node
+
+    def _update_source_info(self):
+        if not (self.source_info_tag and dpg.does_item_exist(self.source_info_tag)):
             return
-        try:
-            names = [str(u) for u in mna_data.get_unknowns()]
-        except Exception:
-            return
-        current = dpg.get_value(self.output_node_tag)
-        dpg.configure_item(self.output_node_tag, items=names)
-        if current not in names and names:
-            pref = [n for n in names if n.lower().lstrip("v_").startswith(
-                ("out", "vout", "ua", "aus"))]
-            dpg.set_value(self.output_node_tag, pref[0] if pref else names[-1])
+        if self.src_mode:
+            label = {"numeric": "TF Numeric (QZ / sayisal)",
+                     "symbolic": "TF Symbolic (det N(s)/D(s))"}.get(
+                        self.src_mode, self.src_mode)
+            node = self.src_output_node or "(TF dugumunde secilmedi)"
+            dpg.set_value(self.source_info_tag,
+                          f"Kaynak: {label}\nCikis dugumu: {node}")
+        else:
+            dpg.set_value(self.source_info_tag,
+                          "Kaynak: bir TransferFunction dugumu baglayin "
+                          "(veya dogrudan MNA).")
 
     def onlink_callback(self):
-        # MNA (veya Circuit) baglaninca / hesaplaninca cikis dugumu listesini
-        # simdiden doldur ki kullanici 'Calculate' oncesi secebilsin.
+        # Bagli TransferFunction dugumunun modunu / cikis dugumunu al ki
+        # 'Calculate & Plot' oncesi kullanici ne olacagini gorsun.
         try:
-            mna_data = self._extract_mna(self.get_input_pin_value("mna_pin"))
-            if mna_data is not None:
-                self._populate_output_nodes(mna_data)
+            raw = self.get_input_pin_value("mna_pin")
+            _, mode, out_node = self._read_link_context(raw)
+            self.src_mode = mode
+            self.src_output_node = out_node
+            self._update_source_info()
         except Exception as e:
-            print(f"Cikis dugumu listesi doldurulamadi: {e}", flush=True)
+            print(f"Kaynak baglami okunamadi: {e}", flush=True)
         super().onlink_callback()
 
     def calculate_callback(self, sender, app_data, user_data=None):
@@ -968,7 +971,12 @@ class PoleZeroNode(Node):
         print(f"Kablodan Gelen İlk Veri Tipi: {type(raw)}", flush=True)
 
         try:
-            mna_data = self._extract_mna(raw)
+            mna_data, mode, out_node = self._read_link_context(raw)
+            if mode:
+                self.src_mode = mode
+            if out_node:
+                self.src_output_node = out_node
+            self._update_source_info()
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -991,18 +999,14 @@ class PoleZeroNode(Node):
                 dpg.set_value(self.text_zeros_tag, "Output node secilemedi.")
                 dpg.set_value(self.text_poles_tag, "MNA bilinmeyenleri okunamadi.")
                 return
-            print(f"Hedef düğüm ({target_node}) için hesaplama yapılıyor...", flush=True)
-            
-            exact_mode = (dpg.get_value(self.exact_mode_tag)
-                          if self.exact_mode_tag and dpg.does_item_exist(self.exact_mode_tag)
-                          else False)
-            symbolic_mode = (dpg.get_value(self.symbolic_mode_tag)
-                             if self.symbolic_mode_tag and dpg.does_item_exist(self.symbolic_mode_tag)
-                             else False)
+            symbolic_mode = (self.src_mode == "symbolic")
+            print(f"Hedef düğüm ({target_node}) için hesaplama yapılıyor "
+                  f"[{'sembolik' if symbolic_mode else 'sayisal QZ'} yol]...",
+                  flush=True)
 
             pz_results = None
             if symbolic_mode:
-                print("Symbolic Solve secili; H(s) tam rasyonel olarak "
+                print("TF Symbolic'ten geldi; H(s) tam rasyonel olarak "
                       "cozuluyor (buyuk devrelerde yavas olabilir)...", flush=True)
                 try:
                     pz_results = self._calculate_symbolic_poles_zeros(
@@ -1012,19 +1016,6 @@ class PoleZeroNode(Node):
                     traceback.print_exc()
                     print(f"Sembolik cozum basarisiz ({e}); sayisal QZ yoluna "
                           f"donuluyor.", flush=True)
-
-            if pz_results is None and exact_mode:
-                print("Exact Precision Calculation (mpmath) secili; bignum yolu "
-                      "deneniyor...", flush=True)
-                s_sym = sp.symbols('s')
-                A_sym = mna_data.A.subs(mna_data.value_dict)
-                z_sym = mna_data.z.subs(mna_data.value_dict)
-                x_syms = [str(u) for u in mna_data.get_unknowns()]
-                if target_node in x_syms:
-                    pz_results = self._calculate_high_precision_roots(
-                        A_sym, z_sym, x_syms.index(target_node))
-                else:
-                    print(f"Hata: '{target_node}' bilinmeyenler arasinda yok.", flush=True)
 
             if pz_results is None:
                 pz_results = self._calculate_robust_poles_zeros(mna_data, target_node)

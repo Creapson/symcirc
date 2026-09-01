@@ -24,7 +24,8 @@ class NumericSolver(Node):
         return ["bode_plot"]
 
     def onlink_callback(self):
-        self.h, self.sweep = self.get_input_pin_value("h_input_pin", ([], []))
+        data = self.get_input_pin_value("h_input_pin", ([], []))
+        self.h, self.sweep = data[0], data[1]
 
         super().onlink_callback()
 
