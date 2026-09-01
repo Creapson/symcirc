@@ -31,6 +31,8 @@ class Model(BaseModel):
 
         if self.type in ("MOS", "NMOS") or element_type == "M":
             param_list = self._mosfet_ac_param_values(param_list)
+        elif self.type in ("NPN", "PNP") or element_type == "Q":
+            param_list = self._bjt_ac_param_values(param_list)
 
         from netlist.Circuit import Circuit
 
@@ -107,6 +109,49 @@ class Model(BaseModel):
             element.connections = [canon(n) for n in element.connections]
         circuit.elements = survivors
         return circuit
+
+    @staticmethod
+    def _num_or_none(value):
+        try:
+            f = float(value)
+        except (TypeError, ValueError):
+            return None
+        return f if f == f and f not in (float("inf"), float("-inf")) else None
+
+    @classmethod
+    def _bjt_ac_param_values(cls, param_list: Dict[str, str]) -> Dict[str, str]:
+        """Resolve the BJT small-signal symbols the way Analog Insydes'
+        DoBJTSmallSignal (AC, Level 1) does.
+
+        ModelSupport.m references:
+          * RPI$ac, RO$ac, RX$ac, CBC$ac, CBE$ac, CBX$ac, CJS$ac, GM$ac come
+            straight from the OPERATING POINT block (already the right names)
+          * the base-collector leak GMU is a conductance -> store 1/GMU$ac
+          * the ohmic RC/RE come from the model card, divided by AREA:
+              Rc = RC/AREA,  Re = RE/AREA
+        Only finite non-zero results are written; the degeneracy cleanup opens
+        or shorts everything else, so RC/RE/RX/GMU vanish for the Basic and
+        Simplified levels exactly as they do in DoBJTSmallSignal.
+        """
+        p = dict(param_list)
+        num = cls._num_or_none
+
+        area = num(p.get("area")) or 1.0
+
+        gmu = num(p.get("gmu$ac"))
+        if gmu is None:
+            gmu = num(p.get("gmu"))
+        if gmu:
+            p["gmu"] = repr(1.0 / gmu)
+
+        rc = num(p.get("rc"))
+        if rc:
+            p["rc"] = repr(rc / area)
+        re_ = num(p.get("re"))
+        if re_:
+            p["re"] = repr(re_ / area)
+
+        return p
 
     @staticmethod
     def _mosfet_ac_param_values(param_list: Dict[str, str]) -> Dict[str, str]:

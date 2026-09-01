@@ -410,28 +410,31 @@ class SpiceParser:
         _parse_param_block(bipol_param_start_index, elements)
         _parse_param_block(mosfet_param_start_index, elements)
 
-        self._parse_mosfet_model_params(lines, elements)
+        self._parse_device_model_params(lines, elements, "MOSFET MODEL PARAMETERS")
+        self._parse_device_model_params(lines, elements, "BJT MODEL PARAMETERS")
 
-    def _parse_mosfet_model_params(self, lines: List[str], elements: List[Element]):
-        """Read the "MOSFET MODEL PARAMETERS" table from a PSpice .out.
+    def _parse_device_model_params(self, lines: List[str], elements: List[Element],
+                                   header_marker: str):
+        """Read a "<device> MODEL PARAMETERS" table from a PSpice .out.
 
         The OPERATING POINT section only lists the bias-dependent small-signal
-        quantities (GM, GDS, CBD, ...). The ohmic parasitics RD, RS (and RSH,
-        NRD, NRS) live in this separate model-card table, keyed by model name.
-        Analog Insydes' DoMOSFETSmallSignal needs them to decide whether to
-        insert the series RD/RS resistors, so attach them to every element that
-        references the model. Bias-dependent keys already parsed from the
-        OPERATING POINT block are left untouched.
+        quantities (GM, GDS/RO, CBD/CBE, ...). The ohmic parasitics - RD/RS for
+        MOSFETs, RC/RE for BJTs - and AREA live in this separate model-card
+        table, keyed by model name. Analog Insydes' DoMOSFETSmallSignal /
+        DoBJTSmallSignal need them to decide whether to insert the series
+        RD/RS / RC/RE resistors, so attach them to every element that references
+        the model. Bias-dependent keys already parsed from the OPERATING POINT
+        block are left untouched.
         """
         import re
 
         header = next((i for i, ln in enumerate(lines)
-                       if "MOSFET MODEL PARAMETERS" in ln), None)
+                       if header_marker in ln), None)
         if header is None:
             return
 
-        by_model: Dict[str, Element] = {}
         model_params: Dict[str, Dict[str, str]] = {}
+        polarity = {"NMOS", "PMOS", "NPN", "PNP", "LPNP", "NJF", "PJF"}
 
         i = header + 1
         n = len(lines)
@@ -444,7 +447,7 @@ class SpiceParser:
             if line.startswith("****"):
                 break  # next report section (date banner / "SMALL SIGNAL BIAS ...")
             parts = line.split()
-            if parts[0] in ("NMOS", "PMOS"):            # device polarity line
+            if parts[0] in polarity:                    # device polarity line
                 continue
             if len(parts) == 1:                         # a bare model name
                 current_model = Element.get_normalised_name(parts[0])
