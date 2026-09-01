@@ -2,98 +2,48 @@
     "name": "BasicMOSFETModels",
     "netlist_file_path": "",
     "params": {},
-    "inner_connecting_nodes": [
-        "D",
-        "G",
-        "S",
-        "B"
-    ],
-    "nodes": [
-        "D",
-        "G",
-        "S",
-        "B"
-    ],
+    "inner_connecting_nodes": ["D", "G", "S", "B"],
+    "nodes": ["D", "G", "S", "B"],
     "elements": [
         {
-            "name": "R_ds",
-            "historical_name": "R_ds",
-            "symbol": "rds",
-            "connections": [
-                "D",
-                "S"
-            ],
-            "type": "R",
-            "params": {
-                "value_dc": "rds"
-            }
+            "name": "R_ds", "historical_name": "R_ds", "symbol": "rds",
+            "connections": ["D", "S"], "type": "R",
+            "params": { "value_dc": "rds" }
         },
         {
-            "name": "C_gd",
-            "historical_name": "C_gd",
-            "symbol": "cgd",
-            "connections": [
-                "G",
-                "D"
-            ],
-            "type": "C",
-            "params": {
-                "value_dc": "cgd"
-            }
+            "name": "C_gd", "historical_name": "C_gd", "symbol": "cgd",
+            "connections": ["G", "D"], "type": "C",
+            "params": { "value_dc": "cgd" }
         },
         {
-            "name": "C_gs",
-            "historical_name": "C_gs",
-            "symbol": "cgs",
-            "connections": [
-                "G",
-                "S"
-            ],
-            "type": "C",
-            "params": {
-                "value_dc": "cgs"
-            }
+            "name": "C_gdov", "historical_name": "C_gdov", "symbol": "cgdov",
+            "connections": ["G", "D"], "type": "C",
+            "params": { "value_dc": "cgdov" }
         },
         {
-            "name": "C_bd",
-            "historical_name": "C_bd",
-            "symbol": "cbd",
-            "connections": [
-                "D",
-                "B"
-            ],
-            "type": "C",
-            "params": {
-                "value_dc": "cbd"
-            }
+            "name": "C_gs", "historical_name": "C_gs", "symbol": "cgs",
+            "connections": ["G", "S"], "type": "C",
+            "params": { "value_dc": "cgs" }
         },
         {
-            "name": "C_bs",
-            "historical_name": "C_bs",
-            "symbol": "cbs",
-            "connections": [
-                "S",
-                "B"
-            ],
-            "type": "C",
-            "params": {
-                "value_dc": "cbs"
-            }
+            "name": "C_gsov", "historical_name": "C_gsov", "symbol": "cgsov",
+            "connections": ["G", "S"], "type": "C",
+            "params": { "value_dc": "cgsov" }
         },
         {
-            "name": "G_m",
-            "historical_name": "G_m",
-            "symbol": "gm",
-            "connections": [
-                "D",
-                "S",
-                "G",
-                "S"
-            ],
-            "type": "G",
-            "params": {
-                "value": "gm"
-            }
+            "name": "C_bd", "historical_name": "C_bd", "symbol": "cbd",
+            "connections": ["D", "B"], "type": "C",
+            "params": { "value_dc": "cbd" }
+        },
+        {
+            "name": "C_bs", "historical_name": "C_bs", "symbol": "cbs",
+            "connections": ["S", "B"], "type": "C",
+            "params": { "value_dc": "cbs" }
+        },
+        {
+            "name": "G_m", "historical_name": "G_m", "symbol": "gm",
+            "connections": ["D", "S", "G", "S"], "type": "G",
+            "params": { "value": "gm" }
         }
     ],
     "models": {},
