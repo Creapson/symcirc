@@ -581,27 +581,37 @@ class PoleZeroNode(Node):
 
     def _det_poly(self, M, s):
         """
-        [TR] det(M(s))'i s cinsinden tam bir ifade olarak dondurur.
-             M'nin girdileri s'de afin oldugundan (R/C devreleri) det(M) en
-             fazla n. dereceden bir POLINOMDUR. Sembolik acilim yerine: M'yi n+1
-             farkli tam rasyonel s degerinde degerlendir (her biri bolmesiz,
-             saf rasyonel bir determinant), sonra Lagrange ile geri kur. Tum
-             aritmetik tam rasyoneldir. Fazladan bir noktada dogrulanir;
-             tutmazsa (enduktanslarda det(M) s'de RASYONELdir, polinom degil)
-             berkowitz + sp.cancel'e doner.
+        [TR] det(M(s))'i s cinsinden tam bir POLINOM olarak dondurur (arayan
+             fonksiyon 1/s paydalarini onceden temizler, bkz. _clear_s_denoms).
+             M'nin her elemani s'de en fazla d. dereceden ise det(M) en fazla
+             n*d. derecedendir. Sembolik acilim yerine: M'yi n*d+1 farkli tam
+             rasyonel s degerinde degerlendir (her biri bolmesiz, saf rasyonel
+             bir Bareiss determinanti), sonra Lagrange ile geri kur. Tum
+             aritmetik tam rasyoneldir; fazladan bir noktada dogrulanir.
+             Interpolasyon tutmazsa berkowitz + sp.cancel'e doner.
 
-        [EN] Return det(M(s)) as an exact expression in s.
-             M's entries are affine in s (R/C circuits), so det(M) is a
-             POLYNOMIAL of degree <= n. Instead of a symbolic expansion:
-             evaluate M at n+1 distinct exact rational values of s (each a
-             fraction-free pure-rational determinant), then rebuild by Lagrange
-             interpolation. All arithmetic is exact rational. Verified at one
-             extra point; on mismatch (with inductors det(M) is RATIONAL in s,
-             not polynomial) it falls back to berkowitz + sp.cancel.
+        [EN] Return det(M(s)) as an exact POLYNOMIAL in s (the caller clears any
+             1/s denominators first, see _clear_s_denoms). If every entry of M
+             is degree <= d in s, det(M) is degree <= n*d. Instead of a symbolic
+             expansion: evaluate M at n*d+1 distinct exact rational values of s
+             (each a fraction-free pure-rational Bareiss determinant), then
+             rebuild by Lagrange interpolation. All arithmetic is exact
+             rational; verified at one extra point. On mismatch it falls back to
+             berkowitz + sp.cancel.
         """
         n = M.shape[0]
         try:
-            pts = [sp.Rational(2 * i + 1, 7) for i in range(n + 1)]   # distinct, plain
+            deg = 1
+            for i in range(n):
+                for j in range(n):
+                    e = M[i, j]
+                    if e != 0 and e.has(s):
+                        try:
+                            deg = max(deg, int(sp.degree(e, s)))
+                        except (sp.PolynomialError, TypeError):
+                            deg = max(deg, 1)
+            npts = n * deg + 1
+            pts = [sp.Rational(2 * i + 1, 7) for i in range(npts)]
             ys = [M.xreplace({s: p}).det(method="bareiss") for p in pts]
             cand = sp.Poly(sp.interpolate(list(zip(pts, ys)), s), s)
             check = sp.Rational(3, 5)
@@ -610,6 +620,43 @@ class PoleZeroNode(Node):
         except Exception:
             pass
         return sp.cancel(M.det(method="berkowitz"))
+
+    @staticmethod
+    def _clear_s_denoms(A, A_out, s):
+        """
+        [TR] Enduktanslar MNA'da 1/(s*L) olarak damgalanir, dolayisiyla A(s)
+             s'de RASYONELdir - oysa _det_poly interpolasyonu polinom bekler.
+             Her iki matrisi de s^k ile carp (k = herhangi bir elemanin
+             paydasindaki en yuksek s kuvveti). det(s^k * M) = s^(k*n) * det(M)
+             oldugundan bu ortak carpan H = det(A_out)/det(A) oraninda TAM
+             sadelesir; ama matrisler artik polinom -> hizli interpolasyon.
+             1/s yoksa (yalniz R/C) matrisler dokunulmadan geri doner.
+
+        [EN] Inductors are stamped as 1/(s*L) in the MNA, so A(s) is RATIONAL in
+             s - but the _det_poly interpolation expects a polynomial. Multiply
+             both matrices by s^k (k = the highest power of s in any entry's
+             denominator). det(s^k * M) = s^(k*n) * det(M), so this common
+             factor cancels EXACTLY in H = det(A_out)/det(A); the matrices are
+             now polynomial -> fast interpolation. With no 1/s (pure R/C) the
+             matrices are returned untouched.
+        """
+        n = A.shape[0]
+        k = 0
+        for i in range(n):
+            for j in range(n):
+                e = A[i, j]
+                if e != 0 and e.has(s):
+                    den = sp.together(e).as_numer_denom()[1]
+                    if den.has(s):
+                        try:
+                            k = max(k, int(sp.degree(den, s)))
+                        except (sp.PolynomialError, TypeError):
+                            k = max(k, 1)
+        if k == 0:
+            return A, A_out
+        mult = s ** k
+        return ((A * mult).applyfunc(sp.expand),
+                (A_out * mult).applyfunc(sp.expand))
 
     def _calculate_symbolic_poles_zeros(self, mna_data, unknown_variable: str):
         """
@@ -660,6 +707,16 @@ class PoleZeroNode(Node):
 
         A_out = A.copy()
         A_out[:, idx_out] = z
+
+        # [TR] Enduktansli devrelerde A(s) 1/(s*L) yuzunden s'de rasyoneldir;
+        #      iki matrisi de s^k ile carparak polinom yap (ortak s^(k*n)
+        #      carpani D_expr/N_expr oraninda sadelesir). Boylece _det_poly
+        #      interpolasyonu calisir ve berkowitz'in n>=10'da takilmasi onlenir.
+        # [EN] With inductors A(s) is rational in s (1/(s*L)); make both matrices
+        #      polynomial by multiplying by s^k (the shared s^(k*n) factor
+        #      cancels in D_expr/N_expr). This lets the _det_poly interpolation
+        #      run instead of berkowitz stalling for n >= 10.
+        A, A_out = self._clear_s_denoms(A, A_out, s)
 
         D_expr = self._det_poly(A, s)
         N_expr = self._det_poly(A_out, s)
