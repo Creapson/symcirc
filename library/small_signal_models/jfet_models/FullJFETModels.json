@@ -1,0 +1,54 @@
+{
+    "name": "FullJFETModels",
+    "_comment_tr": "JFET kucuk-sinyal sablonu - Full seviye (Analog Insydes FullJFETSmallSignal, simp==0). Simplified'a ek olarak seri ohmik drain/source dirençleri: R_d (D ile ic dugum DS arasi), R_s (S ile ic dugum SS arasi). Kucuk-sinyal cekirdegi (C_gd, C_gs, R_ds, G_m) ic dugumlere baglanir; RD/RS != 0 ise DS/SS gercek dugum olur, yoksa dejenerasyon temizleme onlari kisaltip modeli Simplified'e indirir. Gecit sizinti direncleri R_gd/R_gs guvenlik icin D/S PORTLARINA baglanir (cozulmezse dugum birlestirmeden dusurulsun diye). RD/RS .out'un JFET MODEL PARAMETERS tablosundan, deger cozumu netlist/Model.py._jfet_ac_param_values (RD/AREA, RS/AREA).",
+    "_comment_en": "JFET small-signal template - Full level (Analog Insydes FullJFETSmallSignal, simp==0). Simplified plus the series ohmic drain/source resistors: R_d (between D and the internal node DS), R_s (between S and the internal node SS). The small-signal core (C_gd, C_gs, R_ds, G_m) attaches to the internal nodes; when RD/RS != 0 the DS/SS nodes materialise, otherwise the degeneracy cleanup shorts them and the model collapses to Simplified. The gate leak resistors R_gd/R_gs attach to the D/S PORTS (so an unresolved leak is dropped rather than merging nodes). RD/RS come from the .out JFET MODEL PARAMETERS table; value resolution in netlist/Model.py._jfet_ac_param_values (RD/AREA, RS/AREA).",
+    "netlist_file_path": "",
+    "params": {},
+    "inner_connecting_nodes": ["D", "G", "S"],
+    "nodes": ["D", "G", "S", "DS", "SS"],
+    "elements": [
+        {
+            "name": "R_d", "historical_name": "R_d", "symbol": "rd",
+            "connections": ["D", "DS"], "type": "R",
+            "params": { "value_dc": "rd" }
+        },
+        {
+            "name": "R_s", "historical_name": "R_s", "symbol": "rs",
+            "connections": ["S", "SS"], "type": "R",
+            "params": { "value_dc": "rs" }
+        },
+        {
+            "name": "C_gd", "historical_name": "C_gd", "symbol": "cgd",
+            "connections": ["G", "DS"], "type": "C",
+            "params": { "value_dc": "cgd" }
+        },
+        {
+            "name": "C_gs", "historical_name": "C_gs", "symbol": "cgs",
+            "connections": ["G", "SS"], "type": "C",
+            "params": { "value_dc": "cgs" }
+        },
+        {
+            "name": "R_gd", "historical_name": "R_gd", "symbol": "rgd",
+            "connections": ["G", "D"], "type": "R",
+            "params": { "value_dc": "rgd" }
+        },
+        {
+            "name": "R_gs", "historical_name": "R_gs", "symbol": "rgs",
+            "connections": ["G", "S"], "type": "R",
+            "params": { "value_dc": "rgs" }
+        },
+        {
+            "name": "R_ds", "historical_name": "R_ds", "symbol": "rds",
+            "connections": ["DS", "SS"], "type": "R",
+            "params": { "value_dc": "rds" }
+        },
+        {
+            "name": "G_m", "historical_name": "G_m", "symbol": "gm",
+            "connections": ["DS", "SS", "G", "SS"], "type": "G",
+            "params": { "value": "gm" }
+        }
+    ],
+    "models": {},
+    "subcircuits": {},
+    "separator": "_"
+}

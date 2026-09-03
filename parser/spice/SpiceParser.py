@@ -131,7 +131,7 @@ class SpiceParser:
                 element = self._parse_element(line)
                 _scope.add_element(element)
                 if _scope == base_circuit:
-                    if element.type in ("Q", "M"):
+                    if element.type in ("Q", "M", "D", "J"):
                         used_models.append(element.params.get("ref_model", ""))
                     if element.type == "X":
                         used_subckts.append(element.params.get("ref_cir", ""))
@@ -182,9 +182,24 @@ class SpiceParser:
 
         match element.type:
             # Admittance
-            case "R" | "C" | "L" | "D":
+            case "R" | "C" | "L":
                 element.set_connections(line.tokens[1:-1])
                 element.add_param("value_dc", line.tokens[-1])
+
+            # Diode (2 nodes) / JFET (3 nodes) - carry a model reference, not a
+            # value; expanded to a small-signal subcircuit during flatten.
+            case "D" | "J":
+                node_cnt = 2 if element.type == "D" else 3
+                element.set_connections(line.tokens[1:1 + node_cnt])
+                rest = line.tokens[1 + node_cnt:]
+                if rest and "=" not in rest[0]:
+                    element.add_param("ref_model", rest[0])
+                    rest = rest[1:]
+                if rest and "=" not in rest[0]:
+                    element.add_param("area", rest[0])
+                    rest = rest[1:]
+                if rest:
+                    element.params.update(line.get_kwargs(" ".join(rest)))
 
             # Sources
             case "V" | "I":
@@ -410,8 +425,25 @@ class SpiceParser:
         _parse_param_block(bipol_param_start_index, elements)
         _parse_param_block(mosfet_param_start_index, elements)
 
+        # [TR] Diyot ve JFET OP bloklari (**** DIODES / **** JFETS) BJT/MOSFET
+        #      bolumlerinden once ya da sonra gelebilir; tum "NAME ..." bloklarini
+        #      yakalamak icin OPERATING POINT INFORMATION basligindan bir kez daha
+        #      tara. _parse_param_block ileri dogru tarar ve zaten islenmis
+        #      bloklari ayni degerle yeniden yazar (zararsiz).
+        # [EN] The diode/JFET OP blocks (**** DIODES / **** JFETS) can sit before
+        #      or after the BJT/MOSFET sections; scan once more from the
+        #      OPERATING POINT INFORMATION header to catch every "NAME ..." block.
+        #      _parse_param_block scans forward and simply re-writes any block
+        #      already handled with the same value (harmless).
+        op_info_start = next((k for k, ln in enumerate(lines)
+                              if "OPERATING POINT INFORMATION" in ln), None)
+        if op_info_start is not None:
+            _parse_param_block(op_info_start, elements)
+
         self._parse_device_model_params(lines, elements, "MOSFET MODEL PARAMETERS")
         self._parse_device_model_params(lines, elements, "BJT MODEL PARAMETERS")
+        self._parse_device_model_params(lines, elements, "Diode MODEL PARAMETERS")
+        self._parse_device_model_params(lines, elements, "JFET MODEL PARAMETERS")
 
     def _parse_device_model_params(self, lines: List[str], elements: List[Element],
                                    header_marker: str):

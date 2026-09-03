@@ -1,0 +1,44 @@
+{
+    "name": "SimplifiedJFETModels",
+    "_comment_tr": "JFET kucuk-sinyal sablonu - Simplified seviye (Analog Insydes SimplifiedJFETSmallSignal, simp==1). Basic'e ek olarak gecit-kanal jonksiyonlarinin sizinti iletkenlikleri: R_gd = 1/GGD (G-D) ve R_gs = 1/GGS (G-S). Seri ohmik RD/RS yine ihmal. GGD/GGS cogu PSpice .out'unda yoktur (GMIN mertebesi), o durumda dejenerasyon temizleme bu direncleri dusurur ve model Basic'e iner. Deger cozumu netlist/Model.py._jfet_ac_param_values.",
+    "_comment_en": "JFET small-signal template - Simplified level (Analog Insydes SimplifiedJFETSmallSignal, simp==1). Basic plus the gate-channel junction leak conductances: R_gd = 1/GGD (G-D) and R_gs = 1/GGS (G-S). Series ohmic RD/RS still neglected. GGD/GGS are absent from most PSpice .out files (GMIN-level); when so the degeneracy cleanup drops these resistors and the model collapses to Basic. Value resolution in netlist/Model.py._jfet_ac_param_values.",
+    "netlist_file_path": "",
+    "params": {},
+    "inner_connecting_nodes": ["D", "G", "S"],
+    "nodes": ["D", "G", "S"],
+    "elements": [
+        {
+            "name": "C_gd", "historical_name": "C_gd", "symbol": "cgd",
+            "connections": ["G", "D"], "type": "C",
+            "params": { "value_dc": "cgd" }
+        },
+        {
+            "name": "C_gs", "historical_name": "C_gs", "symbol": "cgs",
+            "connections": ["G", "S"], "type": "C",
+            "params": { "value_dc": "cgs" }
+        },
+        {
+            "name": "R_gd", "historical_name": "R_gd", "symbol": "rgd",
+            "connections": ["G", "D"], "type": "R",
+            "params": { "value_dc": "rgd" }
+        },
+        {
+            "name": "R_gs", "historical_name": "R_gs", "symbol": "rgs",
+            "connections": ["G", "S"], "type": "R",
+            "params": { "value_dc": "rgs" }
+        },
+        {
+            "name": "R_ds", "historical_name": "R_ds", "symbol": "rds",
+            "connections": ["D", "S"], "type": "R",
+            "params": { "value_dc": "rds" }
+        },
+        {
+            "name": "G_m", "historical_name": "G_m", "symbol": "gm",
+            "connections": ["D", "S", "G", "S"], "type": "G",
+            "params": { "value": "gm" }
+        }
+    ],
+    "models": {},
+    "subcircuits": {},
+    "separator": "_"
+}

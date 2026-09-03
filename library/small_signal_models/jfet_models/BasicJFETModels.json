@@ -1,0 +1,34 @@
+{
+    "name": "BasicJFETModels",
+    "_comment_tr": "JFET kucuk-sinyal sablonu - Basic seviye (Analog Insydes BasicJFETSmallSignal, simp==2). Icerik: gecit-drain kapasitesi C_gd, gecit-source kapasitesi C_gs, cikis iletkenligi g_ds (R_ds = 1/GDS) ve transkondüktans kaynagi G_m (gm*V(G,S) akimi D->S). Gecit sizinti iletkenlikleri (GGD/GGS) ve seri ohmik RD/RS ihmal. Deger cozumu netlist/Model.py._jfet_ac_param_values: CGD/CGS/GM dogrudan .out OPERATING POINT'ten, GDS -> R_ds = 1/GDS.",
+    "_comment_en": "JFET small-signal template - Basic level (Analog Insydes BasicJFETSmallSignal, simp==2). Contents: gate-drain capacitance C_gd, gate-source capacitance C_gs, output conductance g_ds (R_ds = 1/GDS) and the transconductance source G_m (gm*V(G,S) current D->S). Gate leak conductances (GGD/GGS) and series ohmic RD/RS are neglected. Value resolution in netlist/Model.py._jfet_ac_param_values: CGD/CGS/GM come straight from the .out OPERATING POINT, GDS -> R_ds = 1/GDS.",
+    "netlist_file_path": "",
+    "params": {},
+    "inner_connecting_nodes": ["D", "G", "S"],
+    "nodes": ["D", "G", "S"],
+    "elements": [
+        {
+            "name": "C_gd", "historical_name": "C_gd", "symbol": "cgd",
+            "connections": ["G", "D"], "type": "C",
+            "params": { "value_dc": "cgd" }
+        },
+        {
+            "name": "C_gs", "historical_name": "C_gs", "symbol": "cgs",
+            "connections": ["G", "S"], "type": "C",
+            "params": { "value_dc": "cgs" }
+        },
+        {
+            "name": "R_ds", "historical_name": "R_ds", "symbol": "rds",
+            "connections": ["D", "S"], "type": "R",
+            "params": { "value_dc": "rds" }
+        },
+        {
+            "name": "G_m", "historical_name": "G_m", "symbol": "gm",
+            "connections": ["D", "S", "G", "S"], "type": "G",
+            "params": { "value": "gm" }
+        }
+    ],
+    "models": {},
+    "subcircuits": {},
+    "separator": "_"
+}

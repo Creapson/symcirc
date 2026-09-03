@@ -1,0 +1,29 @@
+{
+    "name": "FullDiodeModels",
+    "_comment_tr": "Diyot kucuk-sinyal sablonu - Full seviye (Analog Insydes FullDiodeSmallSignal, simp==0). Basic'e ek olarak seri ohmik RS: gercek anot A ile ic dugum AS arasinda R_s, kucuk-sinyal cekirdegi (R_eq ile C_d) ise AS-C arasinda. RS != 0 ise AS gercek dugum olur; RS yoksa/0 ise dejenerasyon temizleme A ile AS'yi kisa devre eder ve model Basic'e iner. RS .out'un Diode MODEL PARAMETERS tablosundan okunur, deger cozumu netlist/Model.py._diode_ac_param_values (RS/AREA).",
+    "_comment_en": "Diode small-signal template - Full level (Analog Insydes FullDiodeSmallSignal, simp==0). Basic plus the series ohmic RS: R_s between the true anode A and the internal node AS, with the small-signal core (R_eq and C_d) across AS-C. When RS != 0 the AS node materialises; when RS is absent/0 the degeneracy cleanup shorts A to AS and the model collapses to Basic. RS is read from the .out Diode MODEL PARAMETERS table; value resolution in netlist/Model.py._diode_ac_param_values (RS/AREA).",
+    "netlist_file_path": "",
+    "params": {},
+    "inner_connecting_nodes": ["A", "C"],
+    "nodes": ["A", "C", "AS"],
+    "elements": [
+        {
+            "name": "R_s", "historical_name": "R_s", "symbol": "rs",
+            "connections": ["A", "AS"], "type": "R",
+            "params": { "value_dc": "rs" }
+        },
+        {
+            "name": "R_eq", "historical_name": "R_eq", "symbol": "req",
+            "connections": ["AS", "C"], "type": "R",
+            "params": { "value_dc": "req" }
+        },
+        {
+            "name": "C_d", "historical_name": "C_d", "symbol": "cap",
+            "connections": ["AS", "C"], "type": "C",
+            "params": { "value_dc": "cap" }
+        }
+    ],
+    "models": {},
+    "subcircuits": {},
+    "separator": "_"
+}

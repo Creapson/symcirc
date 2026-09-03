@@ -1,0 +1,24 @@
+{
+    "name": "SimplifiedDiodeModels",
+    "_comment_tr": "Diyot kucuk-sinyal sablonu - Simplified seviye (Analog Insydes SimplifiedDiodeSmallSignal, simp==1). Diyot modelinde tek sadelestirme seri ohmik RS'nin ihmalidir; bu yuzden Simplified topolojisi Basic ile ayni: R_eq (REQ) ile C_d (CAP) A-C arasinda paralel. Deger cozumu netlist/Model.py._diode_ac_param_values.",
+    "_comment_en": "Diode small-signal template - Simplified level (Analog Insydes SimplifiedDiodeSmallSignal, simp==1). The only diode-model simplification is neglecting the series ohmic RS, so the Simplified topology equals Basic: R_eq (REQ) in parallel with C_d (CAP) across A-C. Value resolution in netlist/Model.py._diode_ac_param_values.",
+    "netlist_file_path": "",
+    "params": {},
+    "inner_connecting_nodes": ["A", "C"],
+    "nodes": ["A", "C"],
+    "elements": [
+        {
+            "name": "R_eq", "historical_name": "R_eq", "symbol": "req",
+            "connections": ["A", "C"], "type": "R",
+            "params": { "value_dc": "req" }
+        },
+        {
+            "name": "C_d", "historical_name": "C_d", "symbol": "cap",
+            "connections": ["A", "C"], "type": "C",
+            "params": { "value_dc": "cap" }
+        }
+    ],
+    "models": {},
+    "subcircuits": {},
+    "separator": "_"
+}

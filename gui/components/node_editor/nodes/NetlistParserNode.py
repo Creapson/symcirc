@@ -39,6 +39,16 @@ class NetlistParserNode(Node):
                 tag=self.uuid("mosfet_model")
             )
 
+            dpg.add_string_value(
+                default_value=self.data.get("diode_model", "BasicDiodeModels"),
+                tag=self.uuid("diode_model")
+            )
+
+            dpg.add_string_value(
+                default_value=self.data.get("jfet_model", "BasicJFETModels"),
+                tag=self.uuid("jfet_model")
+            )
+
         self.add_input_pin("file_path_pin", "Connect ImportNode fere! [filepath]")
 
         with self.add_static_attr():
@@ -66,6 +76,22 @@ class NetlistParserNode(Node):
                     source=self.uuid("mosfet_model"),
                 )
 
+            with dpg.group(horizontal=True):
+                dpg.add_text("Default Diode Model")
+                dpg.add_combo(
+                    items=self.editor.application.diode_models,
+                    width=200,
+                    source=self.uuid("diode_model"),
+                )
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Default JFET Model")
+                dpg.add_combo(
+                    items=self.editor.application.jfet_models,
+                    width=200,
+                    source=self.uuid("jfet_model"),
+                )
+
             # create table to edit all subcircuits
             dpg.add_text(
                 "Select the default small signal models for the subcircuits"
@@ -75,6 +101,8 @@ class NetlistParserNode(Node):
             self.table.add_column("name", Widget_Type.TEXT)
             self.table.add_column("bipolar_model", Widget_Type.COMBO, items=self.editor.application.bipolar_models)
             self.table.add_column("mosfet_model", Widget_Type.COMBO, items=self.editor.application.mosfet_models)
+            self.table.add_column("diode_model", Widget_Type.COMBO, items=self.editor.application.diode_models)
+            self.table.add_column("jfet_model", Widget_Type.COMBO, items=self.editor.application.jfet_models)
             self.table.build()
 
             dpg.add_text("When nothing is selected the default value will be used!")
@@ -111,7 +139,9 @@ class NetlistParserNode(Node):
             row_dict = {
                     "name": subct_name,
                     "bipolar_model": subct_obj.bipolar_model,
-                "mosfet_model": subct_obj.mosfet_model
+                    "mosfet_model": subct_obj.mosfet_model,
+                    "diode_model": subct_obj.diode_model,
+                    "jfet_model": subct_obj.jfet_model,
                     }
             self.table.add_row(subct_name,  row_dict)
         self.table.build()
@@ -129,19 +159,27 @@ class NetlistParserNode(Node):
         self.data["separator"] = dpg.get_value(self.uuid("separator"))
         self.data["bipolar_model"] = dpg.get_value(self.uuid("bipolar_model"))
         self.data["mosfet_model"] = dpg.get_value(self.uuid("mosfet_model"))
+        self.data["diode_model"] = dpg.get_value(self.uuid("diode_model"))
+        self.data["jfet_model"] = dpg.get_value(self.uuid("jfet_model"))
 
         self.circuit.set_separator(self.data.get("seperator", "_"))
         self.circuit.set_bipolar_model(self.data.get("bipolar_model", ""))
         self.circuit.set_mosfet_model(self.data.get("mosfet_model", ""))
+        self.circuit.set_diode_model(self.data.get("diode_model", ""))
+        self.circuit.set_jfet_model(self.data.get("jfet_model", ""))
 
         # apply settings from the table
         subct_list = self.circuit.get_subcircuits()
         for subct_name, subct_obj in subct_list.items():
             bipolar_model = self.table.get_value(subct_name, "bipolar_model", "BasicModels")
             mosfet_model = self.table.get_value(subct_name, "mosfet_model", "BasicMOSFETModels")
+            diode_model = self.table.get_value(subct_name, "diode_model", "BasicDiodeModels")
+            jfet_model = self.table.get_value(subct_name, "jfet_model", "BasicJFETModels")
 
             subct_obj.set_bipolar_model(bipolar_model)
             subct_obj.set_mosfet_model(mosfet_model)
+            subct_obj.set_diode_model(diode_model)
+            subct_obj.set_jfet_model(jfet_model)
 
         self.flattend_circuit = self.circuit.model_copy(deep=True)
         self.flattend_circuit.flatten()
@@ -167,6 +205,8 @@ class NetlistParserNode(Node):
         self.data["separator"] = dpg.get_value(self.uuid("separator"))
         self.data["bipolar_model"] = dpg.get_value(self.uuid("bipolar_model"))
         self.data["mosfet_model"] = dpg.get_value(self.uuid("mosfet_model"))
+        self.data["diode_model"] = dpg.get_value(self.uuid("diode_model"))
+        self.data["jfet_model"] = dpg.get_value(self.uuid("jfet_model"))
 
         super().save()
 

@@ -20,6 +20,8 @@ class Circuit(BaseModel):
 
     bipolar_model: str = "BasicModels"
     mosfet_model: str = "BasicMOSFETModels"
+    diode_model: str = "BasicDiodeModels"
+    jfet_model: str = "BasicJFETModels"
 
     nodes: List[str] = Field(default_factory=list)
 
@@ -98,6 +100,22 @@ class Circuit(BaseModel):
         for element in self.elements:
             if element.type == "M":
                 element.add_param("mosfet_model", self.mosfet_model)
+
+    def set_diode_model(self, new_model: str = ""):
+        if new_model == "":
+            return
+        self.diode_model = new_model
+        for element in self.elements:
+            if element.type == "D":
+                element.add_param("diode_model", self.diode_model)
+
+    def set_jfet_model(self, new_model: str = ""):
+        if new_model == "":
+            return
+        self.jfet_model = new_model
+        for element in self.elements:
+            if element.type == "J":
+                element.add_param("jfet_model", self.jfet_model)
 
     def update_nodes(self):
         for element in self.elements:
@@ -192,6 +210,10 @@ class Circuit(BaseModel):
                 new_ele.add_param("bipolar_model", subct.bipolar_model)
             if new_ele.type == "M":
                 new_ele.add_param("mosfet_model", subct.mosfet_model)
+            if new_ele.type == "D":
+                new_ele.add_param("diode_model", subct.diode_model)
+            if new_ele.type == "J":
+                new_ele.add_param("jfet_model", subct.jfet_model)
 
             subct_elements.append(new_ele)
 
@@ -241,8 +263,8 @@ class Circuit(BaseModel):
 
                 new_elements.extend(subct_elements)
 
-            # Expand transistor models
-            if (element.type == "Q" or element.type == "M") and flatten_models:
+            # Expand transistor / diode / JFET models
+            if element.type in ("Q", "M", "D", "J") and flatten_models:
                 model_name = element.params["ref_model"]
                 model = self.models.get(model_name, Model())
 
@@ -250,12 +272,16 @@ class Circuit(BaseModel):
 
                 bipolar_model = element.params.get("bipolar_model", self.bipolar_model)
                 mosfet_model = element.params.get("mosfet_model", self.mosfet_model)
+                diode_model = element.params.get("diode_model", self.diode_model)
+                jfet_model = element.params.get("jfet_model", self.jfet_model)
 
                 model_subct = model.get_generated_subcircuit(
                     element.params,
                     bipolar_model,
                     mosfet_model,
                     element.type,
+                    diode_model,
+                    jfet_model,
                 )
 
                 if model_subct is not None:

@@ -25,6 +25,8 @@ class Model(BaseModel):
         bipolar_model: str,
         mosfet_model: str,
         element_type: str = "",
+        diode_model: str = "BasicDiodeModels",
+        jfet_model: str = "BasicJFETModels",
     ) -> Circuit | None:
         # Merge model params and element params
         param_list = {k.lower(): v for k, v in (self.params | element_params).items()}
@@ -43,6 +45,10 @@ class Model(BaseModel):
             param_list = self._mosfet_ac_param_values(param_list)
         elif self.type in ("NPN", "PNP") or element_type == "Q":
             param_list = self._bjt_ac_param_values(param_list)
+        elif self.type in ("NJF", "PJF") or element_type == "J":
+            param_list = self._jfet_ac_param_values(param_list)
+        elif self.type == "D" or element_type == "D":
+            param_list = self._diode_ac_param_values(param_list)
 
         from netlist.Circuit import Circuit
 
@@ -57,6 +63,10 @@ class Model(BaseModel):
             sub_path = Path("library/small_signal_models/bipolar_models") / f"{bipolar_model}.json"
         elif self.type in ("MOS", "NMOS") or element_type == "M":
             sub_path = Path("library/small_signal_models/mosfet_models") / f"{mosfet_model}.json"
+        elif self.type in ("NJF", "PJF") or element_type == "J":
+            sub_path = Path("library/small_signal_models/jfet_models") / f"{jfet_model}.json"
+        elif self.type == "D" or element_type == "D":
+            sub_path = Path("library/small_signal_models/diode_models") / f"{diode_model}.json"
         else:
             print(f"Failed to load model! Type: {self.type} is not known!")
             return None
@@ -297,6 +307,106 @@ class Model(BaseModel):
         put("rd", rd)
         put("rs", rs)
 
+        return p
+
+    @classmethod
+    def _diode_ac_param_values(cls, param_list: Dict[str, str]) -> Dict[str, str]:
+        """[TR] Diyot kucuk-sinyal sembollerini Analog Insydes'in
+               `DoDiodeSmallSignal` fonksiyonuyla ayni sekilde cozer.
+
+               ModelSupport.m'e gore:
+                 * REQ$ac (kucuk-sinyal direnci = 1/g_d) ve CAP$ac (bariyer +
+                   difuzyon kapasitesi) dogrudan OPERATING POINT bolumunden gelir
+                 * seri ohmik RS model kartindan gelir, AREA'ya bolunur:
+                   Rs = RS/AREA  (yalniz Full seviye)
+               RS yoksa R_s elemani cozulemez ve dejenerasyon temizleme A ile
+               AS'yi kisa devre eder - Full modeli tam da simp>0'daki gibi
+               Basic'e iner.
+
+        [EN] Resolve the diode small-signal symbols the way Analog Insydes'
+             `DoDiodeSmallSignal` does.
+
+             Per ModelSupport.m:
+               * REQ$ac (small-signal resistance = 1/g_d) and CAP$ac (barrier +
+                 diffusion capacitance) come straight from the OPERATING POINT
+                 block
+               * the ohmic series RS comes from the model card, divided by AREA:
+                 Rs = RS/AREA  (Full level only)
+             When RS is absent the R_s element does not resolve and the
+             degeneracy cleanup shorts A to AS - the Full model collapses to
+             Basic exactly as simp>0 prescribes.
+        """
+        p = dict(param_list)
+        num = cls._num_or_none
+
+        area = num(p.get("area")) or 1.0
+        rs = num(p.get("rs"))
+        if rs:
+            p["rs"] = repr(rs / area)
+        return p
+
+    @classmethod
+    def _jfet_ac_param_values(cls, param_list: Dict[str, str]) -> Dict[str, str]:
+        """[TR] JFET kucuk-sinyal sembollerini Analog Insydes'in
+               `DoJFETSmallSignal` (AC, Level 1) fonksiyonuyla ayni sekilde cozer.
+
+               ModelSupport.m'e gore:
+                 * CGD$ac, CGS$ac, GM$ac dogrudan OPERATING POINT bolumunden gelir
+                 * drain-source elemani kucuk-sinyal iletkenligi GDS$ac'dir;
+                   sablonumuz onu direnc modelledigi icin R_ds = 1/GDS$ac saklanir
+                 * gecit-kanal jonksiyon sizintilari GGD$ac / GGS$ac iletkenliktir
+                   -> R_gd = 1/GGD$ac, R_gs = 1/GGS$ac (Simplified/Full; cogu .out
+                   bunlari yazmaz, o zaman temizleme direncleri dusurur)
+                 * ohmik RD/RS model kartindan, AREA'ya bolunmus (yalniz Full)
+               Yalniz sonlu ve sifirdan farkli sonuclar yazilir; gerisi
+               dejenerasyon temizlemeye birakilir, boylece Basic/Simplified/Full
+               seviyeleri `DoJFETSmallSignal`'daki simp==2 / simp==1 / simp==0
+               kurallarindaki gibi davranir.
+
+        [EN] Resolve the JFET small-signal symbols the way Analog Insydes'
+             `DoJFETSmallSignal` (AC, Level 1) does.
+
+             Per ModelSupport.m:
+               * CGD$ac, CGS$ac, GM$ac come straight from the OPERATING POINT block
+               * the drain-source element is the small-signal conductance GDS$ac;
+                 our template models it as a resistor -> store R_ds = 1/GDS$ac
+               * the gate-channel junction leaks GGD$ac / GGS$ac are conductances
+                 -> R_gd = 1/GGD$ac, R_gs = 1/GGS$ac (Simplified/Full; most .out
+                 files omit them, then the cleanup drops the resistors)
+               * the ohmic RD/RS come from the model card, divided by AREA (Full)
+             Only finite non-zero results are written; the rest is left for the
+             degeneracy cleanup, so the Basic/Simplified/Full levels behave
+             exactly like simp==2 / simp==1 / simp==0 in `DoJFETSmallSignal`.
+        """
+        p = dict(param_list)
+        num = cls._num_or_none
+
+        area = num(p.get("area")) or 1.0
+
+        gds = num(p.get("gds$ac"))
+        if gds is None:
+            gds = num(p.get("gds"))
+        if gds:
+            p["rds"] = repr(1.0 / gds)
+
+        ggd = num(p.get("ggd$ac"))
+        if ggd is None:
+            ggd = num(p.get("ggd"))
+        if ggd:
+            p["rgd"] = repr(1.0 / ggd)
+
+        ggs = num(p.get("ggs$ac"))
+        if ggs is None:
+            ggs = num(p.get("ggs"))
+        if ggs:
+            p["rgs"] = repr(1.0 / ggs)
+
+        rd = num(p.get("rd"))
+        if rd:
+            p["rd"] = repr(rd / area)
+        rs = num(p.get("rs"))
+        if rs:
+            p["rs"] = repr(rs / area)
         return p
 
     def to_ai_string(self, indent: int):
