@@ -1,0 +1,77 @@
+{
+    "name": "SimplifiedModelsLateral",
+    "_comment_en": "BJT small-signal template for the lateral PNP - Simplified level (Analog Insydes LPNP branch of DoBJTSmallSignal, simp==1). This is the vertical SimplifiedModels topology plus the lateral-only external base-substrate capacitance C_xs, and with the substrate capacitance C_js moved from the collector (CS-0) to the base (B-S), matching AI's LPNP schematic. rx, rc, re, r_mu are neglected at this level, so there are no internal BS/CS/ES nodes. Values are resolved in netlist/Model.py._bjt_ac_param_values. Requires a 4-terminal device (C B E S).",
+    "netlist_file_path": "",
+    "params": {},
+    "inner_connecting_nodes": ["C", "B", "E", "S"],
+    "nodes": ["B", "E", "C", "S"],
+    "elements": [
+        {
+            "name": "RPI",
+            "historical_name": "RPI",
+            "symbol": "rbe",
+            "connections": ["B", "E"],
+            "type": "R",
+            "params": { "value_dc": "rpi" }
+        },
+        {
+            "name": "RO",
+            "historical_name": "RO",
+            "symbol": "ro",
+            "connections": ["C", "E"],
+            "type": "R",
+            "params": { "value_dc": "ro" }
+        },
+        {
+            "name": "CBC",
+            "historical_name": "CBC",
+            "symbol": "cbc",
+            "connections": ["B", "C"],
+            "type": "C",
+            "params": { "value_dc": "cbc" }
+        },
+        {
+            "name": "CBE",
+            "historical_name": "CBE",
+            "symbol": "cbe",
+            "connections": ["B", "E"],
+            "type": "C",
+            "params": { "value_dc": "cbe" }
+        },
+        {
+            "name": "CBX",
+            "historical_name": "CBX",
+            "symbol": "cbx",
+            "connections": ["B", "C"],
+            "type": "C",
+            "params": { "value_dc": "cbx" }
+        },
+        {
+            "name": "CJS",
+            "historical_name": "CJS",
+            "symbol": "cjs",
+            "connections": ["B", "S"],
+            "type": "C",
+            "params": { "value_dc": "cjs" }
+        },
+        {
+            "name": "CXS",
+            "historical_name": "CXS",
+            "symbol": "cxs",
+            "connections": ["B", "S"],
+            "type": "C",
+            "params": { "value_dc": "cxs" }
+        },
+        {
+            "name": "G",
+            "historical_name": "G",
+            "symbol": "gm",
+            "connections": ["C", "E", "B", "E"],
+            "type": "G",
+            "params": { "value": "gm" }
+        }
+    ],
+    "models": {},
+    "subcircuits": {},
+    "separator": "_"
+}

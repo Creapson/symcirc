@@ -54,8 +54,15 @@ class Model(BaseModel):
         # Fall back to the element kind ("Q" = bipolar, "M" = mosfet) when the
         # .model card type is unknown - e.g. the model lives in an external
         # .lib we cannot read, but the .out still carries the small-signal params.
-        if self.type in ("NPN", "PNP") or element_type == "Q":
-            sub_path = Path("library/small_signal_models/bipolar_models") / f"{bipolar_model}.json"
+        if self.type in ("NPN", "PNP", "LPNP") or element_type == "Q":
+            name = bipolar_model
+            # Lateral PNP: AI routes it to the LPNP branch, where both substrate
+            # capacitances sit on the base instead of a single C_js at the
+            # collector. Map the selected level to its lateral variant; Basic
+            # has no lateral form (AI drops C_js/C_xs at simp==2).
+            if self.type == "LPNP" and name in ("FullModels", "SimplifiedModels"):
+                name = name + "Lateral"
+            sub_path = Path("library/small_signal_models/bipolar_models") / f"{name}.json"
         elif self.type in ("MOS", "NMOS") or element_type == "M":
             sub_path = Path("library/small_signal_models/mosfet_models") / f"{mosfet_model}.json"
         elif self.type in ("NJF", "PJF") or element_type == "J":

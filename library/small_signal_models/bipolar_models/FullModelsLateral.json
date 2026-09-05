@@ -1,167 +1,106 @@
 {
     "name": "FullModelsLateral",
-    "_comment_en": "BJT small-signal template for the lateral PNP - Full level. Like FullModels, but the substrate capacitances attach to the base (C_js and C_xs, between B and S). Corresponds to Analog Insydes' LPNP branch.",
+    "_comment_en": "BJT small-signal template for the lateral PNP - Full level (Analog Insydes LPNP branch of DoBJTSmallSignal, simp==0). Identical to the vertical FullModels EXCEPT the substrate capacitances: for the lateral device BOTH C_js and C_xs attach to the base, between the base port B and the substrate node S (the vertical model instead puts a single C_js at the collector, CS-0). Internal nodes BS/CS/ES are created by rx/rc/re; when a parasitic resolves to 0 the degeneracy cleanup shorts that port to its internal node and the level collapses (Full -> Simplified -> Basic) exactly as AI's simp rules prescribe. rc/re are read from the .out BJT MODEL PARAMETERS table; all symbol values are resolved in netlist/Model.py._bjt_ac_param_values. Requires a 4-terminal device (C B E S); the substrate port S is optional in AI and, when the netlist device has only 3 terminals, the C_js/C_xs branch to S is left dangling.",
     "netlist_file_path": "",
     "params": {},
-    "inner_connecting_nodes": [
-        "C",
-        "B",
-        "E",
-        "S"
-    ],
-    "nodes": [
-        "B",
-        "E",
-        "C",
-        "S",
-        "BS",
-        "CS"
-    ],
+    "inner_connecting_nodes": ["C", "B", "E", "S"],
+    "nodes": ["B", "E", "C", "S", "BS", "CS", "ES"],
     "elements": [
-        {
-            "name": "RC",
-            "historical_name": "RC",
-            "symbol": "rc",
-            "connections": [
-                "C",
-                "CS"
-            ],
-            "type": "R",
-            "params": {
-                "value_dc": "rc"
-            }
-        },
         {
             "name": "RX",
             "historical_name": "RX",
             "symbol": "rx",
-            "connections": [
-                "B",
-                "BS"
-            ],
+            "connections": ["B", "BS"],
             "type": "R",
-            "params": {
-                "value_dc": "rx"
-            }
+            "params": { "value_dc": "rx" }
+        },
+        {
+            "name": "RC",
+            "historical_name": "RC",
+            "symbol": "rc",
+            "connections": ["C", "CS"],
+            "type": "R",
+            "params": { "value_dc": "rc" }
+        },
+        {
+            "name": "RE",
+            "historical_name": "RE",
+            "symbol": "re",
+            "connections": ["E", "ES"],
+            "type": "R",
+            "params": { "value_dc": "re" }
         },
         {
             "name": "RPI",
             "historical_name": "RPI",
             "symbol": "rbe",
-            "connections": [
-                "BS",
-                "E"
-            ],
+            "connections": ["BS", "ES"],
             "type": "R",
-            "params": {
-                "value_dc": "rpi"
-            }
+            "params": { "value_dc": "rpi" }
         },
         {
             "name": "RO",
             "historical_name": "RO",
             "symbol": "ro",
-            "connections": [
-                "CS",
-                "E"
-            ],
+            "connections": ["CS", "ES"],
             "type": "R",
-            "params": {
-                "value_dc": "ro"
-            }
-        },
-        {
-            "name": "CBC",
-            "historical_name": "CBC",
-            "symbol": "cbc",
-            "connections": [
-                "BS",
-                "CS"
-            ],
-            "type": "C",
-            "params": {
-                "value_dc": "cbc"
-            }
-        },
-        {
-            "name": "CBE",
-            "historical_name": "CBE",
-            "symbol": "cbe",
-            "connections": [
-                "BS",
-                "E"
-            ],
-            "type": "C",
-            "params": {
-                "value_dc": "cbe"
-            }
-        },
-        {
-            "name": "CBX",
-            "historical_name": "CBX",
-            "symbol": "cbx",
-            "connections": [
-                "B",
-                "CS"
-            ],
-            "type": "C",
-            "params": {
-                "value_dc": "cbx"
-            }
-        },
-        {
-            "name": "CJS",
-            "historical_name": "CJS",
-            "symbol": "cjs",
-            "connections": [
-                "B",
-                "S"
-            ],
-            "type": "C",
-            "params": {
-                "value_dc": "cjs"
-            }
-        },
-        {
-            "name": "CXS",
-            "historical_name": "CXS",
-            "symbol": "cxs",
-            "connections": [
-                "B",
-                "S"
-            ],
-            "type": "C",
-            "params": {
-                "value_dc": "cxs"
-            }
+            "params": { "value_dc": "ro" }
         },
         {
             "name": "GMU",
             "historical_name": "GMU",
             "symbol": "gmu",
-            "connections": [
-                "BS",
-                "CS"
-            ],
+            "connections": ["BS", "CS"],
             "type": "R",
-            "params": {
-                "value_dc": "gmu"
-            }
+            "params": { "value_dc": "gmu" }
+        },
+        {
+            "name": "CBC",
+            "historical_name": "CBC",
+            "symbol": "cbc",
+            "connections": ["BS", "CS"],
+            "type": "C",
+            "params": { "value_dc": "cbc" }
+        },
+        {
+            "name": "CBE",
+            "historical_name": "CBE",
+            "symbol": "cbe",
+            "connections": ["BS", "ES"],
+            "type": "C",
+            "params": { "value_dc": "cbe" }
+        },
+        {
+            "name": "CBX",
+            "historical_name": "CBX",
+            "symbol": "cbx",
+            "connections": ["B", "CS"],
+            "type": "C",
+            "params": { "value_dc": "cbx" }
+        },
+        {
+            "name": "CJS",
+            "historical_name": "CJS",
+            "symbol": "cjs",
+            "connections": ["B", "S"],
+            "type": "C",
+            "params": { "value_dc": "cjs" }
+        },
+        {
+            "name": "CXS",
+            "historical_name": "CXS",
+            "symbol": "cxs",
+            "connections": ["B", "S"],
+            "type": "C",
+            "params": { "value_dc": "cxs" }
         },
         {
             "name": "G",
             "historical_name": "G",
             "symbol": "gm",
-            "connections": [
-                "CS",
-                "E",
-                "BS",
-                "E"
-            ],
+            "connections": ["CS", "ES", "BS", "ES"],
             "type": "G",
-            "params": {
-                "value": "gm"
-            }
+            "params": { "value": "gm" }
         }
     ],
     "models": {},
