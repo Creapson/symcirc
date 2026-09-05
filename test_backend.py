@@ -1,7 +1,7 @@
 import traceback
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 
-# --- Sözlüğü (Dict) Obje (Object) yapısına çeviren sarmalayıcı sınıflar ---
+# --- Wrapper classes that turn a dict into an object structure ---
 class MockElement:
     def __init__(self, d):
         for k, v in d.items():
@@ -17,7 +17,7 @@ class MockCircuit:
 # --------------------------------------------------------------------------
 
 def run_backend_test():
-    print("1. Devre veri yapısı (Obje olarak) tanımlanıyor...")
+    print("1. Defining the circuit data structure (as an object)...")
     
     circuit_dict = {
         "name": "simple_lc",
@@ -38,25 +38,25 @@ def run_backend_test():
         "separator": "_"
     }
 
-    # Sözlüğü objeye dönüştür (ModifiedNodalAnalysis'in beklediği format)
+    # Convert the dict into an object (the format ModifiedNodalAnalysis expects)
     circuit_obj = MockCircuit(circuit_dict)
 
     try:
-        print("2. MNA Sınıfı başlatılıyor...")
+        print("2. Initializing the MNA class...")
         mna = ModifiedNodalAnalysis(circuit_obj)
-        
-        print("3. MNA Matrisi kuruldu. Pole/Zero analizi tetikleniyor...")
-        target_node = "V_2" 
+
+        print("3. MNA matrix built. Triggering pole/zero analysis...")
+        target_node = "V_2"
         results = mna.get_poles_zeros(target_node)
-        
-        print("\n--- HESAPLAMA BAŞARILI ---")
+
+        print("\n--- CALCULATION SUCCEEDED ---")
         print(f"Zeros: {results['numeric']['zeros']}")
         print(f"Poles: {results['numeric']['poles']}")
 
     except Exception as e:
-        print(f"\n--- HATA TESPİT EDİLDİ ---")
-        print(f"Hata Türü: {type(e).__name__}")
-        print(f"Açıklama: {e}")
+        print(f"\n--- ERROR DETECTED ---")
+        print(f"Error type: {type(e).__name__}")
+        print(f"Description: {e}")
         print("\nTraceback:")
         traceback.print_exc()
 

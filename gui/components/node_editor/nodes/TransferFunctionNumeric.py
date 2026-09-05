@@ -33,10 +33,8 @@ class TransferFunctionNumeric(Node):
         super().build()
 
     def get_possible_node_connections(self) -> List[str]:
-        # [TR] Bu dugumden sonra: NumericSolver ya da Pole-Zero dugumu. "pole_zero"
-        #      etiketi, TF dugumu seciliyken pole-zero toolbar ikonunu aktiflestirir.
-        # [EN] After this node: a NumericSolver or a Pole-Zero node. The
-        #      "pole_zero" tag enables the pole-zero toolbar icon while a TF node
+        # After this node: a NumericSolver or a Pole-Zero node. The
+        # "pole_zero" tag enables the pole-zero toolbar icon while a TF node
         #      is selected.
         return ["solver_numeric", "pole_zero"]
 
@@ -77,12 +75,9 @@ class TransferFunctionNumeric(Node):
 
         if not dpg.does_item_exist(self.uuid("h_out")):
             self.add_output_pin(tag="h_out", text="H")
-        # [TR] Yuk: Bode yolu icin (H, sweep); Pole-Zero dugumu icin ayrica
-        #      (mna, mode, output_node). Alt dugumler ihtiyaci olan indisi alir
-        #      ("numeric" -> sayisal QZ yolu).
-        # [EN] Payload: (H, sweep) for the Bode path + (mna, mode, output_node)
-        #      for the Pole-Zero node. Downstream nodes index what they need
-        #      ("numeric" -> numeric QZ path).
+        # Payload: (H, sweep) for the Bode path + (mna, mode, output_node)
+        # for the Pole-Zero node. Downstream nodes index what they need
+        # ("numeric" -> numeric QZ path).
         self.add_output_pin_value(
             "h_out",
             (H.tolist(), sweep, self.mna, "numeric", node_out),

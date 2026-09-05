@@ -1,6 +1,5 @@
 {
     "name": "BasicModels",
-    "_comment_tr": "BJT hibrit-pi kucuk-sinyal sablonu - Basic seviye (Analog Insydes BasicBJTSmallSignal, simp==2). Topoloji: r_pi, r_o, C_pi (CBE), C_mu (CBC), C_bx, gm. rx, rc, re, r_mu, C_js ihmal. Sembol degerleri netlist/Model.py._bjt_ac_param_values icinde AI'nin DoBJTSmallSignal formulleriyle cozulur.",
     "_comment_en": "BJT hybrid-pi small-signal template - Basic level (Analog Insydes BasicBJTSmallSignal, simp==2). Topology: r_pi, r_o, C_pi (CBE), C_mu (CBC), C_bx, gm. rx, rc, re, r_mu, C_js neglected. Symbol values are resolved in netlist/Model.py._bjt_ac_param_values using AI's DoBJTSmallSignal formulas.",
     "netlist_file_path": "D:\\Dokumente\\docs\\ESS\\AI4Python\\PSpice\\Models\\",
     "params": {},

@@ -1,6 +1,5 @@
 {
     "name": "BasicDiodeModels",
-    "_comment_tr": "Diyot kucuk-sinyal sablonu - Basic seviye (Analog Insydes BasicDiodeSmallSignal, simp==2). Calisma noktasinda diyot = kucuk-sinyal iletkenligi g_d = dID/dVD ile bunun tersi direnci R_eq (REQ) ve bariyer + difuzyon kapasitesi C_d (CAP) paralel. Seri ohmik RS ihmal. Deger cozumu netlist/Model.py._diode_ac_param_values icinde: REQ ve CAP dogrudan .out OPERATING POINT bolumunden gelir.",
     "_comment_en": "Diode small-signal template - Basic level (Analog Insydes BasicDiodeSmallSignal, simp==2). About the operating point the diode is the small-signal conductance g_d = dID/dVD, i.e. the resistance R_eq (REQ) in parallel with the barrier + diffusion capacitance C_d (CAP). Series ohmic RS neglected. Value resolution in netlist/Model.py._diode_ac_param_values: REQ and CAP come straight from the .out OPERATING POINT block.",
     "netlist_file_path": "",
     "params": {},

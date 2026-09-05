@@ -1,6 +1,5 @@
 {
     "name": "SimplifiedMOSFETModels",
-    "_comment_tr": "MOSFET kucuk-sinyal sablonu - Simplified seviye (Analog Insydes SimplifiedMOSFETSmallSignal, simp==1). Basic + gmb, GBD (R_bd), GBS (R_bs); RD/RS ve CGB ihmal. Sembol degerleri netlist/Model.py._mosfet_ac_param_values icinde cozulur.",
     "_comment_en": "MOSFET small-signal template - Simplified level (Analog Insydes SimplifiedMOSFETSmallSignal, simp==1). Basic + gmb, GBD (R_bd), GBS (R_bs); RD/RS and CGB neglected. Symbol values are resolved in netlist/Model.py._mosfet_ac_param_values.",
     "netlist_file_path": "",
     "params": {},

@@ -1,6 +1,5 @@
 {
     "name": "FullModelsLateral",
-    "_comment_tr": "Lateral PNP icin BJT kucuk-sinyal sablonu - Full seviye. FullModels'e benzer, ancak alttas kapasiteleri tabana baglidir (C_js ve C_xs, B-S arasi). Analog Insydes'in LPNP dalina karsilik gelir.",
     "_comment_en": "BJT small-signal template for the lateral PNP - Full level. Like FullModels, but the substrate capacitances attach to the base (C_js and C_xs, between B and S). Corresponds to Analog Insydes' LPNP branch.",
     "netlist_file_path": "",
     "params": {},

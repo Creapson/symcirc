@@ -1,6 +1,5 @@
 {
     "name": "SimplifiedModels",
-    "_comment_tr": "BJT hibrit-pi kucuk-sinyal sablonu - Simplified seviye (Analog Insydes SimplifiedBJTSmallSignal, simp==1). Basic + C_js (kollektor-alttas). rx, rc, re, r_mu ihmal. Sembol degerleri netlist/Model.py._bjt_ac_param_values icinde cozulur.",
     "_comment_en": "BJT hybrid-pi small-signal template - Simplified level (Analog Insydes SimplifiedBJTSmallSignal, simp==1). Basic + C_js (collector-substrate). rx, rc, re, r_mu neglected. Symbol values are resolved in netlist/Model.py._bjt_ac_param_values.",
     "netlist_file_path": "",
     "params": {},

@@ -31,16 +31,11 @@ class Model(BaseModel):
         # Merge model params and element params
         param_list = {k.lower(): v for k, v in (self.params | element_params).items()}
 
-        # [TR] Transistoru kucuk-sinyal esdegeriyle degistirmeden once, sembol
-        #      -> deger sozlugunu Analog Insydes'in yaptigi gibi hazirla: gate
-        #      kapasitesi = bias + ortusme terimi, cikis elemani = 1/g_ds,
-        #      parazitik RC/RE/RD/RS model kartindan, vb. Boylece JSON sablonu
-        #      ince kalir ve sayilar AI ile birebir cikar.
-        # [EN] Before the transistor is replaced by its small-signal equivalent,
-        #      resolve the symbol -> value map the way Analog Insydes does: gate
-        #      cap = bias + overlap term, output element = 1/g_ds, parasitic
-        #      RC/RE/RD/RS from the model card, etc. This keeps the JSON template
-        #      thin and makes the numbers match AI term for term.
+        # Before the transistor is replaced by its small-signal equivalent,
+        # resolve the symbol -> value map the way Analog Insydes does: gate
+        # cap = bias + overlap term, output element = 1/g_ds, parasitic
+        # RC/RE/RD/RS from the model card, etc. This keeps the JSON template
+        # thin and makes the numbers match AI term for term.
         if self.type in ("MOS", "NMOS") or element_type == "M":
             param_list = self._mosfet_ac_param_values(param_list)
         elif self.type in ("NPN", "PNP") or element_type == "Q":
@@ -83,30 +78,18 @@ class Model(BaseModel):
         for element in circuit.elements:
             element.remap_values(param_list)
 
-        # [TR] DEJENERASYON TEMIZLEME. Kucuk-sinyal sablonlari cogu zaman .OP
-        #      bolumunun hic yazmadigi (rc, gmu, cxs, ...) ya da 0 verdigi
-        #      (cbx, cjs) parametrelere atifta bulunur. Degeri sayiya
-        #      cozulmemis - ya da 0 cozulmus - her eleman bu calisma
-        #      noktasinda ihmal edilebilir:
-        #        * kondansator             -> acik devre -> at
-        #        * kontrollu kaynak        -> at
-        #        * seri direnc  (port <-> ic dugum)  -> kisa devre: dugumleri birlestir
-        #        * paralel/sizinti direnc (ic <-> ic) -> acik devre -> at
-        #      Butun kararlar *orijinal* sablon topolojisinden alinip topluca
-        #      uygulanir; boylece bir birlestirme baska bir elemani yanlis
-        #      siniflandirtamaz.
-        # [EN] DEGENERACY CLEANUP. Small-signal templates often reference
-        #      parameters the PSpice .OP section does not emit (rc, gmu, cxs,
-        #      ...) or reports as 0 (cbx, cjs). Any element whose value did not
-        #      resolve to a number - or resolved to 0 - is negligible for this
-        #      operating point:
-        #        * capacitor           -> open  -> drop
-        #        * controlled source   -> drop
-        #        * series resistor     (port <-> internal node) -> short: merge nodes
-        #        * shunt/leak resistor (internal <-> internal)   -> open  -> drop
-        #      All decisions are taken from the *original* template topology and
-        #      then applied together, so one merge cannot make another element
-        #      look like something it is not.
+        # DEGENERACY CLEANUP. Small-signal templates often reference
+        # parameters the PSpice .OP section does not emit (rc, gmu, cxs,
+        # ...) or reports as 0 (cbx, cjs). Any element whose value did not
+        # resolve to a number - or resolved to 0 - is negligible for this
+        # operating point:
+        #   * capacitor           -> open  -> drop
+        #   * controlled source   -> drop
+        #   * series resistor     (port <-> internal node) -> short: merge nodes
+        #   * shunt/leak resistor (internal <-> internal)   -> open  -> drop
+        # All decisions are taken from the *original* template topology and
+        # then applied together, so one merge cannot make another element
+        # look like something it is not.
         inner = set(circuit.inner_connecting_nodes)
 
         def _num(v):
@@ -145,12 +128,9 @@ class Model(BaseModel):
 
     @staticmethod
     def _num_or_none(value):
-        """[TR] Degeri float'a cevirir; cevrilemezse veya sonlu degilse
-               (nan / +-inf) None doner. AI formullerinde "parametre var mi
-               ve gecerli bir sayi mi?" kontrolu icin kullanilir.
-        [EN] Convert a value to float; return None if it cannot be parsed or
-             is not finite (nan / +-inf). Used by the AI-style formulas to ask
-             "is this parameter present and a usable number?".
+        """Convert a value to float; return None if it cannot be parsed or
+        is not finite (nan / +-inf). Used by the AI-style formulas to ask
+        "is this parameter present and a usable number?".
         """
         try:
             f = float(value)
@@ -160,22 +140,7 @@ class Model(BaseModel):
 
     @classmethod
     def _bjt_ac_param_values(cls, param_list: Dict[str, str]) -> Dict[str, str]:
-        """[TR] BJT kucuk-sinyal sembollerini Analog Insydes'in
-               `DoBJTSmallSignal` (AC, Level 1) fonksiyonuyla ayni sekilde cozer.
-
-               ModelSupport.m'e gore:
-                 * RPI$ac, RO$ac, RX$ac, CBC$ac, CBE$ac, CBX$ac, CJS$ac, GM$ac
-                   dogrudan OPERATING POINT bolumunden gelir (isimler zaten dogru)
-                 * taban-kollektor sizinti elemani GMU bir iletkenliktir ->
-                   1/GMU$ac olarak saklanir
-                 * ohmik RC/RE model kartindan gelir, AREA'ya bolunur:
-                   Rc = RC/AREA,  Re = RE/AREA
-               Yalniz sonlu ve sifirdan farkli sonuclar yazilir; gerisini
-               dejenerasyon temizleme acar/kisaltir, yani RC/RE/RX/GMU
-               Basic ve Simplified seviyelerinde `DoBJTSmallSignal`'daki
-               simp==1 / simp==2 kurallarindaki gibi kaybolur.
-
-        [EN] Resolve the BJT small-signal symbols the way Analog Insydes'
+        """Resolve the BJT small-signal symbols the way Analog Insydes'
              `DoBJTSmallSignal` (AC, Level 1) does.
 
              Per ModelSupport.m:
@@ -192,22 +157,19 @@ class Model(BaseModel):
         p = dict(param_list)
         num = cls._num_or_none
 
-        # [TR] AREA yoksa 1 (birim alan). [EN] AREA defaults to 1 (unit area).
+        # AREA defaults to 1 (unit area).
         area = num(p.get("area")) or 1.0
 
-        # [TR] GMU bir iletkenlik -> direnc olarak 1/GMU. Cogu PSpice .out'unda
-        #      GMU yoktur, o zaman GMU elemani zaten dusurulur.
-        # [EN] GMU is a conductance -> store it as the resistance 1/GMU. Most
-        #      PSpice .out files have no GMU, in which case the element is dropped.
+        # GMU is a conductance -> store it as the resistance 1/GMU. Most
+        # PSpice .out files have no GMU, in which case the element is dropped.
         gmu = num(p.get("gmu$ac"))
         if gmu is None:
             gmu = num(p.get("gmu"))
         if gmu:
             p["gmu"] = repr(1.0 / gmu)
 
-        # [TR] Ohmik taban/kollektor/emiter parazitikleri model kartindan,
-        #      AREA'ya bolunmus. [EN] Ohmic base/collector/emitter parasitics
-        #      from the model card, divided by AREA.
+        # Ohmic base/collector/emitter parasitics from the model card,
+        # divided by AREA.
         rc = num(p.get("rc"))
         if rc:
             p["rc"] = repr(rc / area)
@@ -219,23 +181,7 @@ class Model(BaseModel):
 
     @staticmethod
     def _mosfet_ac_param_values(param_list: Dict[str, str]) -> Dict[str, str]:
-        """[TR] MOSFET kucuk-sinyal sembollerini Analog Insydes'in
-               `DoMOSFETSmallSignal` (AC, Level 1-3) fonksiyonuyla ayni sekilde
-               cozer; boylece JSON sablonlari ince kalir ve sayilar birebir cikar.
-
-               ModelSupport.m'e gore:
-                 * kapi (gate) kapasiteleri bias terimi ile ortusme (overlap)
-                   teriminin TOPLAMIDIR:
-                   Cgd = CGD$ac + CGDOV$ac,  Cgs = CGS$ac + CGSOV$ac,
-                   Cgb = CGB$ac + CGBOV$ac
-                 * drain-source elemani kucuk-sinyal iletkenligi GDS$ac'dir
-                   (sablonumuz onu direnc olarak modelledigi icin 1/GDS$ac saklanir)
-                 * ohmik RD/RS model kartindan; ikisi de 0 ise tabaka
-                   direncinden turetilebilir:  RD = NRD*RSH,  RS = NRS*RSH
-               Yalniz sonlu ve sifirdan farkli sonuclar yazilir; gerisi
-               dokunulmadan birakilir, dejenerasyon temizleme onu acar/kisaltir.
-
-        [EN] Resolve the MOSFET small-signal symbols the way Analog Insydes'
+        """Resolve the MOSFET small-signal symbols the way Analog Insydes'
              `DoMOSFETSmallSignal` (AC, Level 1-3) does, so the JSON templates
              stay thin and the numbers come out identical.
 
@@ -254,25 +200,21 @@ class Model(BaseModel):
         p = dict(param_list)
 
         def num(key):
-            # [TR] p[key]'i float'a cevir, olmazsa None.
-            # [EN] parse p[key] to float, else None.
+            # parse p[key] to float, else None.
             try:
                 return float(p[key])
             except (KeyError, ValueError, TypeError):
                 return None
 
         def put(key, value):
-            # [TR] Sonuc sonlu ve sifirdan farkliysa sozluge yaz; degilse
-            #      dokunma - boylece ilgili eleman temizleme adiminda dususur.
-            # [EN] Write the result into the map only if it is finite and
-            #      non-zero; otherwise leave it, so the element is dropped by
-            #      the cleanup step.
+            # Write the result into the map only if it is finite and
+            # non-zero; otherwise leave it, so the element is dropped by
+            # the cleanup step.
             if value is not None and value == value and value not in (
                     float("inf"), float("-inf")) and value != 0.0:
                 p[key] = repr(value)
 
-        # [TR] Kapi kapasiteleri: bias + ortusme toplami.
-        # [EN] Gate caps: bias + overlap term, summed.
+        # Gate caps: bias + overlap term, summed.
         cgd = (num("cgd") or 0.0) + (num("cgdov") or 0.0)
         cgs = (num("cgs") or 0.0) + (num("cgsov") or 0.0)
         cgb = (num("cgb") or 0.0) + (num("cgbov") or 0.0)
@@ -280,22 +222,19 @@ class Model(BaseModel):
         put("cgs", cgs)
         put("cgb", cgb)
 
-        # [TR] Drain-source iletkenligi -> direnc 1/GDS. [EN] D-S conductance
-        #      -> resistance 1/GDS.
+        # D-S conductance -> resistance 1/GDS.
         gds = num("gds")
         if gds:
             put("rds", 1.0 / gds)
 
-        # [TR] Bulk-junction sizinti iletkenlikleri -> direnc. [EN] Bulk-junction
-        #      leak conductances -> resistance.
+        # Bulk-junction leak conductances -> resistance.
         gbd, gbs = num("gbd"), num("gbs")
         if gbd:
             put("rbd", 1.0 / gbd)
         if gbs:
             put("rbs", 1.0 / gbs)
 
-        # [TR] Ohmik RD/RS model kartindan; ikisi de 0 ise tabaka direncinden.
-        # [EN] Ohmic RD/RS from the model card; if both 0, from sheet resistance.
+        # Ohmic RD/RS from the model card; if both 0, from sheet resistance.
         rd = num("rd") or 0.0
         rs = num("rs") or 0.0
         if rd == 0.0 and rs == 0.0:
@@ -311,19 +250,7 @@ class Model(BaseModel):
 
     @classmethod
     def _diode_ac_param_values(cls, param_list: Dict[str, str]) -> Dict[str, str]:
-        """[TR] Diyot kucuk-sinyal sembollerini Analog Insydes'in
-               `DoDiodeSmallSignal` fonksiyonuyla ayni sekilde cozer.
-
-               ModelSupport.m'e gore:
-                 * REQ$ac (kucuk-sinyal direnci = 1/g_d) ve CAP$ac (bariyer +
-                   difuzyon kapasitesi) dogrudan OPERATING POINT bolumunden gelir
-                 * seri ohmik RS model kartindan gelir, AREA'ya bolunur:
-                   Rs = RS/AREA  (yalniz Full seviye)
-               RS yoksa R_s elemani cozulemez ve dejenerasyon temizleme A ile
-               AS'yi kisa devre eder - Full modeli tam da simp>0'daki gibi
-               Basic'e iner.
-
-        [EN] Resolve the diode small-signal symbols the way Analog Insydes'
+        """Resolve the diode small-signal symbols the way Analog Insydes'
              `DoDiodeSmallSignal` does.
 
              Per ModelSupport.m:
@@ -347,23 +274,7 @@ class Model(BaseModel):
 
     @classmethod
     def _jfet_ac_param_values(cls, param_list: Dict[str, str]) -> Dict[str, str]:
-        """[TR] JFET kucuk-sinyal sembollerini Analog Insydes'in
-               `DoJFETSmallSignal` (AC, Level 1) fonksiyonuyla ayni sekilde cozer.
-
-               ModelSupport.m'e gore:
-                 * CGD$ac, CGS$ac, GM$ac dogrudan OPERATING POINT bolumunden gelir
-                 * drain-source elemani kucuk-sinyal iletkenligi GDS$ac'dir;
-                   sablonumuz onu direnc modelledigi icin R_ds = 1/GDS$ac saklanir
-                 * gecit-kanal jonksiyon sizintilari GGD$ac / GGS$ac iletkenliktir
-                   -> R_gd = 1/GGD$ac, R_gs = 1/GGS$ac (Simplified/Full; cogu .out
-                   bunlari yazmaz, o zaman temizleme direncleri dusurur)
-                 * ohmik RD/RS model kartindan, AREA'ya bolunmus (yalniz Full)
-               Yalniz sonlu ve sifirdan farkli sonuclar yazilir; gerisi
-               dejenerasyon temizlemeye birakilir, boylece Basic/Simplified/Full
-               seviyeleri `DoJFETSmallSignal`'daki simp==2 / simp==1 / simp==0
-               kurallarindaki gibi davranir.
-
-        [EN] Resolve the JFET small-signal symbols the way Analog Insydes'
+        """Resolve the JFET small-signal symbols the way Analog Insydes'
              `DoJFETSmallSignal` (AC, Level 1) does.
 
              Per ModelSupport.m:

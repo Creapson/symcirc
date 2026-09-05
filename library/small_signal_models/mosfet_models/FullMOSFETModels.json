@@ -1,6 +1,5 @@
 {
     "name": "FullMOSFETModels",
-    "_comment_tr": "MOSFET kucuk-sinyal sablonu - Full seviye (Analog Insydes FullMOSFETSmallSignal, simp==0). Simplified + CGB + seri RD/RS. RD/RS != 0 ise DS/SS ic dugumleri gercek dugum olur; 0 ise dejenerasyon temizleme onlari kisaltir. Sembol/deger cozumu netlist/Model.py._mosfet_ac_param_values; RD/RS parser/spice/SpiceParser.py._parse_device_model_params ile .out'un MODEL PARAMETERS bolumunden okunur.",
     "_comment_en": "MOSFET small-signal template - Full level (Analog Insydes FullMOSFETSmallSignal, simp==0). Simplified + CGB + series RD/RS. When RD/RS != 0 the DS/SS internal nodes materialise; when 0 the degeneracy cleanup shorts them. Symbol/value resolution in netlist/Model.py._mosfet_ac_param_values; RD/RS are read from the .out MODEL PARAMETERS table by parser/spice/SpiceParser.py._parse_device_model_params.",
     "netlist_file_path": "",
     "params": {},
