@@ -2,7 +2,7 @@ import dearpygui.dearpygui as dpg
 from pydantic import Field
 
 from gui.components.node_editor.nodes.Node import Node, NodeType
-from Modified_Node_Analysis import ModifiedNodalAnalysis
+from analysis_methoden.Modified_Node_Analysis import ModifiedNodalAnalysis
 from typing import Literal, List
 from netlist.Circuit import Circuit
 from Equation_Formulator import EquationFormulator
@@ -42,7 +42,12 @@ class TransferFunctionNumeric(Node):
         if self.mna is None:
             nodes = ["Update MNA"]
         else:
-            nodes = self.mna.get_unknowns_as_strings()
+            # The normal sparse tableau has no node potentials among its
+            # unknowns; get_solvable_names() adds them back as post
+            # processed outputs. MNA has no such method, so fall back.
+            nodes = getattr(
+                self.mna, "get_solvable_names", self.mna.get_unknowns_as_strings
+            )()
             inputs = self.mna.get_System_Inputs()
 
             with self.add_static_attr():

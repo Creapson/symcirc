@@ -130,7 +130,7 @@ class NetlistParserNode(Node):
         self.data["bipolar_model"] = dpg.get_value(self.uuid("bipolar_model"))
         self.data["mosfet_model"] = dpg.get_value(self.uuid("mosfet_model"))
 
-        self.circuit.set_separator(self.data.get("seperator", "_"))
+        self.circuit.set_separator(self.data.get("separator", "_"))
         self.circuit.set_bipolar_model(self.data.get("bipolar_model", ""))
         self.circuit.set_mosfet_model(self.data.get("mosfet_model", ""))
 

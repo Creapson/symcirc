@@ -35,7 +35,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
         self.num_result = {}
 
         #create mapping for node names to integer values for easy matrix handling
-   
+
         self.node_map = {}
         used_values = set()
 
@@ -45,7 +45,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
                 self.node_map[node] = 0
                 used_values.add(0)
                 continue
-             
+
             #assign next available starting from 1
             val = 1
             while val in used_values:

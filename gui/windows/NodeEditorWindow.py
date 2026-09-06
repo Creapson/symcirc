@@ -9,7 +9,7 @@ from gui.components.node_editor.nodes.FlattenNode import FlattenNode
 from gui.components.node_editor.nodes.ImportCircuit import ImportCircuit
 from gui.components.node_editor.nodes.NetlistParserNode import NetlistParserNode
 
-from gui.components.node_editor.nodes.MNA import MNA
+from gui.components.node_editor.nodes.STA import STA
 
 from gui.components.node_editor.nodes.TransferFunctionNumeric import TransferFunctionNumeric
 from gui.components.node_editor.nodes.NumericSolver import NumericSolver
@@ -155,7 +155,7 @@ class NodeEditorWindow(Window):
                 ]
             },
             ("ApproximatorNode", ApproximatorNode, "Approximate"),
-            ("ModifiedNodalAnalysis", MNA, "MNA Node"),
+            ("EquationSystem", STA, "Equation System"),
         ]
 
         def _create_menu_recursive(data):
@@ -270,11 +270,11 @@ class NodeEditorWindow(Window):
                 "Approximate a transfer-function",
             ),
             (
-                MNA,
-                "MNA Node",
+                STA,
+                "Equation System",
                 "gui/gfx/node_editor/mna.png",
-                "mna",
-                "Create a equation system",
+                "sta",
+                "Build MNA, Extended Tableau or Sparse Tableau, selectable",
             ),
         ]
 
@@ -284,8 +284,8 @@ class NodeEditorWindow(Window):
             try:
                 width, height, channels, data = dpg.load_image(image_path)
                 with dpg.texture_registry():
-                    dpg.add_static_texture(width, height, data, tag=self.uuid(image_path))
-                    texture_tag = self.uuid(image_path)
+                    dpg.add_static_texture(width, height, data, tag=self.uuid(image_path + tag))
+                    texture_tag = self.uuid(image_path + tag)
             except:
                 print("Could not load", image_path)
 

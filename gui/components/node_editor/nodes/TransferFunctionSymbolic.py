@@ -7,7 +7,7 @@ init_printing(use_unicode=True)
 
 from netlist.Circuit import Circuit
 from gui.components.node_editor.nodes.Node import Node, NodeType
-from Modified_Node_Analysis import ModifiedNodalAnalysis
+from analysis_methoden.Modified_Node_Analysis import ModifiedNodalAnalysis
 from typing import Literal, List
 
 class TransferFunctionSymbolic(Node):
@@ -49,15 +49,20 @@ class TransferFunctionSymbolic(Node):
         self.sweep, self.mna = self.get_input_pin_value("num_results_input_pin", ("None", None))
         dpg.configure_item(self.uuid("sweep"), default_value=self.sweep)
 
-        A, _ = self.mna.get_equation_system()
-        estimate_num_terms = self.mna.estimateTerms(A)
-        print("Estimations: ", estimate_num_terms)
-        dpg.configure_item(self.uuid("compl_estimate"), default_value="Complexity Estimations: " + str(estimate_num_terms))
-
         if self.mna is None:
             nodes = ["Update MNA"]
         else:
-            nodes = self.mna.get_unknowns_as_strings()
+            A, _ = self.mna.get_equation_system()
+            estimate_num_terms = self.mna.estimateTerms(A)
+            print("Estimations: ", estimate_num_terms)
+            dpg.configure_item(self.uuid("compl_estimate"), default_value="Complexity Estimations: " + str(estimate_num_terms))
+
+            # The normal sparse tableau has no node potentials among its
+            # unknowns; get_solvable_names() adds them back as post
+            # processed outputs. MNA has no such method, so fall back.
+            nodes = getattr(
+                self.mna, "get_solvable_names", self.mna.get_unknowns_as_strings
+            )()
             inputs = self.mna.get_System_Inputs()
 
             if dpg.does_item_exist(self.uuid("adv_settings")):

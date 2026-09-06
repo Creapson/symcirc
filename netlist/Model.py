@@ -28,6 +28,13 @@ class Model(BaseModel):
         # Merge model params and element params
         param_list = {k.lower(): v for k, v in (self.params | element_params).items()}
 
+        # PSpice operating-point (.out) dumps never report these parasitic
+        # feedback terms, so they can't be resolved from element_params.
+        # They are conventionally negligible/open in hybrid-pi analysis, so
+        # fall back to values that make their branch have no effect.
+        param_list.setdefault("gmu", "1e12")  # feedback resistor -> effectively open
+        param_list.setdefault("cxs", "0")     # extrinsic capacitance -> negligible
+
         from netlist.Circuit import Circuit
 
         current_file_dir = Path(__file__).resolve().parent

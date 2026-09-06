@@ -2,7 +2,7 @@ import time as t
 
 
 from netlist.Circuit import Circuit
-from Modified_Node_Analysis import ModifiedNodalAnalysis
+from analysis_methoden.Modified_Node_Analysis import ModifiedNodalAnalysis
 from parser.NetlistParser import get_circuit_from_file
 from Approximate import Approximation 
 import time as t

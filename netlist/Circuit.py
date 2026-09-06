@@ -240,6 +240,7 @@ class Circuit(BaseModel):
                 )
 
                 new_elements.extend(subct_elements)
+                continue
 
             # Expand transistor models
             if (element.type == "Q" or element.type == "M") and flatten_models:
@@ -267,6 +268,7 @@ class Circuit(BaseModel):
                 )
 
                 new_elements.extend(subct_elements)
+                continue
 
             # Normal element
             new_elements.append(element)

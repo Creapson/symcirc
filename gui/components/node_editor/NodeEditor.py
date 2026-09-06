@@ -10,6 +10,7 @@ from gui.components.node_editor.nodes.ImportCircuit import ImportCircuit
 from gui.components.node_editor.nodes.NetlistParserNode import NetlistParserNode
 
 from gui.components.node_editor.nodes.MNA import MNA
+from gui.components.node_editor.nodes.STA import STA
 
 from gui.components.node_editor.nodes.TransferFunctionNumeric import TransferFunctionNumeric
 from gui.components.node_editor.nodes.NumericSolver import NumericSolver
@@ -26,6 +27,7 @@ AnyNode = Annotated[
           FlattenNode,
           ImportCircuit,
           MNA,
+          STA,
           NetlistParserNode,
           NumericSolver,
           SymbolicSolver,

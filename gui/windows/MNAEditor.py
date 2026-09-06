@@ -1,5 +1,5 @@
 import dearpygui.dearpygui as dpg
-from Modified_Node_Analysis import ModifiedNodalAnalysis
+from analysis_methoden.Modified_Node_Analysis import ModifiedNodalAnalysis
 from gui.windows.Window import Window
 from netlist.Circuit import Circuit
 from gui.components.Table import Table, Widget_Type
