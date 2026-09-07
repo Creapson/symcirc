@@ -8,6 +8,45 @@ import numpy as np
 from netlist.Element import Element
 from netlist.Model import Model
 
+# Order Analog Insydes expands a transistor model in. The branch order of a
+# model is whatever order its elements are listed in, so a model file written
+# in a different order shifts every unknown that comes out of that transistor
+# and the tableau no longer lines up with Insydes column for column, even
+# though both matrices are correct.
+#
+# Confirmed against Insydes output for BJT_BasicModel (RPI, RO, CBC, CBE, G,
+# CBX) and BJT_full_standard (the same list with GMU, RC, RX inserted), the
+# first being a subsequence of the second. CJS and CXS sit at the end with the
+# other substrate parasitics; that placement is not confirmed against Insydes
+# because no lateral-model reference has been exported yet.
+#
+# A model element whose name is not listed keeps its position relative to the
+# other unlisted ones, so a model this list says nothing about - every MOSFET
+# model, today - comes out in its file order, exactly as before.
+INSYDES_MODEL_ELEMENT_ORDER = (
+    "RPI", "RO", "CBC", "CBE", "G", "GMU", "RC", "RX", "CBX", "CJS", "CXS",
+)
+
+
+def order_model_elements(elements: List[Element]) -> List[Element]:
+    """Sort one expanded transistor model into Analog Insydes' branch order.
+
+    Args:
+        elements (List[Element]): the elements of a generated small signal
+            model, still carrying their model names (RPI, CBC, ...).
+
+    Returns:
+        List[Element]: the same elements, ordered the way Insydes lists them.
+            Elements missing from INSYDES_MODEL_ELEMENT_ORDER keep their
+            original order among themselves and follow the known ones.
+
+    """
+    rank = {name: index for index, name in enumerate(INSYDES_MODEL_ELEMENT_ORDER)}
+    unknown = len(rank)
+
+    # sorted() is stable, so same-rank elements stay in their file order
+    return sorted(elements, key=lambda e: rank.get(e.name.upper(), unknown))
+
 
 class Circuit(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -259,6 +298,10 @@ class Circuit(BaseModel):
                 )
 
                 if model_subct is not None:
+                    # branch order follows the model file's element order, so
+                    # normalise it here rather than relying on every model
+                    # file being written in Insydes' order
+                    model_subct.elements = order_model_elements(model_subct.elements)
                     self.add_subcircuit(model_subct, subct_name)
 
                 subct_elements = self.flatten_subcircuit(

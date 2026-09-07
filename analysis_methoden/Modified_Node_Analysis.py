@@ -37,21 +37,26 @@ class ModifiedNodalAnalysis(EquationFormulator):
         #create mapping for node names to integer values for easy matrix handling
 
         self.node_map = {}
-        used_values = set()
+
+        def _node_sort_key(name):
+            # numeric node names sort as numbers (1, 2, ..., 10), everything
+            # else (named nets like "ua") sorts alphabetically after them
+            try:
+                return (0, int(name))
+            except ValueError:
+                return (1, name)
 
         for node in self.ct.nodes:
             #filter out ground node and assign them value 0
             if (node == "ground") | (node == "0") | (node == "GND") | (node == "gnd"):
                 self.node_map[node] = 0
-                used_values.add(0)
-                continue
 
-            #assign next available starting from 1
-            val = 1
-            while val in used_values:
-                val += 1
-            self.node_map[node] = val
-            used_values.add(val)
+        non_ground_nodes = sorted(
+            {node for node in self.ct.nodes if node not in self.node_map},
+            key=_node_sort_key,
+        )
+        for index, node in enumerate(non_ground_nodes, start=1):
+            self.node_map[node] = index
 
         print("Node mapping:")
         print(self.node_map)
