@@ -215,12 +215,19 @@ class Circuit(BaseModel):
         # Parse model parameters from .out
 
         if flatten_models:
-            from parser.NetlistParser import get_element_parameters_from_outfile
+            from parser.NetlistParser import (
+                get_element_parameters_from_outfile,
+                get_element_parameters_from_logfile,
+            )
 
-            # load small signal parameters from out file
+            # load small signal parameters from .out (PSpice) or .log (LTspice),
+            # picked by file extension so existing .out callers are unaffected.
             if out_file_path == "":
-                get_element_parameters_from_outfile(self.netlist_file_path + self.name + ".out", self.elements)
-                print(self.netlist_file_path + self.name + ".out")
+                default_out_path = self.netlist_file_path + self.name + ".out"
+                get_element_parameters_from_outfile(default_out_path, self.elements)
+                print(default_out_path)
+            elif out_file_path.lower().endswith(".log"):
+                get_element_parameters_from_logfile(out_file_path, self.elements)
             else:
                 get_element_parameters_from_outfile(out_file_path, self.elements)
 

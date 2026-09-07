@@ -1,0 +1,2 @@
+* fixture library for LtspiceParser tests (mimics LTspice's standard.bjt)
+.model BC547B NPN(IS=14.34E-15 BF=255.9)

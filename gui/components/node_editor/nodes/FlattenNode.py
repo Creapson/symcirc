@@ -1,3 +1,6 @@
+import os
+import subprocess
+
 import dearpygui.dearpygui as dpg
 from typing import List, Dict, Literal
 
@@ -25,10 +28,68 @@ class FlattenNode(Node):
     flattend_circuit : Circuit = Field(default=Circuit(), exclude=True)
 
     def callback(self, sender, app_data):
-        file_path = self.open_file_dialog("Select Output File", [("Output Files","*.out")])
-        if len(file_path) ==  0:
+        file_path = self.open_file_dialog(
+            "Select Output File",
+            [
+                ("Output/Log Files", "*.out *.log"),
+                ("PSpice Output", "*.out"),
+                ("LTspice Log", "*.log"),
+            ],
+        )
+        if len(file_path) > 0:
             self.data["out_file_path"] = file_path[0]
-        dpg.set_value(self.uuid("out_file_path"), f"Selected {self.data["out_file_path"]}")
+
+        # .get(): the dialog can be cancelled, in which case no file was ever
+        # selected and self.data has no "out_file_path" key yet.
+        selected = self.data.get("out_file_path", "")
+        if selected == "":
+            dpg.set_value(self.uuid("out_file_path"), "No .out/.log file currently selected!")
+        else:
+            dpg.set_value(self.uuid("out_file_path"), f"Selected {selected}")
+
+    def _find_netlist_file(self) -> str:
+        """Rebuilds the netlist path from the Circuit.
+
+        NetlistParserNode stores the folder and the file *stem* separately
+        (netlist_file_path + name), so the extension has to be found again.
+        """
+        base = self.circuit.netlist_file_path + self.circuit.name
+        for extension in (".net", ".cir", ".sp", ".txt"):
+            if os.path.isfile(base + extension):
+                return base + extension
+        return ""
+
+    def op_callback(self, sender, app_data):
+        """Lets LTspice produce the ".op" log instead of the user.
+
+        LTspice only writes the small-signal operating point table when ".op"
+        is the active analysis, which a circuit netlisted for ".ac" never is.
+        LtspiceRunner runs LTspice on a ".op" copy of the netlist so the
+        schematic and its own output files stay untouched.
+        """
+        from parser.ltspice.LtspiceRunner import generate_op_log
+
+        netlist_path = self._find_netlist_file()
+        if netlist_path == "":
+            message = (
+                f"Netlist not found next to {self.circuit.netlist_file_path} - "
+                "cannot run LTspice. Select the .log by hand instead."
+            )
+            dpg.set_value(self.uuid("out_file_path"), message)
+            print(message)
+            return
+
+        try:
+            log_path = generate_op_log(netlist_path)
+        except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+            message = f"LTspice .op run failed: {error}"
+            dpg.set_value(self.uuid("out_file_path"), message)
+            print(message)
+            return
+
+        self.data["out_file_path"] = log_path
+        dpg.set_value(self.uuid("out_file_path"), f"Selected {log_path}")
+        print(f"LTspice .op log generated: {log_path}")
 
     def get_possible_node_connections(self) -> List[str]:
         return ["mna"]
@@ -47,10 +108,15 @@ class FlattenNode(Node):
         self.add_input_pin("parsed_circuit", "Connect Circuit here! [circuit]")
 
         with self.add_static_attr():
-            dpg.add_button(
-                label="Select .out File",
-                callback=self.callback,
-            )
+            with dpg.group(horizontal=True):
+                dpg.add_button(
+                    label="Select .out/.log File",
+                    callback=self.callback,
+                )
+                dpg.add_button(
+                    label="Run LTspice .op",
+                    callback=self.op_callback,
+                )
             dpg.add_text(source=self.uuid("out_file_path"))
 
             # create table to edit all subcircuits
@@ -105,7 +171,22 @@ class FlattenNode(Node):
         self.flattend_circuit = self.circuit.copy()
         self.circuit.to_ai_string()
         default_out_path = self.circuit.netlist_file_path + self.circuit.name + ".out"
-        self.flattend_circuit.flatten(True, self.data.get("out_file_path", default_out_path))
+        params_path = self.data.get("out_file_path", default_out_path)
+
+        # Without this the missing file surfaces as a bare FileNotFoundError
+        # from deep inside the parser, and flattening a circuit whose
+        # small-signal values never got filled in only fails later, in the MNA
+        # node, as "could not convert string to float: 'rpi'".
+        if not os.path.isfile(params_path):
+            message = (
+                f"Cannot flatten: {params_path} not found. Select the simulation "
+                "output first - a PSpice '.out' or an LTspice '.op' run's '.log'."
+            )
+            dpg.set_value(self.uuid("out_file_path"), message)
+            print(message)
+            return
+
+        self.flattend_circuit.flatten(True, params_path)
 
 
         self.add_output_pin(

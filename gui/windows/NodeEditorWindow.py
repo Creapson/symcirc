@@ -49,6 +49,13 @@ class NodeEditorWindow(Window):
         current_selection = dpg.get_selected_nodes(self.node_editor_tag)
         if len(current_selection) == 1:
             from_node = self.node_editor.node_dic.get(current_selection[0], None)
+            # A selected node can have no output pins yet (it hasn't run, or it
+            # failed while running) and a new node can have no input pins - in
+            # both cases there is simply nothing to auto-connect, so skip it
+            # instead of indexing into an empty list.
+            if from_node is None or not from_node.output_pins or not new_node.input_pins:
+                return
+
             output_pin = list(from_node.output_pins.values())[0]
             input_pin = list(new_node.input_pins.values())[0]
             if (output_pin.pin_id and input_pin):

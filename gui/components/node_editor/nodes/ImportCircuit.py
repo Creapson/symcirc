@@ -17,7 +17,14 @@ class ImportCircuit(Node):
 
         from parser.NetlistParser import get_pre_format_info 
 
-        file_path = self.open_file_dialog("Select Ciruit file", [("Circuit File","*.cir")])
+        file_path = self.open_file_dialog(
+            "Select Ciruit file",
+            [
+                ("Circuit/Netlist Files", "*.cir *.net"),
+                ("PSpice Circuit", "*.cir"),
+                ("LTspice Netlist", "*.net"),
+            ],
+        )
         if len(file_path) > 0:
             feedback = get_pre_format_info(file_path[0])
 
