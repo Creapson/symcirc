@@ -3,7 +3,7 @@ import netlist.Circuit as Circuit
 import logging as logger
 import Pspice_util as pu
 import numpy as np
-import scipy.linalg as scipy
+import scipy
 from Equation_Formulator import EquationFormulator
 import time
 import warnings
@@ -448,7 +448,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
         """
 
-        H = np.zeros(len(frequencies), dtype=complex)
+        H = np.zeros(len(frequencies), dtype=np.complex128)
 
         unknown_variable_symbol = sp.symbols(unknown_variable)
 
@@ -470,32 +470,27 @@ class ModifiedNodalAnalysis(EquationFormulator):
         A_num = self.toNumerical(self.A, self.value_dict)
         z_num = self.toNumerical(z_mod, self.value_dict)
 
-        print("Symbolic A matrix:")
-        #sp.pprint(self.A)
-        print("Symbolic z vector:")
-        #sp.pprint(z_mod)
 
-        print("Numerical A matrix:")
-        print(A_num)
-        print("Numerical z vector:")
-        print(z_num)
+     
 
-        A_num_func = sp.lambdify(sp.symbols("s"), A_num, "numpy")
-        z_num_func = sp.lambdify(sp.symbols("s"), z_num, "numpy")
+        s = sp.symbols('s')
+
+        A_num_func = sp.lambdify(s, A_num, "numpy")
+        z_num_func = sp.lambdify(s, z_num, "numpy")
 
         
         def solve_freq(freq):
             jw = 1j * 2* np.pi*freq
             A_num_eval = A_num_func(jw)
             
-            z_num_eval = z_num_func(jw)
-
+            z_num_eval = np.asarray(z_num_func(jw), dtype=np.complex128).flatten()
+  
+           
             try:
-                x = scipy.solve(A_num_eval, z_num_eval)
+                x = scipy.linalg.solve(A_num_eval, z_num_eval)
             
-            except scipy.LinAlgError:
+            except scipy.linalg.LinAlgError:
                 return np.nan
-                
                 
 
 
@@ -527,10 +522,7 @@ class ModifiedNodalAnalysis(EquationFormulator):
 
         """
         
-        z_modified = self.z.copy()
-        
-        for idx, element in enumerate(z_modified):
-            element = element * new_value[idx]
+        z_modified = self.z.multiply_elementwise(sp.Matrix(new_value))
                 
         
         return z_modified
