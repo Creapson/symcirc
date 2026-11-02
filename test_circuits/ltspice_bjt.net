@@ -1,0 +1,8 @@
+* C:\fixtures\ltspice_bjt.asc
+.lib ltspice_bjt_lib.lib
+V1 1 0 DC 5
+RB 1 2 10k
+Q1 3 2 0 0 BC547B
+RC 3 1 1k
+.backanno
+.end

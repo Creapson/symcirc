@@ -33,7 +33,10 @@ class TransferFunctionNumeric(Node):
         super().build()
 
     def get_possible_node_connections(self) -> List[str]:
-        return ["solver_numeric"]
+        # After this node: a NumericSolver or a Pole-Zero node. The
+        # "pole_zero" tag enables the pole-zero toolbar icon while a TF node
+        #      is selected.
+        return ["solver_numeric", "pole_zero"]
 
     def onlink_callback(self):
         self.sweep, self.mna = self.get_input_pin_value("num_results_input_pin", ("None", None))
@@ -77,5 +80,12 @@ class TransferFunctionNumeric(Node):
 
         if not dpg.does_item_exist(self.uuid("h_out")):
             self.add_output_pin(tag="h_out", text="H")
-        self.add_output_pin_value("h_out", (H.tolist(), sweep), is_persistence=False)
+        # Payload: (H, sweep) for the Bode path + (mna, mode, output_node)
+        # for the Pole-Zero node. Downstream nodes index what they need
+        # ("numeric" -> numeric QZ path).
+        self.add_output_pin_value(
+            "h_out",
+            (H.tolist(), sweep, self.mna, "numeric", node_out),
+            is_persistence=False,
+        )
         super().update()

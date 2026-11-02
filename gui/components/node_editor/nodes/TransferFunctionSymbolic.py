@@ -43,7 +43,8 @@ class TransferFunctionSymbolic(Node):
         super().build()
 
     def get_possible_node_connections(self) -> List[str]:
-        return ["solver_symbolic"]
+        # After this node: a SymbolicSolver or a Pole-Zero node.
+        return ["solver_symbolic", "pole_zero"]
 
     def onlink_callback(self):
         self.sweep, self.mna = self.get_input_pin_value("num_results_input_pin", ("None", None))
@@ -101,5 +102,11 @@ class TransferFunctionSymbolic(Node):
 
         if not dpg.does_item_exist(self.uuid("h_out")):
             self.add_output_pin(tag="h_out", text="H")
-        self.add_output_pin_value("h_out", (H_num.tolist(), sweep), is_persistence=False)
+        # Payload: (H, sweep) for the Bode path + (mna, mode, output_node)
+        # for the Pole-Zero node. "symbolic" -> det(A_out)/det(A) path.
+        self.add_output_pin_value(
+            "h_out",
+            (H_num.tolist(), sweep, self.mna, "symbolic", node_out),
+            is_persistence=False,
+        )
         super().update()

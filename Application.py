@@ -51,17 +51,23 @@ class Application:
         
         bipolar_path = base_dir / "library" / "small_signal_models" / "bipolar_models"
         mosfet_path = base_dir / "library" / "small_signal_models" / "mosfet_models"
+        diode_path = base_dir / "library" / "small_signal_models" / "diode_models"
+        jfet_path = base_dir / "library" / "small_signal_models" / "jfet_models"
 
-        self.bipolar_models = []
-        if bipolar_path.exists():
-            self.bipolar_models = [f.stem for f in bipolar_path.iterdir() if f.is_file() and f.suffix == ".json"]
+        def _model_stems(path):
+            if not path.exists():
+                return []
+            return [f.stem for f in path.iterdir() if f.is_file() and f.suffix == ".json"]
 
-        self.mosfet_models = []
-        if mosfet_path.exists():
-            self.mosfet_models = [f.stem for f in mosfet_path.iterdir() if f.is_file() and f.suffix == ".json"]
+        self.bipolar_models = _model_stems(bipolar_path)
+        self.mosfet_models = _model_stems(mosfet_path)
+        self.diode_models = _model_stems(diode_path)
+        self.jfet_models = _model_stems(jfet_path)
 
         print(self.bipolar_models)
         print(self.mosfet_models)
+        print(self.diode_models)
+        print(self.jfet_models)
 
     def get_setting(self, setting:str, default=None) -> str | None:
         return self.settings.get(setting, default)

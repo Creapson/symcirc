@@ -1,0 +1,5 @@
+* RC Low Pass Filter
+V1 1 0 AC 1V
+R1 1 2 1k
+C1 2 0 1uF
+.end

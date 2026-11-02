@@ -24,7 +24,10 @@ class NumericSolver(Node):
         return ["bode_plot"]
 
     def onlink_callback(self):
-        self.h, self.sweep = self.get_input_pin_value("h_input_pin", ([], []))
+        # The TF node's payload is now a 5-tuple; take the first two fields
+        # for the Bode path (H, sweep). The rest is for the Pole-Zero node.
+        data = self.get_input_pin_value("h_input_pin", ([], []))
+        self.h, self.sweep = data[0], data[1]
 
         super().onlink_callback()
 

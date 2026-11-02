@@ -22,6 +22,8 @@ from gui.components.plots.PoleZeroPlot import PoleZeroPlot
 
 from gui.components.node_editor.nodes.ApproximatorNode import ApproximatorNode
 
+from gui.components.node_editor.nodes.PoleZeroNode import PoleZeroNode
+
 from gui.windows.Window import Window
 
 
@@ -49,6 +51,13 @@ class NodeEditorWindow(Window):
         current_selection = dpg.get_selected_nodes(self.node_editor_tag)
         if len(current_selection) == 1:
             from_node = self.node_editor.node_dic.get(current_selection[0], None)
+            # A selected node can have no output pins yet (it hasn't run, or it
+            # failed while running) and a new node can have no input pins - in
+            # both cases there is simply nothing to auto-connect, so skip it
+            # instead of indexing into an empty list.
+            if from_node is None or not from_node.output_pins or not new_node.input_pins:
+                return
+
             output_pin = list(from_node.output_pins.values())[0]
             input_pin = list(new_node.input_pins.values())[0]
             if (output_pin.pin_id and input_pin):
@@ -152,6 +161,7 @@ class NodeEditorWindow(Window):
             {
                 "Display": [
                     ("BodeBlot", BodePlotNode, "BodePlot Node"),
+                    ("Pole-Zero Plot", PoleZeroNode, "Pole-Zero Plot Node"),
                 ]
             },
             ("ApproximatorNode", ApproximatorNode, "Approximate"),
@@ -275,6 +285,13 @@ class NodeEditorWindow(Window):
                 "gui/gfx/node_editor/mna.png",
                 "sta",
                 "Build MNA, Extended Tableau or Sparse Tableau, selectable",
+            ),
+            (
+                PoleZeroNode,
+                "Pole-Zero Plot Node",
+                "gui/gfx/node_editor/pole_zero.png",
+                "pole_zero",
+                "Plot poles and zeros on the s-plane",
             ),
         ]
 

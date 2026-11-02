@@ -1,0 +1,9 @@
+* AC source written the way LTspice exports it: "AC <magnitude> <phase>"
+* (taken from a real Draft6.net export, where the trailing phase used to be
+* concatenated onto the magnitude and turned "AC 1 0" into "10")
+Vin 1 0 SINE(0 100m 1k) AC 1 0
+RS 2 1 600
+RL 2 0 1k
+.ac dec 101 0.1 1.00GHz
+.backanno
+.end
