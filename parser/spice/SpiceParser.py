@@ -131,7 +131,7 @@ class SpiceParser:
                 element = self._parse_element(line)
                 _scope.add_element(element)
                 if _scope == base_circuit:
-                    if element.type in ("Q", "M"):
+                    if element.type in ("Q", "M", "D", "J"):
                         used_models.append(element.params.get("ref_model", ""))
                     if element.type == "X":
                         used_subckts.append(element.params.get("ref_cir", ""))
@@ -182,9 +182,24 @@ class SpiceParser:
 
         match element.type:
             # Admittance
-            case "R" | "C" | "L" | "D":
+            case "R" | "C" | "L":
                 element.set_connections(line.tokens[1:-1])
                 element.add_param("value_dc", line.tokens[-1])
+
+            # Diode (2 nodes) / JFET (3 nodes) - carry a model reference, not a
+            # value; expanded to a small-signal subcircuit during flatten.
+            case "D" | "J":
+                node_cnt = 2 if element.type == "D" else 3
+                element.set_connections(line.tokens[1:1 + node_cnt])
+                rest = line.tokens[1 + node_cnt:]
+                if rest and "=" not in rest[0]:
+                    element.add_param("ref_model", rest[0])
+                    rest = rest[1:]
+                if rest and "=" not in rest[0]:
+                    element.add_param("area", rest[0])
+                    rest = rest[1:]
+                if rest:
+                    element.params.update(line.get_kwargs(" ".join(rest)))
 
             # Sources
             case "V" | "I":
@@ -409,6 +424,87 @@ class SpiceParser:
 
         _parse_param_block(bipol_param_start_index, elements)
         _parse_param_block(mosfet_param_start_index, elements)
+
+        # The diode/JFET OP blocks (**** DIODES / **** JFETS) can sit before
+        # or after the BJT/MOSFET sections; scan once more from the
+        # OPERATING POINT INFORMATION header to catch every "NAME ..." block.
+        # _parse_param_block scans forward and simply re-writes any block it
+        # already processed with the same value (harmless).
+        #      _parse_param_block scans forward and simply re-writes any block
+        #      already handled with the same value (harmless).
+        op_info_start = next((k for k, ln in enumerate(lines)
+                              if "OPERATING POINT INFORMATION" in ln), None)
+        if op_info_start is not None:
+            _parse_param_block(op_info_start, elements)
+
+        self._parse_device_model_params(lines, elements, "MOSFET MODEL PARAMETERS")
+        self._parse_device_model_params(lines, elements, "BJT MODEL PARAMETERS")
+        self._parse_device_model_params(lines, elements, "Diode MODEL PARAMETERS")
+        self._parse_device_model_params(lines, elements, "JFET MODEL PARAMETERS")
+
+    def _parse_device_model_params(self, lines: List[str], elements: List[Element],
+                                   header_marker: str):
+        """Read a "<device> MODEL PARAMETERS" table from a PSpice .out.
+
+             The OPERATING POINT section only lists the bias-dependent
+             small-signal quantities (GM, GDS/RO, CBD/CBE, ...). The ohmic
+             parasitics - RD/RS for MOSFETs, RC/RE for BJTs - and AREA live in
+             this separate model-card table, keyed by model name. Analog
+             Insydes' DoMOSFETSmallSignal / DoBJTSmallSignal need them to decide
+             whether to insert the series RD/RS / RC/RE resistors, so attach
+             them to every element that references the model. Bias-dependent
+             keys already parsed from the OPERATING POINT block are left
+             untouched.
+        """
+        import re
+
+        # Locate the table's header line.
+        header = next((i for i, ln in enumerate(lines)
+                       if header_marker in ln), None)
+        if header is None:
+            return
+
+        # model name -> {PARAM: value}.
+        model_params: Dict[str, Dict[str, str]] = {}
+        polarity = {"NMOS", "PMOS", "NPN", "PNP", "LPNP", "NJF", "PJF"}
+
+        i = header + 1
+        n = len(lines)
+        current_model = None
+        while i < n:
+            line = lines[i].strip()
+            i += 1
+            # Skip blank lines and star separator lines.
+            if not line or set(line) <= {"*"}:
+                continue
+            # A line starting with "****" is the next report section -> stop.
+            if line.startswith("****"):
+                break
+            parts = line.split()
+            # A polarity line (NMOS/NPN/...) is not a parameter.
+            if parts[0] in polarity:
+                continue
+            # A single-token line = model name.
+            if len(parts) == 1:
+                current_model = Element.get_normalised_name(parts[0])
+                model_params.setdefault(current_model, {})
+                continue
+            if current_model is None:
+                continue
+            # Record the "PARAM value" pair.
+            if len(parts) == 2 and re.match(r"^[A-Za-z][A-Za-z0-9]*$", parts[0]):
+                model_params[current_model][parts[0]] = parts[1]
+
+        if not model_params:
+            return
+
+        # Attach the parsed params to every element that uses the model;
+        # do NOT overwrite a bias value from OPERATING POINT (setdefault).
+        for el in elements:
+            ref = Element.get_normalised_name(el.params.get("ref_model", ""))
+            if ref in model_params:
+                for k, v in model_params[ref].items():
+                    el.params.setdefault(k, v)
 
 class Line:
     def __init__(self, line:str = "") -> None:

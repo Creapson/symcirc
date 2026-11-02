@@ -126,6 +126,8 @@ class FlattenNode(Node):
             self.table.add_column("Name", Widget_Type.TEXT)
             self.table.add_column("Bipolar Model", Widget_Type.COMBO, items=self.editor.application.bipolar_models)
             self.table.add_column("Mosfet Model", Widget_Type.COMBO, items=self.editor.application.mosfet_models)
+            self.table.add_column("Diode Model", Widget_Type.COMBO, items=self.editor.application.diode_models)
+            self.table.add_column("JFET Model", Widget_Type.COMBO, items=self.editor.application.jfet_models)
             self.table.build()
 
             dpg.add_text("When nothing is selected the default value will be used!")
@@ -145,11 +147,13 @@ class FlattenNode(Node):
         self.table.clear()
         if not self.table.is_setup: self.table.setup()
         for item in self.circuit.get_elements():
-            if item.type == "Q":
+            if item.type in ("Q", "M", "D", "J"):
                 row_dict = {
                         "Name": item.name,
-                        "Bipolar Model": item.params.get("bipolar_model", "BJT_BasicModel"),
-                        "Mosfet Model": item.params.get("mosfet_model", "MOSFET_basicmodel"),
+                        "Bipolar Model": item.params.get("bipolar_model", "BasicModels"),
+                        "Mosfet Model": item.params.get("mosfet_model", "BasicMOSFETModels"),
+                        "Diode Model": item.params.get("diode_model", "BasicDiodeModels"),
+                        "JFET Model": item.params.get("jfet_model", "BasicJFETModels"),
                         }
                 self.table.add_row(item.name, row_dict)
         self.table.build()
@@ -163,12 +167,16 @@ class FlattenNode(Node):
     def update(self):
         # apply the changed small signal models to all elements
         for element in self.element_list:
-            bipolar_model = self.table.get_value(element.name, "Bipolar Model", "BJT_BasicModel")
-            mosfet_model = self.table.get_value(element.name, "Mosfet Model", "MOSFET_basicmodel")
+            bipolar_model = self.table.get_value(element.name, "Bipolar Model", "BasicModels")
+            mosfet_model = self.table.get_value(element.name, "Mosfet Model", "BasicMOSFETModels")
+            diode_model = self.table.get_value(element.name, "Diode Model", "BasicDiodeModels")
+            jfet_model = self.table.get_value(element.name, "JFET Model", "BasicJFETModels")
             element.params["bipolar_model"] = bipolar_model
             element.params["mosfet_model"] = mosfet_model
+            element.params["diode_model"] = diode_model
+            element.params["jfet_model"] = jfet_model
 
-        self.flattend_circuit = self.circuit.copy()
+        self.flattend_circuit = self.circuit.model_copy(deep=True)
         self.circuit.to_ai_string()
         default_out_path = self.circuit.netlist_file_path + self.circuit.name + ".out"
         params_path = self.data.get("out_file_path", default_out_path)

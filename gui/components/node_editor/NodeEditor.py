@@ -19,6 +19,8 @@ from gui.components.node_editor.nodes.SymbolicSolver import SymbolicSolver
 
 from gui.components.node_editor.nodes.ApproximatorNode import ApproximatorNode
 
+from gui.components.node_editor.nodes.PoleZeroNode import PoleZeroNode
+
 AnyNode = Annotated[
     Union[Node,
           ApproximatorNode,
@@ -30,8 +32,9 @@ AnyNode = Annotated[
           NumericSolver,
           SymbolicSolver,
           TransferFunctionNumeric,
-          TransferFunctionSymbolic
-          ], 
+          TransferFunctionSymbolic,
+          PoleZeroNode
+          ],
     Field(discriminator='node_type')
 ]
 
