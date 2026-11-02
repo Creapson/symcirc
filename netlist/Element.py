@@ -62,6 +62,10 @@ class Element(BaseModel):
 
             current_value = self.params.get(value_str, None)
             if current_value == key:
+                # keep the model's parameter name ("gm", "rpi", ...) around.
+                # It is the only place it survives, and Analog Insydes names
+                # element values after it (gm$Q1), not after the element.
+                self.params["param_name"] = key
                 self.params[value_str] = str(value)
                 print(key, current_value, value)
                 return

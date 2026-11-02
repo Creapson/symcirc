@@ -5,7 +5,7 @@ from gui.components.node_editor.nodes.Node import Node, NodeType
 from gui.windows.ApproximatorWindow import ApproximatorWindow
 from gui.windows.MNAEditor import MNAEditor
 
-from Modified_Node_Analysis import ModifiedNodalAnalysis
+from analysis_methoden.Modified_Node_Analysis import ModifiedNodalAnalysis
 
 from typing import Literal, List
 from pydantic import Field

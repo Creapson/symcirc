@@ -21,6 +21,7 @@ class NodeType(IntEnum):
     SYMBOLIC_SOLVER = 9
     TRANSFER_FUNCTION_SYMBOLIC = 10
     POLE_ZERO_PLOT = 11
+    STA = 12
 
 class Node(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -129,6 +130,11 @@ class Node(BaseModel):
             )
             out_pin.setup_pin(self.node_id, self)
             self.output_pins[tag] = out_pin
+        else:
+            # pin already exists (e.g. Calculate pressed again with a
+            # different method) - refresh the button label/callback instead
+            # of silently keeping the stale one
+            self.output_pins[tag].update_button(self, button_text, button_callback)
 
     def add_input_pin(self, tag="", text=""):
         input_pin = 0

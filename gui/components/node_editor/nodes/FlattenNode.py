@@ -92,7 +92,7 @@ class FlattenNode(Node):
         print(f"LTspice .op log generated: {log_path}")
 
     def get_possible_node_connections(self) -> List[str]:
-        return ["mna"]
+        return ["sta"]
 
     def build(self):
         with dpg.value_registry():

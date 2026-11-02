@@ -7,7 +7,7 @@ from gui.components.OutputPin import PinType
 from gui.components.node_editor.nodes.Node import Node, NodeType
 from gui.windows.MNAEditor import MNAEditor
 from netlist.Circuit import Circuit
-from Modified_Node_Analysis import ModifiedNodalAnalysis
+from analysis_methoden.Modified_Node_Analysis import ModifiedNodalAnalysis
 
 
 class MNA(Node):

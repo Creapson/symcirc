@@ -162,7 +162,7 @@ class NetlistParserNode(Node):
         self.data["diode_model"] = dpg.get_value(self.uuid("diode_model"))
         self.data["jfet_model"] = dpg.get_value(self.uuid("jfet_model"))
 
-        self.circuit.set_separator(self.data.get("seperator", "_"))
+        self.circuit.set_separator(self.data.get("separator", "_"))
         self.circuit.set_bipolar_model(self.data.get("bipolar_model", ""))
         self.circuit.set_mosfet_model(self.data.get("mosfet_model", ""))
         self.circuit.set_diode_model(self.data.get("diode_model", ""))
