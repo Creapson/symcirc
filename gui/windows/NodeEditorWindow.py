@@ -282,7 +282,7 @@ class NodeEditorWindow(Window):
             (
                 PoleZeroNode,
                 "Pole-Zero Plot Node",
-                "gui/gfx/node_editor/bode_plot.png",
+                "gui/gfx/node_editor/pole_zero.png",
                 "pole_zero",
                 "Plot poles and zeros on the s-plane",
             ),
