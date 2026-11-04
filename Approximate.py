@@ -6,7 +6,9 @@ import time
 import scipy.linalg as scipy
 import warnings
 import copy
+
 from Modified_Node_Analysis import ModifiedNodalAnalysis
+import compress_matrix as cm
 
 
 
@@ -14,7 +16,7 @@ from Modified_Node_Analysis import ModifiedNodalAnalysis
 class Approximation:
 
     def __init__(self, equation_formulator):
-        self.analysis = equation_formulator
+        self.analysis = copy.deepcopy(equation_formulator)
         warnings.filterwarnings("error", category=scipy.LinAlgWarning)
         
     @staticmethod
@@ -43,10 +45,10 @@ class Approximation:
                     continue
                 terms = list(sp.Add.make_args(expr))
                 for t in terms:
-                    term_list.append(((i, j), t, [0.0]))  # Placeholder for numerical value
+                    term_list.append(((i, j), t, []))  # Placeholder for numerical value
         return term_list
 
-    def generate_relevance_coefficients_sm(
+    def generate_relevance_coefficients(
         self,
         output_potential,
         approx_points,
@@ -110,11 +112,12 @@ class Approximation:
             A_j_i = A_inv_np[j_idx, i_idx]
             x_j = x_np[j_idx]
 
-            dx_k_all = (-t_vals * A_out_i) / (1 + t_vals * A_j_i) * x_j
+            dx_k_all = (t_vals * A_out_i) / (1 - t_vals * A_j_i) * x_j
 
             se_all = np.abs(dx_k_all) / abs(ref_result_k)
 
             for idx, se in enumerate(se_all):
+             
                 term_list[idx][2].append(float(se))
 
             
@@ -137,7 +140,7 @@ class Approximation:
 
 
     
-    def generate_relevance_coefficients(self, output_potential, approx_points, sysMatrix):
+    def generate_relevance_coefficients_LU(self, output_potential, approx_points, sysMatrix):
         """Generate relevance coefficients for each term in the term list.
 
         Args:
@@ -253,12 +256,16 @@ class Approximation:
         elimination_method,
         rel_error_threshold,
         sorting_method,
+        influenceJumpPosition = None,
         column=0,
+        
         
     ):
         #Initialize
         approx_points = [a for a, _ in reference_points]
         approx_points_errors = [b for _, b in reference_points]
+
+        print("Approximation points:", approx_points)
 
         #----------------------------------------------------------
         # Determine maximum allowed error
@@ -294,6 +301,10 @@ class Approximation:
                                                          output_potential, 
                                                          approx_points, 
                                                          self.analysis.A)
+
+        print("Unsorted term list:")
+        for ((i, j), t, rel) in term_list_sym:
+            print(f"Term at position ({i}, {j}): {t}, Relevance Coefficient: {rel}")
       
 
         
@@ -303,6 +314,8 @@ class Approximation:
 
         
         # Sort term list by relevance coefficient --------------------------------------------------
+
+        
         
 
         term_list_sym = self.sort_term_list(term_list_sym, sorting_method, column)
@@ -310,9 +323,9 @@ class Approximation:
         
         term_list_sym.sort(key=lambda x: x[2].real)
 
-        # print("Sorted term list:")
-        # for ((i, j), t, rel) in term_list_sym:
-        #     print(f"Term at position ({i}, {j}): {t}, Relevance Coefficient: {rel}")
+        print("Sorted term list:")
+        for ((i, j), t, rel) in term_list_sym:
+            print(f"Term at position ({i}, {j}): {t}, Relevance Coefficient: {rel}")
         
 
         # ------------------------------------------------------------------------------------------
@@ -341,6 +354,10 @@ class Approximation:
             idx_out
         )
         abs_H_ref = np.abs(H_ref)
+
+        
+        print("Reference transfer function magnitude:")
+        print(abs_H_ref)
         
         
 
@@ -351,129 +368,92 @@ class Approximation:
 
 
         match elimination_method:
-            # case "block":
+            case "block":
+
+                if influenceJumpPosition is not None:
+                    for n in range(influenceJumpPosition + 1):
+                        (i, j), term, influence = term_list_sym.pop(0)
+                        A_reduced[i, j] -= term   
+
+
+                A_reduced_comp_num, z_comp_num, new_indice, A_reduced_comp, z_comp, unknowns_comp = cm.CompressMatrix(A_reduced, self.analysis.get_unknowns(), self.analysis.z, idx_out, self.analysis.value_dict, True)
+
+                z_num_func_comp = sp.lambdify(sp.symbols('s'), z_comp_num, "numpy")
+
+
+                term_list_sym = [((i, j), term, infl) for (i, j), term, infl in term_list_sym
+                if i < A_reduced_comp.rows and j < A_reduced_comp.cols]
+
+                A0_comp, A1_comp, term_list = self.split_linear_s_dependence(
+                            A_reduced_comp,
+                            term_list_sym,
+                            s
+                        )
+
+                count = 0
+                no_terms = True
+
+                for safty_counter in range(3):
+               
+                    removable_terms = self.find_removable_block_terms(
+                    A_matrix=A_reduced_comp,
+                    term_list_sym=term_list_sym,
+                    term_list_split=term_list,
+                    A0=A0_comp,
+                    A1=A1_comp,
+                    z_num_func=z_num_func_comp,
+                    approx_points=approx_points,
+                    idx_out=new_indice,
+                    max_error=max_error,
+                    has_phase_sign_jump=self.has_phase_sign_jump,
+                    )
+
+                    count += 1
+
+                    if removable_terms:
+                        for (i,j), term, _ in removable_terms:
+                            A_reduced_comp[i, j] -= term
+
+                        A_reduced_comp_num, z_comp_num, new_indice, A_reduced_comp, z_comp, unknowns_comp = cm.CompressMatrix(A_reduced, self.analysis.get_unknowns(), self.analysis.z, idx_out, self.analysis.value_dict, True)
+                        
+                        z_num_func_comp = sp.lambdify(sp.symbols('s'), z_comp_num, "numpy")
+                        
+                        
+                        term_list_sym = [((i, j), term, infl) for (i, j), term, infl in term_list_sym
+                        if i < A_reduced_comp.rows and j < A_reduced_comp.cols]
+                        
+                        A0_comp, A1_comp, term_list = self.split_linear_s_dependence(
+                            A_reduced_comp,
+                            term_list_sym,
+                            s
+                        )
+
+                        no_terms = False
+
+                    if no_terms or count != 1:
+                        analysis_comp = ModifiedNodalAnalysis(self.analysis.ct)
+
+                        analysis_comp.A = A_reduced_comp
+                        analysis_comp.z = z_comp
+                        analysis_comp.unknowns = unknowns_comp
+                        analysis_comp.value_dict = self.analysis.value_dict
+
+                        approx_compressed = Approximation(analysis_comp)
+
+                        return approx_compressed.approximate(
+                                output_potential_str,
+                                reference_points,
+                                "term-by-term",
+                                rel_error_threshold,
+                                sorting_method,
+                                influenceJumpPosition,
+                                column)    
+
                 
-                # error_flag = False
-                
-
-                # while term_list:
-                #     mag_jump = self.find_order_jumps(term_list, rel_error_threshold)
-
-                #     trial_term_list = term_list.copy()
-                #     trial_term_list_sym = term_list_sym.copy()
-                #     # create trial matrices
-                #     A0_trial = A0.copy()
-                #     A1_trial = A1.copy()
-
-                #     for k in range(mag_jump + 1):
-                #         (i, j), t0, t1, rel_coeff = trial_term_list.pop(0) #get least relevant numeric term
-                #         (i_sym, j_sym), term, rel_coeff_sym = trial_term_list_sym.pop(0) # get least relevant symbolic term for record keeping
-                        
-                #         A0_trial[i, j] -= t0
-                #         A1_trial[i, j] -= t1
-
-                #     # compute trial transfer function
-                #     try:
-                        
-                #         H_trial = self.compute_transfer_function_numeric(
-                #                 A0_trial,
-                #                 A1_trial,
-                #                 z_num_func,
-                #                 approx_points,
-                #                 idx_in,
-                #                 idx_out
-                #             )
-                #         print("Computed trial transfer function.")
-                #         print(H_trial)
-                        
-
-                #     except NonInvertibleMatrixError:
-                #         error_flag = True
                     
-                #     if not error_flag:
-                #         if self.has_phase_sign_jump(H_ref, H_trial):# check for phase jumps
-                #             continue
-
-                #         abs_H_trial= np.abs(H_trial)
-
-                #         # calculate true error
-                #         true_error = np.max(
-                #             np.abs(abs_H_ref - abs_H_trial) / abs_H_ref
-                #         )
-                #     #check if true error is acceptable
-                #     if true_error > max_error or error_flag: #TODO: max_error per frequency point
-                #         for k in range(mag_jump + 1):
                     
-                #             #get next, least relevant, term
-                            
 
-                #             (i, j), t0, t1, rel_coeff = term_list.pop(0) #get least relevant numeric term
-
-
-                #             (i_sym, j_sym), term, rel_coeff_sym = term_list_sym.pop(0) # get least relevant symbolic term for record keeping
-
-                #             print(f"Trying to remove term {term} at position ({i}, {j}) with relevance coefficient {rel_coeff}")
-
-                #             #-------------------------------------------------------------------------------
-                #             # create trial matrices
-
-
-                #             A0_trial = A0.copy()
-                #             A1_trial = A1.copy()
-
-                #             A0_trial[i, j] -= t0
-                #             A1_trial[i, j] -= t1
-
-                #             #-------------------------------------------------------------------------------
-                #             # compute trial transfer function
-
-                #             try:
-                                
-                #                 H_trial = self.compute_transfer_function_numeric(
-                #                         A0_trial,
-                #                         A1_trial,
-                #                         z_num_func,
-                #                         approx_points,
-                #                         idx_in,
-                #                         idx_out
-                #                     )
-                #                 print("Computed trial transfer function.")
-                #                 print(H_trial)
-                                
-
-                #             except NonInvertibleMatrixError:
-                #                 continue
-                            
-
-                #             if self.has_phase_sign_jump(H_ref, H_trial):# check for phase jumps 
-                #                 continue
-
-                        
-                #             abs_H_trial= np.abs(H_trial)
-
-
-                #             #-------------------------------------------------------------------------------
-                #             # calculate true error
-                            
-                            
-                #             true_error = np.abs(abs_H_ref - abs_H_trial) / abs_H_ref
-                            
-                            
-                            
-                #             #check if true error is acceptable
-                #             if any(error > max_error for error in true_error): #TODO: max_error per frequency point
-                #                 break
-
-
-                #             #-------------------------------------------------------------------------------
-                        
-                #             #accept removal
-                #             A0 = A0_trial.copy()
-                #             A1 = A1_trial.copy()
-                            
-
-                #             removed_terms.append(((i_sym, j_sym), term, rel_coeff_sym)) # record keeping
-
+                    
                        
             
             case "term-by-term":
@@ -514,8 +494,7 @@ class Approximation:
                                 approx_points,
                                 idx_out
                             )
-                        # print("Computed trial transfer function.")
-                    #print(H_trial)
+                        
                         
 
                     if is_singular:
@@ -538,12 +517,12 @@ class Approximation:
                     )
                     accumulated_relevance_error += rel_coeff
 
-                    #print("True error: ",true_error, " Accumulated error: ",accumulated_relevance_error)
+                    print("True error: ",true_error, " Accumulated error: ",accumulated_relevance_error)
                     
                     
                     #check if true error is acceptable
-                    if (true_error > max_error) or (np.isnan(true_error) and (accumulated_relevance_error > max_error)): #TODO: max_error per frequency point
-                        print("Error too high, ending approximation...")
+                    if (true_error > max_error) or (np.isnan(true_error) and (accumulated_relevance_error > max_error)): 
+                        print("Error too high, ending approximation...\n number of remaining terms: ", len(term_list))
                         return self.calc_End_Result(removed_terms)
 
 
@@ -557,9 +536,9 @@ class Approximation:
                     removed_terms.append(((i_sym, j_sym), term, rel_coeff_sym)) # record keeping
 
                     #-------------------------------------------------------------------------------
-                    rel_diff = 0#np.abs(true_error - accumulated_relevance_error) # difference check
-                    # print("True error: ",true_error, " Accumulated error: ",accumulated_relevance_error, " Difference: ", rel_diff)
-                    # print("-----------------\n")
+                    rel_diff = np.abs(true_error - accumulated_relevance_error) # difference check
+                    print("Difference Error: ", rel_diff)
+                    print("-----------------\n")
 
                     #-------------------------------------------------------------------------------
                     # calculate new relevance coefficients if necessary
@@ -605,7 +584,7 @@ class Approximation:
         Returns:
             ModifiedNodalAnalysis: new MNA object with reduced system matrix
         """
-        analysis_reduced = copy.copy(self.analysis)
+        analysis_reduced = copy.deepcopy(self.analysis)
 
         analysis_reduced.A = self.get_reduced_matrix(rem_terms)
 
@@ -664,7 +643,7 @@ class Approximation:
                 continue
                 
             
-            print(x[output_potential])
+            #print(x[output_potential])
             
 
             
@@ -681,7 +660,7 @@ class Approximation:
 
         dphi = phi_trial - phi_ref
 
-        return np.any(np.abs(np.diff(dphi)) > threshold)
+        return np.any(np.abs(dphi) > threshold)
 
     def update_remaining_terms(
         self,
@@ -824,23 +803,465 @@ class Approximation:
 
         return term_list
     
-    def find_order_jump(term_list, threshold):
 
-        for i in range(len(term_list) - 1):
-            _,_,_,a= term_list[i] 
-            _,_,_,b= term_list[i + 1]
-            # 0 -> positive Zahl: immer ein Sprung
-            if a == 0 and b > 0:
-                return i
-                
 
-            # 0 -> 0 oder negative Fälle ignorieren
-            if a <= 0 or b <= 0:
+    def _block_influence_exceeds(self, influence, max_error):
+        """
+        Prüft, ob mindestens ein Einflusswert max_error überschreitet.
+        Nicht-endliche Einflusswerte führen ebenfalls zum Abbruch.
+        """
+        values = np.asarray(influence).reshape(-1)
+
+        if values.size == 0:
+            return False
+
+        try:
+            values = values.astype(float)
+        except (TypeError, ValueError):
+            values = np.array(
+                [float(sp.N(value)) for value in values],
+                dtype=float,
+            )
+
+        return bool(
+            np.any(~np.isfinite(values))
+            or np.any(values > max_error)
+        )
+
+
+    def _is_symbolically_nonzero(self, value):
+        """
+        Zählt symbolisch und numerisch von null verschiedene Einträge.
+        """
+        value = sp.simplify(value)
+
+        if value.is_zero is True:
+            return False
+
+        if value.is_zero is False:
+            return True
+
+        # Bei einem vollständig numerischen Ausdruck nachprüfen.
+        if not value.free_symbols:
+            try:
+                return complex(sp.N(value)) != 0
+            except (TypeError, ValueError):
+                return True
+
+        # Ein nicht entscheidbarer symbolischer Ausdruck wird
+        # konservativ als potenziell ungleich null behandelt.
+        return True
+
+
+    def find_block_candidate_indices(
+            self,
+        A_matrix,
+        term_list_sym,
+        max_error,
+        include_last_candidate=False,
+    ):
+        """
+        Identifiziert Blockkandidaten gemäß dem ersten Algorithmus.
+
+        Parameters
+        ----------
+        A_matrix : sympy.Matrix
+            Symbolische Ausgangsmatrix.
+        term_list_sym : list
+            Liste der Form ((i, j), term, rel_coeff).
+        max_error : float
+            Maximal zulässiger Einfluss.
+        include_last_candidate : bool
+            False bildet die ursprüngliche Mathematica-Schleife
+            r < Length[Einflußliste] nach. Dabei wird der letzte
+            Eintrag ausgelassen.
+
+        Returns
+        -------
+        list[int]
+            Indizes der erkannten Blockkandidaten in term_list_sym.
+        """
+        AL = sp.Matrix(A_matrix)
+        block_indices = []
+
+        if include_last_candidate:
+            entries = term_list_sym
+        else:
+            entries = term_list_sym[:-1]
+
+        for index, ((i, j), term, influence) in enumerate(entries):
+
+            # Die Einträge sind nach Relevanz sortiert.
+            # Beim ersten überschrittenen Grenzwert wird abgebrochen.
+            if self._block_influence_exceeds(influence, max_error):
+                break
+
+            # Kandidat aus der Arbeitsmatrix entfernen.
+            AL[i, j] = sp.simplify(AL[i, j] - term)
+
+            # Anzahl von Nichtnull-Einträgen in Zeile i.
+            row_count = sum(
+                self._is_symbolically_nonzero(AL[i, k])
+                for k in range(AL.cols)
+            )
+
+            # Anzahl von Nichtnull-Einträgen in Spalte j.
+            col_count = sum(
+                self._is_symbolically_nonzero(AL[k, j])
+                for k in range(AL.rows)
+            )
+
+            # Blockelement identifizieren.
+            if row_count == 1 or col_count == 1:
+                block_indices.append(index)
+
+        return block_indices
+
+
+    def _compute_complex_transfer_function(
+      self,
+        A0,
+        A1,
+        z_num_func,
+        approx_points,
+        idx_out,
+    ):
+        """
+        Berechnet H(s) für alle Approximationspunkte.
+
+        Die Funktion verwendet komplexe Arrays und np.linalg.solve,
+        ohne die bestehenden Klassenmethoden zu verändern.
+
+        Returns
+        -------
+        H : np.ndarray oder None
+            Komplexe Transferfunktionswerte.
+        is_singular : bool
+            True, falls mindestens ein System nicht gelöst werden kann.
+        """
+        A0 = np.asarray(A0, dtype=complex)
+        A1 = np.asarray(A1, dtype=complex)
+
+        if (
+            A0.ndim != 2
+            or A1.ndim != 2
+            or A0.shape != A1.shape
+            or A0.shape[0] != A0.shape[1]
+        ):
+            return None, True
+
+        points = np.atleast_1d(
+            np.asarray(approx_points, dtype=float)
+        )
+
+        H = np.empty(len(points), dtype=complex)
+        n = A0.shape[0]
+
+        for k, frequency in enumerate(points):
+            s_value = 1j * 2 * np.pi * frequency
+
+            A_num = A0 + s_value * A1
+
+            try:
+                z_num = np.asarray(
+                    z_num_func(s_value),
+                    dtype=complex,
+                ).reshape(n)
+
+                if (
+                    not np.all(np.isfinite(A_num))
+                    or not np.all(np.isfinite(z_num))
+                ):
+                    return None, True
+
+                # Direkte Lösung statt expliziter Matrixinversion.
+                x = np.linalg.solve(A_num, z_num)
+
+                if not np.all(np.isfinite(x)):
+                    return None, True
+
+                H[k] = x[idx_out]
+
+            except (
+                np.linalg.LinAlgError,
+                ValueError,
+                TypeError,
+                OverflowError,
+            ):
+                return None, True
+
+        return H, False
+
+
+    def _calculate_relative_magnitude_error(self, H_ref, H_trial):
+        """
+        Berechnet den maximalen relativen Fehler der Beträge
+        über alle Approximationspunkte.
+
+        e = max(| |H_ref| - |H_trial| | / |H_ref|)
+
+        Ist ein Referenzbetrag null, wird der Fehler für diesen
+        Punkt als 0 oder unendlich behandelt.
+        """
+        H_ref = np.asarray(H_ref, dtype=complex)
+        H_trial = np.asarray(H_trial, dtype=complex)
+
+        if (
+            H_ref.shape != H_trial.shape
+            or H_ref.size == 0
+            or not np.all(np.isfinite(H_ref))
+            or not np.all(np.isfinite(H_trial))
+        ):
+            return np.inf
+
+        abs_ref = np.abs(H_ref)
+        abs_trial = np.abs(H_trial)
+        difference = np.abs(abs_ref - abs_trial)
+
+        errors = np.empty_like(abs_ref, dtype=float)
+        nonzero = abs_ref > 0
+
+        errors[nonzero] = (
+            difference[nonzero] / abs_ref[nonzero]
+        )
+
+        zero = ~nonzero
+        errors[zero] = np.where(
+            difference[zero] == 0,
+            0.0,
+            np.inf,
+        )
+
+        if not np.all(np.isfinite(errors)):
+            return np.inf
+
+        return float(np.max(errors))
+
+
+    def find_removable_block_terms(
+        self,
+        A_matrix,
+        term_list_sym,
+        term_list_split,
+        A0,
+        A1,
+        z_num_func,
+        approx_points,
+        idx_out,
+        max_error,
+        has_phase_sign_jump,
+        include_last_candidate=True,
+    ):
+        """
+        Bestimmt die maximal entfernbaren Blockkandidaten.
+
+        Die Funktion ist auf die Datenstrukturen der vorhandenen
+        Approximation-Klasse abgestimmt.
+
+        Parameters
+        ----------
+        A_matrix : sympy.Matrix
+            Symbolische Ausgangsmatrix, z. B. A_reduced.
+        term_list_sym : list
+            Symbolische Terme: ((i, j), term, rel_coeff).
+        term_list_split : list
+            Zerlegte Terme: ((i, j), term0, term1, rel_coeff).
+        A0, A1 : np.ndarray
+            Numerische Matrizen mit A(s) = A0 + s*A1.
+        z_num_func : callable
+            Numerische rechte Seite als Funktion von s.
+        approx_points : array-like
+            Frequenzen, an denen die Approximation geprüft wird.
+        idx_out : int
+            Index der Ausgangsvariablen.
+        max_error : float
+            Maximal zulässiger relativer Fehler.
+        has_phase_sign_jump : callable
+            Bestehende Klassenmethode zur Phasensprungprüfung.
+        include_last_candidate : bool
+            Ob der letzte Eintrag bei der Blockidentifikation
+            berücksichtigt werden soll.
+
+        Returns
+        -------
+        list
+            Entfernte Terme in der Form
+            ((i, j), term, rel_coeff), kompatibel mit
+            get_reduced_matrix() und calc_End_Result().
+        """
+
+        # ---------------------------------------------------------
+        # 1. Eingaben überprüfen
+        # ---------------------------------------------------------
+
+        if len(term_list_sym) != len(term_list_split):
+            raise ValueError(
+                "term_list_sym und term_list_split müssen "
+                "gleich lang sein."
+            )
+
+        for index, (symbolic, numeric) in enumerate(
+            zip(term_list_sym, term_list_split)
+        ):
+            if symbolic[0] != numeric[0]:
+                raise ValueError(
+                    f"Die Termlisten sind bei Index {index} "
+                    "nicht synchronisiert."
+                )
+
+        # ---------------------------------------------------------
+        # 2. Blockkandidaten erkennen
+        # ---------------------------------------------------------
+
+        block_indices = self.find_block_candidate_indices(
+            A_matrix=A_matrix,
+            term_list_sym=term_list_sym,
+            max_error=max_error,
+            include_last_candidate=include_last_candidate,
+        )
+
+        number_of_blocks = len(block_indices)
+
+        print(f"Gefundene Blockkandidaten: {number_of_blocks}")
+
+        if number_of_blocks == 0:
+            return []
+
+        # ---------------------------------------------------------
+        # 3. Referenztransferfunktion komplex berechnen
+        # ---------------------------------------------------------
+
+        H_ref, is_singular = self._compute_complex_transfer_function(
+            A0=A0,
+            A1=A1,
+            z_num_func=z_num_func,
+            approx_points=approx_points,
+            idx_out=idx_out,
+        )
+
+        if is_singular:
+            raise ValueError(
+                "Das Referenzsystem ist an mindestens einem "
+                "Approximationspunkt singulär oder ungültig."
+            )
+
+        # ---------------------------------------------------------
+        # 4. Binäre Suche initialisieren
+        # ---------------------------------------------------------
+
+        # Anzahl akzeptierter Blockkandidaten.
+        yO = 0
+
+        # Obere exklusive Grenze. Damit wird auch die Entfernung
+        # sämtlicher Blockkandidaten überprüft.
+        y = number_of_blocks + 1
+
+        # ---------------------------------------------------------
+        # 5. Maximale Anzahl entfernbarer Kandidaten suchen
+        # ---------------------------------------------------------
+
+        while y - yO > 1:
+
+            yk = (yO + y) // 2
+
+            print(
+                f"\nPrüfe Entfernung der ersten {yk} "
+                f"von {number_of_blocks} Blockkandidaten."
+            )
+
+            # Ausgangssystem für diesen Versuch kopieren.
+            A0_trial = np.array(A0, dtype=complex, copy=True)
+            A1_trial = np.array(A1, dtype=complex, copy=True)
+
+            # Die ersten yk Blockkandidaten entfernen.
+            for index in block_indices[:yk]:
+
+                ((i, j), term0, term1, rel_coeff) = (
+                    term_list_split[index]
+                )
+
+                A0_trial[i, j] -= term0
+                A1_trial[i, j] -= term1
+
+            # -----------------------------------------------------
+            # 6. Invertierbarkeit überprüfen und Lösung bestimmen
+            # -----------------------------------------------------
+
+            H_trial, is_singular = (
+                self._compute_complex_transfer_function(
+                    A0=A0_trial,
+                    A1=A1_trial,
+                    z_num_func=z_num_func,
+                    approx_points=approx_points,
+                    idx_out=idx_out,
+                )
+            )
+
+            if is_singular:
+                y = yk
+
+                print(
+                    "Nicht akzeptiert: Mindestens ein reduziertes "
+                    "System ist singulär oder ungültig."
+                )
                 continue
 
-            diff = abs(math.log10(b) - math.log10(a))
+            # -----------------------------------------------------
+            # 7. Phasensprung überprüfen
+            # -----------------------------------------------------
 
-            if diff >= threshold:
-                return i
+            if has_phase_sign_jump(H_ref, H_trial):
+                y = yk
 
-        return len(term_list)
+                print(
+                    "Nicht akzeptiert: Phasensprung erkannt."
+                )
+                continue
+
+            # -----------------------------------------------------
+            # 8. Relativen Fehler überprüfen
+            # -----------------------------------------------------
+
+            rel_error = self._calculate_relative_magnitude_error(
+                H_ref,
+                H_trial,
+            )
+
+            if rel_error > max_error:
+                # Zu viele entfernte Kandidaten: Intervall verkleinern.
+                y = yk
+
+                print(
+                    f"Nicht akzeptiert: Relativer Fehler "
+                    f"{rel_error:.6g} > {max_error:.6g}."
+                )
+
+            else:
+                # Versuch akzeptieren und mehr Kandidaten testen.
+                yO = yk
+
+                print(
+                    f"Akzeptiert: Relativer Fehler "
+                    f"{rel_error:.6g} <= {max_error:.6g}."
+                )
+
+            print(f"Aktuelles Suchintervall: [{yO}, {y}]")
+
+        # ---------------------------------------------------------
+        # 9. Akzeptierte Blockkandidaten zurückgeben
+        # ---------------------------------------------------------
+
+        removable_indices = block_indices[:yO]
+
+        removed_terms = [
+            term_list_sym[index]
+            for index in removable_indices
+        ]
+
+        print(
+            f"\nBlocksuche abgeschlossen: "
+            f"{len(removed_terms)} von {number_of_blocks} "
+            "Blockkandidaten können entfernt werden."
+        )
+
+        return removed_terms

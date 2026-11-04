@@ -1,0 +1,262 @@
+
+**** 10/29/126 19:04:47 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * C:\Users\kevin\Documents\Uni\BA\Projekt\Testschaltkreise\phono_preamp.sch
+
+
+ ****     CIRCUIT DESCRIPTION
+
+
+******************************************************************************
+
+
+
+
+* Schematics Version 8.0 - July 1997
+* Thu Oct 29 09:43:52 2026
+
+
+
+** Analysis setup **
+.ac DEC 101 10 30k
+.OP 
+.STMLIB "phono_preamp.stl"
+
+
+* From [SCHEMATICS NETLIST] section of msim.ini:
+.lib "D:\MSim_8\lib\OPAMP.LIB"
+.lib "D:\MSim_8\lib\mos.lib"
+.lib "D:\MSim_8\lib\EBIPOLAR.LIB"
+.lib "D:\MSim_8\lib\User\RASH_PCE3_MODEL.LIB"
+.lib "D:\MSim_8\lib\ts.lib"
+.lib "D:\msim_8\lib\nom.lib"
+
+.INC "phono_preamp.net"
+
+**** INCLUDING phono_preamp.net ****
+* Schematics Netlist *
+
+
+
+R_R7         $N_0002 $N_0001 1k
+C_C3         $N_0001 0 330u 
+R_R6         $N_0002 $N_0003 560
+R_R5         $N_0002 $N_0004 560k
+C_C4         $N_0003 $N_0004 5600p 
+C_C5         $N_0004 $N_0005 1600p 
+R_R4         $N_0004 $N_0005 47k
+C_C6         $N_0005 OUT 2.2u 
+R_R3         OUT 0 220k
+V_V2         $N_0006 0 DC 15 AC 0 
+V_V3         0 $N_0007 DC 15 AC 0 
+V_V6         $N_0008 0 DC 0V AC 0.001V 
+C_C1         $N_0009 $N_0002 100p 
+R_R9         $N_0008 $N_0009 220
+R_R8         $N_0009 0 47k
+C_C2         $N_0009 0 120p 
+X_U3A         $N_0009 $N_0002 $N_0006 $N_0007 $N_0005 UA772
+
+**** RESUMING phono_preamp.cir ****
+.INC "phono_preamp.als"
+
+
+
+**** INCLUDING phono_preamp.als ****
+* Schematics Aliases *
+
+.ALIASES
+R_R7            R7(1=$N_0002 2=$N_0001 )
+C_C3            C3(1=$N_0001 2=0 )
+R_R6            R6(1=$N_0002 2=$N_0003 )
+R_R5            R5(1=$N_0002 2=$N_0004 )
+C_C4            C4(1=$N_0003 2=$N_0004 )
+C_C5            C5(1=$N_0004 2=$N_0005 )
+R_R4            R4(1=$N_0004 2=$N_0005 )
+C_C6            C6(1=$N_0005 2=OUT )
+R_R3            R3(1=OUT 2=0 )
+V_V2            V2(+=$N_0006 -=0 )
+V_V3            V3(+=0 -=$N_0007 )
+V_V6            V6(+=$N_0008 -=0 )
+C_C1            C1(1=$N_0009 2=$N_0002 )
+R_R9            R9(1=$N_0008 2=$N_0009 )
+R_R8            R8(1=$N_0009 2=0 )
+C_C2            C2(1=$N_0009 2=0 )
+X_U3A           U3A(+=$N_0009 -=$N_0002 V+=$N_0006 V-=$N_0007 OUT=$N_0005 )
+_    _(OUT=OUT)
+.ENDALIASES
+
+
+**** RESUMING phono_preamp.cir ****
+.probe
+
+
+.END
+
+**** 10/29/126 19:04:47 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * C:\Users\kevin\Documents\Uni\BA\Projekt\Testschaltkreise\phono_preamp.sch
+
+
+ ****     Diode MODEL PARAMETERS
+
+
+******************************************************************************
+
+
+
+
+               X_U3A.dx        X_U3A.dy        
+          IS  800.000000E-18  800.000000E-18 
+          RS                    1.000000E-03 
+         CJO                   10.000000E-12 
+
+
+**** 10/29/126 19:04:47 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * C:\Users\kevin\Documents\Uni\BA\Projekt\Testschaltkreise\phono_preamp.sch
+
+
+ ****     Junction FET MODEL PARAMETERS
+
+
+******************************************************************************
+
+
+
+
+               X_U3A.jx        
+               PJF             
+         VTO   -1            
+        BETA  205.000000E-06 
+          IS   25.000000E-12 
+
+
+**** 10/29/126 19:04:47 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * C:\Users\kevin\Documents\Uni\BA\Projekt\Testschaltkreise\phono_preamp.sch
+
+
+ ****     SMALL SIGNAL BIAS SOLUTION       TEMPERATURE =   27.000 DEG C
+
+
+******************************************************************************
+
+
+
+ NODE   VOLTAGE     NODE   VOLTAGE     NODE   VOLTAGE     NODE   VOLTAGE
+
+
+(  OUT)    0.0000  ($N_0001) 114.2E-06                   ($N_0002) 114.2E-06    
+
+($N_0003) 114.2E-06                   ($N_0004) 150.7E-06                       
+
+($N_0005) 153.8E-06                   ($N_0006)   15.0000                       
+
+($N_0007)  -15.0000                   ($N_0008)    0.0000                       
+
+($N_0009)-14.27E-09                   (X_U3A.6)-6.877E-09                       
+
+(X_U3A.7) 153.8E-06                   (X_U3A.8) 153.8E-06                       
+
+(X_U3A.9)    0.0000                   (X_U3A.10)    -.5117                      
+
+(X_U3A.11)  -14.6540                  (X_U3A.12)  -14.6540                      
+
+(X_U3A.53)   14.0000                  (X_U3A.54)  -14.0000                      
+
+(X_U3A.90) 65.17E-09                  (X_U3A.91)   25.0000                      
+
+(X_U3A.92)  -25.0000                  (X_U3A.99)    0.0000                  
+
+
+
+
+    VOLTAGE SOURCE CURRENTS
+    NAME         CURRENT
+
+    V_V2        -3.000E+03
+    V_V3        -3.000E+03
+    V_V6        -6.486E-11
+    X_U3A.vb    -6.877E-14
+    X_U3A.vc     1.400E-11
+    X_U3A.ve     1.455E-11
+    X_U3A.vlim   6.517E-11
+    X_U3A.vlp   -2.500E-11
+    X_U3A.vln   -2.500E-11
+
+    TOTAL POWER DISSIPATION   9.00E+04  WATTS
+
+
+**** 10/29/126 19:04:47 ****** NT PSpice 8.0 (July 1997) ****** ID# 74155 ****
+
+ * C:\Users\kevin\Documents\Uni\BA\Projekt\Testschaltkreise\phono_preamp.sch
+
+
+ ****     OPERATING POINT INFORMATION      TEMPERATURE =   27.000 DEG C
+
+
+******************************************************************************
+
+
+
+
+
+
+**** VOLTAGE-CONTROLLED CURRENT SOURCES
+
+
+NAME         X_U3A.ga    X_U3A.gcm 
+I-SOURCE    -2.288E-08  -2.288E-08
+
+
+**** VOLTAGE-CONTROLLED VOLTAGE SOURCES
+
+
+NAME         X_U3A.egnd
+V-SOURCE     0.000E+00
+I-SOURCE    -2.490E-07
+
+
+**** CURRENT-CONTROLLED CURRENT SOURCES
+
+
+NAME         X_U3A.fb  
+I-SOURCE    -2.050E-06
+
+
+**** CURRENT-CONTROLLED VOLTAGE SOURCES
+
+
+NAME         X_U3A.hlim
+V-SOURCE     6.517E-08
+I-SOURCE    -1.303E-19
+
+
+**** DIODES
+
+
+NAME         X_U3A.dc    X_U3A.de    X_U3A.dlp   X_U3A.dln   X_U3A.dp  
+MODEL        X_U3A.dy    X_U3A.dy    X_U3A.dx    X_U3A.dx    X_U3A.dx  
+ID          -1.40E-11   -1.40E-11   -2.50E-11   -2.50E-11   -3.00E-11 
+VD          -1.40E+01   -1.40E+01   -2.50E+01   -2.50E+01   -3.00E+01 
+REQ          1.00E+12    1.00E+12    1.00E+12    1.00E+12    1.00E+12 
+CAP          2.58E-12    2.58E-12    0.00E+00    0.00E+00    0.00E+00 
+
+
+**** JFETS
+
+
+NAME         X_U3A.j1    X_U3A.j2  
+MODEL        X_U3A.jx    X_U3A.jx  
+ID          -4.89E-05   -4.89E-05 
+VGS          5.12E-01    5.12E-01 
+VDS         -1.41E+01   -1.41E+01 
+GM           2.00E-04    2.00E-04 
+GDS          0.00E+00    0.00E+00 
+CGS          0.00E+00    0.00E+00 
+CGD          0.00E+00    0.00E+00 
+
+          JOB CONCLUDED
+
+          TOTAL JOB TIME             .06
+

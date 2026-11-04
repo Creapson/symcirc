@@ -1,152 +1,192 @@
+from copy import deepcopy
 import time as t
-
-
 from netlist.Circuit import Circuit
 from Modified_Node_Analysis import ModifiedNodalAnalysis
+from Sparse_Tableau_Extended import SparseTableau
 from parser.NetlistParser import get_circuit_from_file
 from Approximate import Approximation 
-import time as t
-
+import tracemalloc
 import sympy as sp
-import sympy.physics.control.lti as tf
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+import ApproximateEigenvalue as ae
+import compress_matrix as cm
+
 
 circuit = Circuit()
 
-circuit = get_circuit_from_file("test_circuits/Emitteramp_deutsch.cir")
+circuit = get_circuit_from_file("test_circuits/Basisschaltung_2N2222.cir")
 circuit.to_ai_string()
 print("\n\n\nThe now flattend subcircuits")
 circuit.flatten()
 circuit.to_ai_string()
 
 print("\n\n\nThe flattend circuit with small signal models")
-circuit.flatten(True, "test_circuits/Emitteramp_deutsch.out")
+circuit.flatten(True, "test_circuits/Basisschaltung_2N2222.out")
+circuit.elements = [
+    element
+    for element in circuit.elements
+    if element.type.upper() != "Q"
+]
 circuit.to_ai_string()
 print(circuit.get_nodes())
 
-#x = input("Do you want to flatten the circuit with small signal models? (y/n): ")
+
+
+
 
 
 
 mna = ModifiedNodalAnalysis(circuit)
 mna.buildEquationsSystem()
 
-sp.pprint(mna.A[0, :])
-
-x_syms = list(mna.get_unknowns())
-print("Unknowns:")
-print(x_syms)
-#idx_in = x_syms.index(sp.symbols("V_1"))
-idx_out = x_syms.index(sp.symbols("V_3"))
-f = np.logspace(0, 4, 400)
+st = SparseTableau(circuit)
+st.buildEquationsSystem()
 
 
-print("\n\n\n\n\n\n Value dict:\n")
-sp.pprint(mna.value_dict)
+
+s = sp.Symbol("s")
 
 
-H_lambdified = mna.solveNumerical(f, "V_3")
+
+print("\n compressing matrix:")
+print(st.unknowns)
+
+mna_compressed = deepcopy(mna)
+
+T_compressed_num, rhs_comressed_num, new_indice, mna_compressed.A, mna_compressed.z, mna_compressed.unknowns = cm.CompressMatrix(st.T, st.get_unknowns(), st.RHS, list(st.get_unknowns()).index(sp.Symbol("V_ua")), st.value_dict, True)
 
 
-print("\n\n\n\n\n\n")
 
-result = mna.solve("V_3") / mna.solve("V_1")
-result = result.simplify()
-print("Symbolic result for V_2:")
-print(result)
-
-numerator, denominator = sp.together(result).as_numer_denom()
-
-print("\n\n\n\n\n\n")
-#print("Degree of the numerator:", sp.degree(numerator, sp.symbols("s")))
-print("\n")
-#print("Degree of the denominator:", sp.degree(denominator, sp.symbols("s")))
-
-numerator = numerator.subs(mna.value_dict)
-denominator = denominator.subs(mna.value_dict)
-
-print("\n\n\n\n\n\n")
-print("Poles of the transfer function:")
-
-print(sp.solve(denominator, sp.symbols("s")))
-
-print("Zeros of the transfer function:")
+ap = Approximation(mna_compressed)
 
 
-print(sp.solve(numerator, sp.symbols("s")))
+
+result_ap = ap.approximate("V_ua", ((1e5, 0.14),), "block", 2.0, "max", 5)
 
 
-print("Original transfer function:")
-#print(result)
-
-# H_numerical = sp.lambdify(sp.symbols("s"), result.subs(mna.value_dict), "numpy")
-
-# H_lambdified = np.array([H_numerical(1j * 2*np.pi *freq) for freq in f])
-
-# print("\n\n\n\n\n\n")
-# print("Approximation results:")
-# ap = Approximation(mna)
-# print("Available elimination methods:", ap.get_Elimination_Methods())
-# print("Available sorting methods:", ap.get_Sorting_Methods())
-# t0 = t.perf_counter_ns()
-# #approximate(self, in_var, out_var, points/errors, term_removal_method, tolerance (tbt- rel_error; block - jmp_threshold), sorting_criterion, sorting_extra_var(column - col_num))
-# approx = ap.approximate('V_2', ((1e5,0.1),(1e8,0.1)), "term-by-term",0.6, "max", 1)
-# t1 = t.perf_counter_ns()
-# print(f"Time for approximation: {(t1 - t0) / 1e6} ms")
-
-# approx_H_lambdified = approx.solveNumerical(f, "V_3")
-
-# approx_result = approx.solve("V_3") / approx.solve("V_1")
-# print("Symbolic result for V_2:")
-# print(approx_result.simplify())
-# print("\n Numerical result for V_2:")
-# print(approx_result.subs(mna.value_dict).simplify())
-
-# print("\n\n\n\n\n\n")
+print("Result: ")
+print(sp.simplify(result_ap.solve("V_ua")))
 
 
-# numerator, denominator = sp.together(approx_result).as_numer_denom()
+print("Eigenwertberechnung für die Matrix A(s):")
 
-# #numerator = numerator.subs(mna.value_dict)
-# #denominator = denominator.subs(mna.value_dict)
+eigenvalues, S, W, Q, Z = ae.get_eigenvalues(st.T.subs(st.value_dict), s)
 
-# print("\n\n\n\n\n\n")
-# print("Poles of the transfer function:")
+print(eigenvalues)
 
-# print(sp.solve(denominator.subs(mna.value_dict), sp.symbols("s")))
-
-# print("Zeros of the transfer function:")
+# print("\n\n\nLeft eigenvector: ")
 
 
-# print(sp.solve(numerator.subs(mna.value_dict), sp.symbols("s")))
+# v = ae.left_eigenvector_from_qz(S, T, eigenvalues[3], 3, Q)
+
+# print(v)
+
+# print("\n\n\nRight eigenvector: ")
+
+# u = ae.right_eigenvector_from_qz(S, T, eigenvalues[3], 3, Z)
+
+# print(u)
+
+# print("\n\n\nModal Assurance Criterion:")
+
+# mac = ae.modal_assurance_criterion(u, v)
+
+# print(mac)
 
 
 
 
 
-# --- 1. Symbolische Übertragungsfunktion definieren ---
-s = sp.symbols("s")
 
-# --- 4. Bode-Plot erstellen ---
-fig, (ax_mag, ax_phase) = plt.subplots(2, 1, figsize=(8, 6))
+# T = deepcopy(mna.A)
 
-# Betrag (in dB)
-ax_mag.semilogx(f, 20*np.log10(np.abs(H_lambdified)), label="Original") #
-#ax_mag.semilogx(f, 20*np.log10(np.abs(approx_H_lambdified)), "r--", label="Approximiert")
-ax_mag.set_title("Bode-Diagramm der Übertragungsfunktion")
-ax_mag.set_ylabel("Betrag [dB]")
-ax_mag.grid(True, which="both")
-ax_mag.legend()
 
-# Phase (in Grad)
-ax_phase.semilogx(f, np.unwrap(np.angle(H_lambdified, deg=True), axis=0).flatten(), label="Original")
-#ax_phase.semilogx(f, np.unwrap(np.angle(approx_H_lambdified, deg=True), axis=0).flatten(), "r--", label="Approximiert")
-ax_phase.set_ylabel("Phase [°]")
-ax_phase.set_xlabel("Kreisfrequenz ω [rad/s]")
-ax_phase.grid(True, which="both")
-ax_phase.legend()
 
+# A0_sym = T.subs(s, 0)
+
+# B_sym = -T.diff(s)
+
+
+# A0_num = A0_sym.subs(mna.value_dict)
+# B_num = B_sym.subs(mna.value_dict)
+
+# lambda_test, y, residual_norm, iteration = ae.JacobiCorrection(A0_num, 
+#                      B_num, 
+#                      -67531278.0, 
+#                      u, 
+#                      u, 
+#                      v, 
+#                      10e-8, 
+#                      0.98, 
+#                      10)
+
+# print("\n\n\nThe corrected eigenvalue is:")
+# print(lambda_test)
+# print("\n\n\nThe corrected right eigenvector is:")
+# print(y)
+# print("\n\n\nThe residual norm is:")
+# print(residual_norm)
+# print("\n\n\nThe number of iterations is:")
+# print(iteration)
+
+# print("\n\n\nModal Assurance Criterion:")
+
+# mac = ae.modal_assurance_criterion(y, u)
+
+# print(mac)
+
+f = list(np.logspace(1, 9, 1000))
+
+sols = st.solveNumerical(f, "V_ua")
+# print("\n\n\nThe solution is:")
+# print(sols)
+
+fig, (ax_mag, ax_phase) = plt.subplots(2, 1, sharex=True, figsize=(8, 6))
+
+ax_mag.semilogx(f, 20 * np.log10(np.abs(sols)))
+ax_mag.set_ylabel("Magnitude [dB]")
+ax_mag.grid(True, which="both", linestyle="--")
+ax_mag.set_title("Bode Plot")
+
+ax_phase.semilogx(f, np.angle(sols, deg=True))
+ax_phase.set_xlabel("Frequency [rad/s]")
+ax_phase.set_ylabel("Phase [degrees]")
+ax_phase.grid(True, which="both", linestyle="--")
 
 plt.tight_layout()
-plt.show()
+#plt.show()
+
+
+
+info, ranking, determinant, roots= ae.eigenvalue_term_ranking(st.T, s, st, 6, 0.1, 10e-8, 0.98, 3, "relative", "norm", 3, True)
+
+
+
+print("\n\n\nDeterminante:")
+print(sp.simplify(determinant))
+
+
+print("\n\n\nWurzeln:")
+print(roots)
+
+print("\nWurzeln numerisch:")
+for root in roots:
+    print(root.subs(st.value_dict))
+
+
+# print("\n compressing matrix:")
+#print(list(mna.get_unknowns()))
+# T_compressed_num, rhs_comressed_num, new_indice, T_compressed_sym, rhs_compressed_sym, unknowns_compressed = cm.CompressMatrix(st.T, st.unknowns, st.RHS, 35, st.value_dict, True)
+
+# print("\n\n\nThe compressed matrix is:")
+# print(T_compressed_sym)
+
+# print("result ")
+
+# result = st.T.LUsolve(st.RHS)#T_compressed_sym.LUsolve(rhs_compressed_sym)
+
+# print(sp.simplify(result[new_indice]))
+
+
