@@ -7,7 +7,7 @@ from gui.components.OutputPin import PinType
 from gui.components.node_editor.nodes.Node import Node, NodeType
 from gui.windows.MNAEditor import MNAEditor
 from netlist.Circuit import Circuit
-from Modified_Node_Analysis import ModifiedNodalAnalysis
+from analysis_methoden.Modified_Node_Analysis import ModifiedNodalAnalysis
 
 
 class MNA(Node):
@@ -25,7 +25,7 @@ class MNA(Node):
         super().build()
 
     def get_possible_node_connections(self) -> List[str]:
-        return ["transfer_numeric", "transfer_symbolic", "approx"]
+        return ["transfer_numeric", "transfer_symbolic", "approx", "pole_zero"]
 
     def onlink_callback(self):
         circuit_dict = self.get_input_pin_value("circuit_input_pin", Circuit())

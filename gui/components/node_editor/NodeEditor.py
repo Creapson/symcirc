@@ -10,6 +10,7 @@ from gui.components.node_editor.nodes.ImportCircuit import ImportCircuit
 from gui.components.node_editor.nodes.NetlistParserNode import NetlistParserNode
 
 from gui.components.node_editor.nodes.MNA import MNA
+from gui.components.node_editor.nodes.STA import STA
 
 from gui.components.node_editor.nodes.TransferFunctionNumeric import TransferFunctionNumeric
 from gui.components.node_editor.nodes.NumericSolver import NumericSolver
@@ -19,6 +20,8 @@ from gui.components.node_editor.nodes.SymbolicSolver import SymbolicSolver
 
 from gui.components.node_editor.nodes.ApproximatorNode import ApproximatorNode
 
+from gui.components.node_editor.nodes.PoleZeroNode import PoleZeroNode
+
 AnyNode = Annotated[
     Union[Node,
           ApproximatorNode,
@@ -26,12 +29,14 @@ AnyNode = Annotated[
           FlattenNode,
           ImportCircuit,
           MNA,
+          STA,
           NetlistParserNode,
           NumericSolver,
           SymbolicSolver,
           TransferFunctionNumeric,
-          TransferFunctionSymbolic
-          ], 
+          TransferFunctionSymbolic,
+          PoleZeroNode
+          ],
     Field(discriminator='node_type')
 ]
 

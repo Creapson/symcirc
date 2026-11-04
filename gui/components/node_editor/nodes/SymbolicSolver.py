@@ -25,7 +25,9 @@ class SymbolicSolver(Node):
         return ["bode_plot"]
 
     def onlink_callback(self):
-        self.transfer_function, self.sweep = self.get_input_pin_value("h_input_pin", ([], []))
+        # The TF node's payload is now a 5-tuple; take the first two fields.
+        data = self.get_input_pin_value("h_input_pin", ([], []))
+        self.transfer_function, self.sweep = data[0], data[1]
 
         super().onlink_callback()
 

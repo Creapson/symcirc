@@ -9,7 +9,7 @@ from gui.components.node_editor.nodes.FlattenNode import FlattenNode
 from gui.components.node_editor.nodes.ImportCircuit import ImportCircuit
 from gui.components.node_editor.nodes.NetlistParserNode import NetlistParserNode
 
-from gui.components.node_editor.nodes.MNA import MNA
+from gui.components.node_editor.nodes.STA import STA
 
 from gui.components.node_editor.nodes.TransferFunctionNumeric import TransferFunctionNumeric
 from gui.components.node_editor.nodes.NumericSolver import NumericSolver
@@ -21,6 +21,8 @@ from gui.components.node_editor.nodes.BodePlotNode import BodePlotNode
 from gui.components.plots.PoleZeroPlot import PoleZeroPlot
 
 from gui.components.node_editor.nodes.ApproximatorNode import ApproximatorNode
+
+from gui.components.node_editor.nodes.PoleZeroNode import PoleZeroNode
 
 from gui.windows.Window import Window
 
@@ -159,10 +161,11 @@ class NodeEditorWindow(Window):
             {
                 "Display": [
                     ("BodeBlot", BodePlotNode, "BodePlot Node"),
+                    ("Pole-Zero Plot", PoleZeroNode, "Pole-Zero Plot Node"),
                 ]
             },
             ("ApproximatorNode", ApproximatorNode, "Approximate"),
-            ("ModifiedNodalAnalysis", MNA, "MNA Node"),
+            ("EquationSystem", STA, "Equation System"),
         ]
 
         def _create_menu_recursive(data):
@@ -277,11 +280,18 @@ class NodeEditorWindow(Window):
                 "Approximate a transfer-function",
             ),
             (
-                MNA,
-                "MNA Node",
+                STA,
+                "Equation System",
                 "gui/gfx/node_editor/mna.png",
-                "mna",
-                "Create a equation system",
+                "sta",
+                "Build MNA, Extended Tableau or Sparse Tableau, selectable",
+            ),
+            (
+                PoleZeroNode,
+                "Pole-Zero Plot Node",
+                "gui/gfx/node_editor/pole_zero.png",
+                "pole_zero",
+                "Plot poles and zeros on the s-plane",
             ),
         ]
 
@@ -291,8 +301,8 @@ class NodeEditorWindow(Window):
             try:
                 width, height, channels, data = dpg.load_image(image_path)
                 with dpg.texture_registry():
-                    dpg.add_static_texture(width, height, data, tag=self.uuid(image_path))
-                    texture_tag = self.uuid(image_path)
+                    dpg.add_static_texture(width, height, data, tag=self.uuid(image_path + tag))
+                    texture_tag = self.uuid(image_path + tag)
             except:
                 print("Could not load", image_path)
 

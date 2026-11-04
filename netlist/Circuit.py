@@ -8,6 +8,45 @@ import numpy as np
 from netlist.Element import Element
 from netlist.Model import Model
 
+# Order Analog Insydes expands a transistor model in. The branch order of a
+# model is whatever order its elements are listed in, so a model file written
+# in a different order shifts every unknown that comes out of that transistor
+# and the tableau no longer lines up with Insydes column for column, even
+# though both matrices are correct.
+#
+# Confirmed against Insydes output for BJT_BasicModel (RPI, RO, CBC, CBE, G,
+# CBX) and BJT_full_standard (the same list with GMU, RC, RX inserted), the
+# first being a subsequence of the second. CJS and CXS sit at the end with the
+# other substrate parasitics; that placement is not confirmed against Insydes
+# because no lateral-model reference has been exported yet.
+#
+# A model element whose name is not listed keeps its position relative to the
+# other unlisted ones, so a model this list says nothing about - every MOSFET
+# model, today - comes out in its file order, exactly as before.
+INSYDES_MODEL_ELEMENT_ORDER = (
+    "RPI", "RO", "CBC", "CBE", "G", "GMU", "RC", "RX", "CBX", "CJS", "CXS",
+)
+
+
+def order_model_elements(elements: List[Element]) -> List[Element]:
+    """Sort one expanded transistor model into Analog Insydes' branch order.
+
+    Args:
+        elements (List[Element]): the elements of a generated small signal
+            model, still carrying their model names (RPI, CBC, ...).
+
+    Returns:
+        List[Element]: the same elements, ordered the way Insydes lists them.
+            Elements missing from INSYDES_MODEL_ELEMENT_ORDER keep their
+            original order among themselves and follow the known ones.
+
+    """
+    rank = {name: index for index, name in enumerate(INSYDES_MODEL_ELEMENT_ORDER)}
+    unknown = len(rank)
+
+    # sorted() is stable, so same-rank elements stay in their file order
+    return sorted(elements, key=lambda e: rank.get(e.name.upper(), unknown))
+
 
 class Circuit(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -18,8 +57,10 @@ class Circuit(BaseModel):
     params: Dict[str, str] = Field(default_factory=dict)
     inner_connecting_nodes: List[str] = Field(default_factory=list)
 
-    bipolar_model: str = "BJT_BasicModel"
-    mosfet_model: str = "MOSFET_basicmodel"
+    bipolar_model: str = "BasicModels"
+    mosfet_model: str = "BasicMOSFETModels"
+    diode_model: str = "BasicDiodeModels"
+    jfet_model: str = "BasicJFETModels"
 
     nodes: List[str] = Field(default_factory=list)
 
@@ -98,6 +139,22 @@ class Circuit(BaseModel):
         for element in self.elements:
             if element.type == "M":
                 element.add_param("mosfet_model", self.mosfet_model)
+
+    def set_diode_model(self, new_model: str = ""):
+        if new_model == "":
+            return
+        self.diode_model = new_model
+        for element in self.elements:
+            if element.type == "D":
+                element.add_param("diode_model", self.diode_model)
+
+    def set_jfet_model(self, new_model: str = ""):
+        if new_model == "":
+            return
+        self.jfet_model = new_model
+        for element in self.elements:
+            if element.type == "J":
+                element.add_param("jfet_model", self.jfet_model)
 
     def update_nodes(self):
         for element in self.elements:
@@ -183,7 +240,7 @@ class Circuit(BaseModel):
         subct_elements: List[Element] = []
 
         for element in subct.elements:
-            new_ele = element.copy()
+            new_ele = element.model_copy(deep=True)
             new_ele.name = f"{new_ele.name}{self.separator}{element_name}"
             new_ele.historical_name = f"{element_name}{self.separator}{new_ele.historical_name}"
             new_ele.connections = new_node_ids(element.connections)
@@ -192,6 +249,10 @@ class Circuit(BaseModel):
                 new_ele.add_param("bipolar_model", subct.bipolar_model)
             if new_ele.type == "M":
                 new_ele.add_param("mosfet_model", subct.mosfet_model)
+            if new_ele.type == "D":
+                new_ele.add_param("diode_model", subct.diode_model)
+            if new_ele.type == "J":
+                new_ele.add_param("jfet_model", subct.jfet_model)
 
             subct_elements.append(new_ele)
 
@@ -247,9 +308,10 @@ class Circuit(BaseModel):
                 )
 
                 new_elements.extend(subct_elements)
+                continue
 
-            # Expand transistor models
-            if (element.type == "Q" or element.type == "M") and flatten_models:
+            # Expand transistor / diode / JFET models
+            if element.type in ("Q", "M", "D", "J") and flatten_models:
                 model_name = element.params["ref_model"]
                 model = self.models.get(model_name, Model())
 
@@ -257,14 +319,23 @@ class Circuit(BaseModel):
 
                 bipolar_model = element.params.get("bipolar_model", self.bipolar_model)
                 mosfet_model = element.params.get("mosfet_model", self.mosfet_model)
+                diode_model = element.params.get("diode_model", self.diode_model)
+                jfet_model = element.params.get("jfet_model", self.jfet_model)
 
                 model_subct = model.get_generated_subcircuit(
                     element.params,
                     bipolar_model,
                     mosfet_model,
+                    element.type,
+                    diode_model,
+                    jfet_model,
                 )
 
                 if model_subct is not None:
+                    # branch order follows the model file's element order, so
+                    # normalise it here rather than relying on every model
+                    # file being written in Insydes' order
+                    model_subct.elements = order_model_elements(model_subct.elements)
                     self.add_subcircuit(model_subct, subct_name)
 
                 subct_elements = self.flatten_subcircuit(
@@ -274,6 +345,7 @@ class Circuit(BaseModel):
                 )
 
                 new_elements.extend(subct_elements)
+                continue
 
             # Normal element
             new_elements.append(element)

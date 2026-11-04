@@ -1,24 +1,11 @@
 {
-    "name": "BJT_full_standard",
+    "name": "FullModels",
+    "_comment_en": "BJT hybrid-pi small-signal template - Full level (Analog Insydes FullBJTSmallSignal, simp==0). Simplified + rx (BS), rc (CS), re (ES), r_mu (GMU). When rx/rc/re != 0 the BS/CS/ES internal nodes materialise; when 0 the cleanup shorts them. rc/re are read from the .out MODEL PARAMETERS table by the parser; values are resolved in netlist/Model.py._bjt_ac_param_values.",
     "netlist_file_path": "",
     "params": {},
     "inner_connecting_nodes": ["C", "B", "E"],
-    "nodes": [
-        "B",
-        "E",
-        "C",
-        "BS",
-        "CS"
-    ],
+    "nodes": ["B", "E", "C", "BS", "CS", "ES"],
     "elements": [
-        {
-            "name": "RC",
-            "historical_name": "RC",
-            "symbol": "rc",
-            "connections": ["C", "CS"],
-            "type": "R",
-            "params": { "value_dc": "rc" }
-        },
         {
             "name": "RX",
             "historical_name": "RX",
@@ -28,10 +15,26 @@
             "params": { "value_dc": "rx" }
         },
         {
+            "name": "RC",
+            "historical_name": "RC",
+            "symbol": "rc",
+            "connections": ["C", "CS"],
+            "type": "R",
+            "params": { "value_dc": "rc" }
+        },
+        {
+            "name": "RE",
+            "historical_name": "RE",
+            "symbol": "re",
+            "connections": ["E", "ES"],
+            "type": "R",
+            "params": { "value_dc": "re" }
+        },
+        {
             "name": "RPI",
             "historical_name": "RPI",
             "symbol": "rbe",
-            "connections": ["BS", "E"],
+            "connections": ["BS", "ES"],
             "type": "R",
             "params": { "value_dc": "rpi" }
         },
@@ -39,9 +42,17 @@
             "name": "RO",
             "historical_name": "RO",
             "symbol": "ro",
-            "connections": ["CS", "E"],
+            "connections": ["CS", "ES"],
             "type": "R",
             "params": { "value_dc": "ro" }
+        },
+        {
+            "name": "GMU",
+            "historical_name": "GMU",
+            "symbol": "gmu",
+            "connections": ["BS", "CS"],
+            "type": "R",
+            "params": { "value_dc": "gmu" }
         },
         {
             "name": "CBC",
@@ -55,7 +66,7 @@
             "name": "CBE",
             "historical_name": "CBE",
             "symbol": "cbe",
-            "connections": ["BS", "E"],
+            "connections": ["BS", "ES"],
             "type": "C",
             "params": { "value_dc": "cbe" }
         },
@@ -68,18 +79,18 @@
             "params": { "value_dc": "cbx" }
         },
         {
-            "name": "GMU",
-            "historical_name": "GMU",
-            "symbol": "gmu",
-            "connections": ["BS", "CS"],
-            "type": "R",
-            "params": { "value_dc": "gmu" }
+            "name": "CJS",
+            "historical_name": "CJS",
+            "symbol": "cjs",
+            "connections": ["CS", "0"],
+            "type": "C",
+            "params": { "value_dc": "cjs" }
         },
         {
             "name": "G",
             "historical_name": "G",
             "symbol": "gm",
-            "connections": ["CS", "E", "BS", "E"],
+            "connections": ["CS", "ES", "BS", "ES"],
             "type": "G",
             "params": { "value": "gm" }
         }

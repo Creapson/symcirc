@@ -67,7 +67,7 @@ mosfet_simplified_spice = [
 ]
 
 create_model_json(
-    model_name="MOSFET_simplifiedmodel",
+    model_name="SimplifiedMOSFETModels",
     external_nodes=["D", "G", "S", "B"],
     all_nodes=["D", "G", "S", "B"],
     spice_lines=mosfet_simplified_spice

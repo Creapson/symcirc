@@ -2,7 +2,7 @@ import dearpygui.dearpygui as dpg
 from pydantic import Field
 
 from gui.components.node_editor.nodes.Node import Node, NodeType
-from Modified_Node_Analysis import ModifiedNodalAnalysis
+from analysis_methoden.Modified_Node_Analysis import ModifiedNodalAnalysis
 from typing import Literal, List
 from netlist.Circuit import Circuit
 from Equation_Formulator import EquationFormulator
@@ -33,7 +33,10 @@ class TransferFunctionNumeric(Node):
         super().build()
 
     def get_possible_node_connections(self) -> List[str]:
-        return ["solver_numeric"]
+        # After this node: a NumericSolver or a Pole-Zero node. The
+        # "pole_zero" tag enables the pole-zero toolbar icon while a TF node
+        #      is selected.
+        return ["solver_numeric", "pole_zero"]
 
     def onlink_callback(self):
         self.sweep, self.mna = self.get_input_pin_value("num_results_input_pin", ("None", None))
@@ -42,7 +45,12 @@ class TransferFunctionNumeric(Node):
         if self.mna is None:
             nodes = ["Update MNA"]
         else:
-            nodes = self.mna.get_unknowns_as_strings()
+            # The normal sparse tableau has no node potentials among its
+            # unknowns; get_solvable_names() adds them back as post
+            # processed outputs. MNA has no such method, so fall back.
+            nodes = getattr(
+                self.mna, "get_solvable_names", self.mna.get_unknowns_as_strings
+            )()
             inputs = self.mna.get_System_Inputs()
 
             with self.add_static_attr():
@@ -72,5 +80,12 @@ class TransferFunctionNumeric(Node):
 
         if not dpg.does_item_exist(self.uuid("h_out")):
             self.add_output_pin(tag="h_out", text="H")
-        self.add_output_pin_value("h_out", (H.tolist(), sweep), is_persistence=False)
+        # Payload: (H, sweep) for the Bode path + (mna, mode, output_node)
+        # for the Pole-Zero node. Downstream nodes index what they need
+        # ("numeric" -> numeric QZ path).
+        self.add_output_pin_value(
+            "h_out",
+            (H.tolist(), sweep, self.mna, "numeric", node_out),
+            is_persistence=False,
+        )
         super().update()

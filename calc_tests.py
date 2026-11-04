@@ -1,8 +1,12 @@
 from copy import deepcopy
 import time as t
 from netlist.Circuit import Circuit
+<<<<<<< HEAD
 from Modified_Node_Analysis import ModifiedNodalAnalysis
 from Sparse_Tableau_Extended import SparseTableau
+=======
+from analysis_methoden.Modified_Node_Analysis import ModifiedNodalAnalysis
+>>>>>>> 10542b174aa42979f296c9c931ef1079639efa8f
 from parser.NetlistParser import get_circuit_from_file
 from Approximate import Approximation 
 import tracemalloc

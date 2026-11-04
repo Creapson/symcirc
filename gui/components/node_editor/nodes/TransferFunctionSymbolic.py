@@ -7,7 +7,7 @@ init_printing(use_unicode=True)
 
 from netlist.Circuit import Circuit
 from gui.components.node_editor.nodes.Node import Node, NodeType
-from Modified_Node_Analysis import ModifiedNodalAnalysis
+from analysis_methoden.Modified_Node_Analysis import ModifiedNodalAnalysis
 from typing import Literal, List
 
 class TransferFunctionSymbolic(Node):
@@ -43,21 +43,27 @@ class TransferFunctionSymbolic(Node):
         super().build()
 
     def get_possible_node_connections(self) -> List[str]:
-        return ["solver_symbolic"]
+        # After this node: a SymbolicSolver or a Pole-Zero node.
+        return ["solver_symbolic", "pole_zero"]
 
     def onlink_callback(self):
         self.sweep, self.mna = self.get_input_pin_value("num_results_input_pin", ("None", None))
         dpg.configure_item(self.uuid("sweep"), default_value=self.sweep)
 
-        A, _ = self.mna.get_equation_system()
-        estimate_num_terms = self.mna.estimateTerms(A)
-        print("Estimations: ", estimate_num_terms)
-        dpg.configure_item(self.uuid("compl_estimate"), default_value="Complexity Estimations: " + str(estimate_num_terms))
-
         if self.mna is None:
             nodes = ["Update MNA"]
         else:
-            nodes = self.mna.get_unknowns_as_strings()
+            A, _ = self.mna.get_equation_system()
+            estimate_num_terms = self.mna.estimateTerms(A)
+            print("Estimations: ", estimate_num_terms)
+            dpg.configure_item(self.uuid("compl_estimate"), default_value="Complexity Estimations: " + str(estimate_num_terms))
+
+            # The normal sparse tableau has no node potentials among its
+            # unknowns; get_solvable_names() adds them back as post
+            # processed outputs. MNA has no such method, so fall back.
+            nodes = getattr(
+                self.mna, "get_solvable_names", self.mna.get_unknowns_as_strings
+            )()
             inputs = self.mna.get_System_Inputs()
 
             if dpg.does_item_exist(self.uuid("adv_settings")):
@@ -96,5 +102,11 @@ class TransferFunctionSymbolic(Node):
 
         if not dpg.does_item_exist(self.uuid("h_out")):
             self.add_output_pin(tag="h_out", text="H")
-        self.add_output_pin_value("h_out", (H_num.tolist(), sweep), is_persistence=False)
+        # Payload: (H, sweep) for the Bode path + (mna, mode, output_node)
+        # for the Pole-Zero node. "symbolic" -> det(A_out)/det(A) path.
+        self.add_output_pin_value(
+            "h_out",
+            (H_num.tolist(), sweep, self.mna, "symbolic", node_out),
+            is_persistence=False,
+        )
         super().update()
