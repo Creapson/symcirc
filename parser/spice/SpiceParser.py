@@ -306,7 +306,9 @@ class SpiceParser:
     def _parse_subct(self, line: Line) -> Circuit:
         circuit = Circuit()
         circuit.name = line.tokens[1]
-        circuit.inner_connecting_nodes = line.tokens[2:-1]
+        num_kwargs = line.get_num_kwargs(line._text)
+        print("num_kwargs: ", num_kwargs)
+        circuit.inner_connecting_nodes = line.tokens[2:]
         return circuit
 
     def to_spice_num(self, val : str) -> float:
@@ -546,3 +548,13 @@ class Line:
                 i += 3
 
         return dict_parameters
+
+    @staticmethod 
+    def get_num_kwargs(text:str) -> int:
+        kwarg_cnd = 0
+        text = text.strip(" ;()")
+        for part in text.split():
+            if "=" in part: 
+                kwarg_cnd += 1
+
+        return kwarg_cnd
