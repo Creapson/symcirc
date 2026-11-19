@@ -7,7 +7,7 @@ import scipy.linalg as scipy
 import warnings
 import copy
 
-from Modified_Node_Analysis import ModifiedNodalAnalysis
+from analysis_methoden.Modified_Node_Analysis import ModifiedNodalAnalysis
 import compress_matrix as cm
 
 
