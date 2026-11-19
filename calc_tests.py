@@ -1,12 +1,8 @@
 from copy import deepcopy
 import time as t
 from netlist.Circuit import Circuit
-<<<<<<< HEAD
-from Modified_Node_Analysis import ModifiedNodalAnalysis
-from Sparse_Tableau_Extended import SparseTableau
-=======
 from analysis_methoden.Modified_Node_Analysis import ModifiedNodalAnalysis
->>>>>>> 10542b174aa42979f296c9c931ef1079639efa8f
+from analysis_methoden.Sparse_Tableau_Extended import SparseTableau
 from parser.NetlistParser import get_circuit_from_file
 from Approximate import Approximation 
 import tracemalloc
@@ -20,19 +16,22 @@ import compress_matrix as cm
 
 circuit = Circuit()
 
-circuit = get_circuit_from_file("test_circuits/Basisschaltung_2N2222.cir")
+circuit = get_circuit_from_file("test_circuits/labor10.cir")
 circuit.to_ai_string()
 print("\n\n\nThe now flattend subcircuits")
 circuit.flatten()
 circuit.to_ai_string()
 
+input("Press Enter to continue...")
+
+
 print("\n\n\nThe flattend circuit with small signal models")
-circuit.flatten(True, "test_circuits/Basisschaltung_2N2222.out")
-circuit.elements = [
-    element
-    for element in circuit.elements
-    if element.type.upper() != "Q"
-]
+circuit.flatten(True, "test_circuits/labor10.out")
+# circuit.elements = [
+#     element
+#     for element in circuit.elements
+#     if element.type.upper() != "Q"
+# ]
 circuit.to_ai_string()
 print(circuit.get_nodes())
 
@@ -59,7 +58,7 @@ print(st.unknowns)
 
 mna_compressed = deepcopy(mna)
 
-T_compressed_num, rhs_comressed_num, new_indice, mna_compressed.A, mna_compressed.z, mna_compressed.unknowns = cm.CompressMatrix(st.T, st.get_unknowns(), st.RHS, list(st.get_unknowns()).index(sp.Symbol("V_ua")), st.value_dict, True)
+T_compressed_num, rhs_comressed_num, new_indice, mna_compressed.A, mna_compressed.z, mna_compressed.unknowns = cm.CompressMatrix(st.T, st.get_unknowns(), st.RHS, list(st.get_unknowns()).index(sp.Symbol("V_VOUT")), st.value_dict, True)
 
 
 
@@ -67,18 +66,18 @@ ap = Approximation(mna_compressed)
 
 
 
-result_ap = ap.approximate("V_ua", ((1e5, 0.14),), "block", 2.0, "max", 5)
+result_ap = ap.approximate("V_VOUT", ((1e3, 0.1),), "block", 2.0, "max", 5)
 
 
 print("Result: ")
-print(sp.simplify(result_ap.solve("V_ua")))
+print(sp.simplify(result_ap.solve("V_VOUT")))
 
 
 print("Eigenwertberechnung für die Matrix A(s):")
 
 eigenvalues, S, W, Q, Z = ae.get_eigenvalues(st.T.subs(st.value_dict), s)
 
-print(eigenvalues)
+
 
 # print("\n\n\nLeft eigenvector: ")
 
@@ -143,7 +142,7 @@ print(eigenvalues)
 
 f = list(np.logspace(1, 9, 1000))
 
-sols = st.solveNumerical(f, "V_ua")
+sols = st.solveNumerical(f, "V_VOUT")
 # print("\n\n\nThe solution is:")
 # print(sols)
 
@@ -164,7 +163,7 @@ plt.tight_layout()
 
 
 
-info, ranking, determinant, roots= ae.eigenvalue_term_ranking(st.T, s, st, 6, 0.1, 10e-8, 0.98, 3, "relative", "norm", 3, True)
+info, ranking, determinant, roots= ae.eigenvalue_term_ranking(st.T, s, st, 8, 0.2, 10e-5, 0.98, 3, "relative", "norm", 3, True)
 
 
 

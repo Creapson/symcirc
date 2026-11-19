@@ -7,7 +7,7 @@ import scipy.linalg as scipy
 import warnings
 import copy
 
-from Modified_Node_Analysis import ModifiedNodalAnalysis
+from analysis_methoden.Modified_Node_Analysis import ModifiedNodalAnalysis
 import compress_matrix as cm
 
 
@@ -21,7 +21,7 @@ class Approximation:
         
     @staticmethod
     def get_Elimination_Methods():
-        return list(("term-by-term",))
+        return list(("term-by-term","block"))
     
     @staticmethod
     def get_Sorting_Methods():
@@ -302,9 +302,7 @@ class Approximation:
                                                          approx_points, 
                                                          self.analysis.A)
 
-        print("Unsorted term list:")
-        for ((i, j), t, rel) in term_list_sym:
-            print(f"Term at position ({i}, {j}): {t}, Relevance Coefficient: {rel}")
+        
       
 
         
@@ -323,9 +321,7 @@ class Approximation:
         
         term_list_sym.sort(key=lambda x: x[2].real)
 
-        print("Sorted term list:")
-        for ((i, j), t, rel) in term_list_sym:
-            print(f"Term at position ({i}, {j}): {t}, Relevance Coefficient: {rel}")
+        
         
 
         # ------------------------------------------------------------------------------------------

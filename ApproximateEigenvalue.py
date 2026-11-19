@@ -919,8 +919,11 @@ def JacobiCorrection(A_test_num,
         b[:n] = -residual
         b[n] = 0.0
         # check_finite=False matters for tight iteration loops.
-        sol = la.solve(K, b, assume_a="gen", check_finite=False, overwrite_a=True,
-                    overwrite_b=True)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=la.LinAlgWarning)
+            sol = la.solve(K, b, assume_a="gen", check_finite=False, overwrite_a=True,
+                        overwrite_b=True)
+
         z = sol[:n]
 
         y = y + z
